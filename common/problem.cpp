@@ -438,7 +438,11 @@ static int __gen_benchmark_work(unsigned int contestid, ContestWork * work)
       work->bigcrypto.keysdone.lo = ( 0 );
       work->bigcrypto.keysdone.hi = ( 0 );
       work->bigcrypto.iterations.lo = ( 0 );
-      work->bigcrypto.iterations.hi = ( 8 );
+      #if (CLIENT_CPU == CPU_CUDA) || (CLIENT_CPU == CPU_OPENCL)
+        work->bigcrypto.iterations.hi = ( 8 );
+      #else
+        work->bigcrypto.iterations.hi = ( 1 );
+      #endif
       work->bigcrypto.randomsubspace = 0xffff; /* invalid, benchmarks don't propagate random subspaces */
       return contestid;
     }
@@ -562,7 +566,11 @@ static int __gen_random_work(unsigned int contestid, ContestWork * work)
     work->bigcrypto.keysdone.lo = 0;
     work->bigcrypto.keysdone.hi = 0;
     work->bigcrypto.iterations.lo = 0;
-    work->bigcrypto.iterations.hi = 64;
+    #if (CLIENT_CPU == CPU_CUDA) || (CLIENT_CPU == CPU_OPENCL)
+      work->bigcrypto.iterations.hi = 64;
+    #else
+      work->bigcrypto.iterations.hi = 1;
+    #endif
     work->bigcrypto.randomsubspace = 0xffff; /* invalid, randoms don't propagate random subspaces */
     work->bigcrypto.check.count = 0;
     work->bigcrypto.check.hi  = 0;
