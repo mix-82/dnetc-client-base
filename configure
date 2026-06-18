@@ -3561,7 +3561,7 @@ case "$1" in
         TARGET_AS="gcc -m32 -c"
         TARGET_CC="gcc"
         generate_gcc_opts "x86" "linux"
-        TARGET_CCFLAGS="$OPTS_GCC -m32 -DOPENCL -DDYN_TIMESLICE"
+        TARGET_CCFLAGS="$OPTS_GCC -m32 -DOPENCL -DDYN_TIMESLICE -mmx"
         TARGET_LDFLAGS="$TARGET_LDFLAGS -m32"
         TARGET_LIBS="-lrt -lOpenCL -lpthread"
         TARGET_USES_GNUMAKE="yes"
