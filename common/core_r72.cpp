@@ -114,6 +114,9 @@ extern "C" s32 rc5_72_unit_func_ocl_ref (RC5_72UnitWork *rc5_72unitwork, u32 *it
 extern "C" s32 rc5_72_unit_func_ocl_1pipe (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
 extern "C" s32 rc5_72_unit_func_ocl_2pipe (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
 extern "C" s32 rc5_72_unit_func_ocl_4pipe (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
+extern "C" s32 rc5_72_unit_func_ocl_1pipe_nv (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
+extern "C" s32 rc5_72_unit_func_ocl_2pipe_nv (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
+extern "C" s32 rc5_72_unit_func_ocl_4pipe_nv (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
 #elif (CLIENT_CPU == CPU_ARM64)
 extern "C" s32 rc5_72_unit_func_scalarfusion(RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
 #endif
@@ -240,6 +243,9 @@ const char **corenames_for_contest_rc572()
       "CL 1-pipe",
       "CL 2-pipe",
       "CL 4-pipe",
+      "CL 1-pipe-nv",
+      "CL 2-pipe-nv",
+      "CL 4-pipe-nv",
   #else
       "ANSI 4-pipe",
       "ANSI 2-pipe",
@@ -1026,7 +1032,18 @@ int selcoreSelectCore_rc572(Client *client, unsigned int threadindex,
         unit_func.gen_72 = rc5_72_unit_func_ocl_4pipe;
         pipeline_count = 4;
         break;
-
+      case 4:
+        unit_func.gen_72 = rc5_72_unit_func_ocl_1pipe_nv;
+        pipeline_count = 1;
+        break;
+      case 5:
+        unit_func.gen_72 = rc5_72_unit_func_ocl_2pipe_nv;
+        pipeline_count = 2;
+        break;
+      case 6:
+		unit_func.gen_72 = rc5_72_unit_func_ocl_4pipe_nv;
+        pipeline_count = 4;
+        break;
     // -----------
      #else /* the ansi cores */
       case 0:

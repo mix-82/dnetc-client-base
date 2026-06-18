@@ -10,6 +10,7 @@
 #include "base64.h"
 #include <stdlib.h>
 #include <string.h>
+#include "stdio.h"
 
 //rc5-72 test
 #define P 0xB7E15163
@@ -222,6 +223,234 @@ static unsigned char* Decompress(const unsigned char *inbuf, unsigned length)
 }
 
 
+/*
+bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *kernelName)
+{
+  unsigned char *decompressed_src;
+  FILE *f;
+	  
+	if (strcmp(kernelName, "ocl_rc572_ref") == 0)
+	{
+		f=fopen("./rc5-72/opencl/rc5-ref.cl","rb");
+		if(f==NULL) {
+			Log("Couldn't load 'rc5-ref.cl'");
+			return false;
+		}
+	}
+	else if (strcmp(kernelName, "ocl_rc572_1pipe") == 0)
+	{
+		f=fopen("./rc5-72/opencl/rc5-1pipe.cl","rb");
+		if(f==NULL) {
+			Log("Couldn't load 'rc5-1pipe.cl'");
+			return false;
+		}
+	}
+	else if (strcmp(kernelName, "ocl_rc572_2pipe") == 0)
+	{
+		f=fopen("./rc5-72/opencl/rc5-2pipe.cl","rb");
+		if(f==NULL) {
+			Log("Couldn't load 'rc5-2pipe.cl'");
+			return false;
+		}
+	}
+	else if (strcmp(kernelName, "ocl_rc572_4pipe") == 0)
+	{
+		f=fopen("./rc5-72/opencl/rc5-4pipe.cl","rb");
+		if(f==NULL) {
+			Log("Couldn't load 'rc5-4pipe.cl'");
+			return false;
+		}
+	}
+	else if (strcmp(kernelName, "ocl_rc572_1pipe_2i") == 0)
+	{
+		f=fopen("./rc5-72/opencl/rc5-1pipe-2i.cl","rb");
+		if(f==NULL) {
+			Log("Couldn't load 'rc5-1pipe-2i.cl'");
+			return false;
+		}
+	}
+    else if (strcmp(kernelName, "ocl_rc572_1pipe_4i") == 0)
+	{
+		f=fopen("./rc5-72/opencl/rc5-1pipe-4i.cl","rb");
+		if(f==NULL) {
+			Log("Couldn't load 'rc5-1pipe-4i.cl'");
+			return false;
+		}
+	}
+    else if (strcmp(kernelName, "ocl_rc572_1pipe_8i") == 0)
+	{
+		f=fopen("./rc5-72/opencl/rc5-1pipe-8i.cl","rb");
+		if(f==NULL) {
+			Log("Couldn't load 'rc5-1pipe-8i.cl'");
+			return false;
+		}
+	}
+    else if (strcmp(kernelName, "ocl_rc572_1pipe_16i") == 0)
+	{
+		f=fopen("./rc5-72/opencl/rc5-1pipe-16i.cl","rb");
+		if(f==NULL) {
+			Log("Couldn't load 'rc5-1pipe-16i.cl'");
+			return false;
+		}
+	}
+    else if (strcmp(kernelName, "ocl_rc572_1pipe_32i") == 0)
+	{
+		f=fopen("./rc5-72/opencl/rc5-1pipe-32i.cl","rb");
+		if(f==NULL) {
+			Log("Couldn't load 'rc5-1pipe-32i.cl'");
+			return false;
+		}
+	}
+    else if (strcmp(kernelName, "ocl_rc572_1pipe_64i") == 0)
+	{
+		f=fopen("./rc5-72/opencl/rc5-1pipe-64i.cl","rb");
+		if(f==NULL) {
+			Log("Couldn't load 'rc5-1pipe-64i.cl'");
+			return false;
+		}
+	}
+    else if (strcmp(kernelName, "ocl_rc572_1pipe_128i") == 0)
+	{
+		f=fopen("./rc5-72/opencl/rc5-1pipe-128i.cl","rb");
+		if(f==NULL) {
+			Log("Couldn't load 'rc5-1pipe-128i.cl'");
+			return false;
+		}
+	}
+    else if (strcmp(kernelName, "ocl_rc572_1pipe_256i") == 0)
+	{
+		f=fopen("./rc5-72/opencl/rc5-1pipe-256i.cl","rb");
+		if(f==NULL) {
+			Log("Couldn't load 'rc5-1pipe-256i.cl'");
+			return false;
+		}
+	}
+    else if (strcmp(kernelName, "ocl_rc572_1pipe_512i") == 0)
+	{
+		f=fopen("./rc5-72/opencl/rc5-1pipe-512i.cl","rb");
+		if(f==NULL) {
+			Log("Couldn't load 'rc5-1pipe-512i.cl'");
+			return false;
+		}
+	}
+    else if (strcmp(kernelName, "ocl_rc572_1pipe_1024i") == 0)
+	{
+		f=fopen("./rc5-72/opencl/rc5-1pipe-1024i.cl","rb");
+		if(f==NULL) {
+			Log("Couldn't load 'rc5-1pipe-1024i.cl'");
+			return false;
+		}
+	}
+	else
+	{
+			Log("Couldn't load unknown CL file ");
+			Log(kernelName);
+			return false;
+	}
+	
+    fseek (f , 0 , SEEK_END);
+    unsigned lSize = ftell (f)+1;
+
+    if(lSize>1000000) {
+        fclose(f);
+        Log("Error in CL file");
+        return false;
+    }
+
+    decompressed_src=(unsigned char*)malloc(lSize);
+
+    rewind(f);
+    fread(decompressed_src,lSize-1,1,f);
+    decompressed_src[lSize-1]=0;
+
+    fclose(f);
+  
+  if (decompressed_src == NULL)
+    return false;
+        
+  cl_int status;
+  cont->program = clCreateProgramWithSource(cont->clcontext, 1, (const char**)&decompressed_src, NULL, &status);
+  free(decompressed_src);
+  if (status == CL_SUCCESS)
+  {
+    status = clBuildProgram(cont->program, 1, &cont->deviceID, "-cl-std=CL1.2", NULL, NULL);
+
+  }
+  if (ocl_diagnose(status, "building cl program", cont) != CL_SUCCESS)
+  {
+    //static char buf[0x10001]={0};
+    size_t log_size;
+
+    clGetProgramBuildInfo( cont->program,
+                           cont->deviceID,
+                           CL_PROGRAM_BUILD_LOG,
+                           0,
+                           NULL,
+                           &log_size );
+
+    char *buf = (char *) malloc(log_size);
+    clGetProgramBuildInfo( cont->program,
+                           cont->deviceID,
+                           CL_PROGRAM_BUILD_LOG,
+                           log_size,
+                           buf,
+                           NULL );
+    
+    buf[log_size - 1] = '\0';
+    Log("Build log returned %ld bytes\n", (long)log_size);
+    LogRaw("Build Log:\n");
+    LogRaw("%s\n", buf);
+   
+    free(buf);
+
+    return false;
+  }
+
+    size_t binary_size = 0;
+    clGetProgramInfo(cont->program, CL_PROGRAM_BINARY_SIZES, sizeof(size_t), &binary_size, NULL);
+
+    if (binary_size > 0)
+    {
+        // 2. Allocate space for the binary pointer array
+        unsigned char* binary_buffer = (unsigned char*)malloc(binary_size);
+                
+        // OpenCL requires an array of pointers matching the number of devices
+        unsigned char* binaries[1] = { binary_buffer };
+                
+        // 3. Retrieve the payload
+        clGetProgramInfo(cont->program, CL_PROGRAM_BINARIES, sizeof(unsigned char*) * 1, binaries, NULL);
+                
+        // 4. Dump to disk
+        FILE* f = fopen("./rc5-72/opencl/rc5_compiled.ptx", "wb");
+        fwrite(binary_buffer, 1, binary_size, f);
+        fclose(f);
+            
+        free(binary_buffer);
+    }
+
+  cont->kernel = clCreateKernel(cont->program, kernelName, &status);
+  if (ocl_diagnose(status, "building kernel", cont) != CL_SUCCESS)
+    return false;
+
+  return true;
+}
+*/
+
+int GetNvidiaComputeCapability(cl_device_id device)
+{
+    cl_uint vendor;
+    if (clGetDeviceInfo(device, CL_DEVICE_VENDOR_ID, sizeof(vendor), &vendor, NULL) != CL_SUCCESS)
+      return 0;
+    if (vendor != 0x10DE)
+      return 0; // Not NVIDIA
+
+    cl_uint sm_major = 0, sm_minor = 0;
+    clGetDeviceInfo(device, 0x4000, sizeof(sm_major), &sm_major, NULL);
+    clGetDeviceInfo(device, 0x4001, sizeof(sm_minor), &sm_minor, NULL);
+    
+    return (int)sm_major * 10 + (int)sm_minor;
+}
+
 bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *kernelName)
 {
   char *decoded_src = (char*)malloc(strlen(programText)+1);
@@ -239,8 +468,29 @@ bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *ke
   free(decompressed_src);
   if (status == CL_SUCCESS)
   {
-    //status = clBuildProgram(cont->program, 1, &cont->deviceID, NULL, NULL, NULL);
-    status = clBuildProgram(cont->program, 1, &cont->deviceID, "-cl-std=CL1.1", NULL, NULL);
+    const char *clOption = "-cl-std=CL1.1";  // support older macOS
+    char nvOption[32] = "";
+    char buildOptions[64];
+
+    int sm_ver = GetNvidiaComputeCapability(cont->deviceID); 
+    if (sm_ver > 0)
+      snprintf(nvOption, sizeof(nvOption), "-D NV_SM=%d", sm_ver);
+
+    snprintf(buildOptions, sizeof(buildOptions), "%s %s", clOption, nvOption);
+
+    status = clBuildProgram(cont->program, 1, &cont->deviceID, buildOptions, NULL, NULL);
+    
+    if (status != CL_SUCCESS)  // fallback
+    {
+      //Log("clBuildProgram() failed with build options %s\n", buildOptions);
+      if (sm_ver > 0)
+      {
+        snprintf(buildOptions, sizeof(buildOptions), "%s", nvOption);
+        status = clBuildProgram(cont->program, 1, &cont->deviceID, buildOptions, NULL, NULL);
+      }
+      else
+        status = clBuildProgram(cont->program, 1, &cont->deviceID, NULL, NULL, NULL);
+    }
   }
   if (ocl_diagnose(status, "building cl program", cont) != CL_SUCCESS)
   {
@@ -278,3 +528,4 @@ bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *ke
 
   return true;
 }
+

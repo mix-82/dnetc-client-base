@@ -106,10 +106,14 @@
 #if defined(_WIN64)
   #define CLIENT_OS        OS_WIN64
   #define CLIENT_OS_NAME   "Win64"
-  #if defined(_M_AMD64)
-    #define CLIENT_CPU     CPU_AMD64
+  #if defined(CUDA)
+    #define CLIENT_CPU      CPU_CUDA
+  #elif defined(OPENCL)
+    #define CLIENT_CPU      CPU_OPENCL
+  #elif defined(_M_AMD64)
+    #define CLIENT_CPU      CPU_AMD64
   #elif defined(_M_IA64)
-    #define CLIENT_CPU     CPU_IA64
+    #define CLIENT_CPU      CPU_IA64
   #endif
 #elif defined(WIN32) || defined(__WIN32__) || defined(_Windows) || defined(_WIN32)
   #define CLIENT_OS        OS_WIN32

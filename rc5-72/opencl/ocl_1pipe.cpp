@@ -14,6 +14,9 @@
 #include "rc5-1pipe.cpp"
 #include "rc5-2pipe.cpp"
 #include "rc5-4pipe.cpp"
+#include "rc5-1pipe-nv.cpp"
+#include "rc5-2pipe-nv.cpp"
+#include "rc5-4pipe-nv.cpp"
 
 #define CONST_SIZE (sizeof(cl_uint)*16)
 #define OUT_SIZE (sizeof(cl_uint)*128)
@@ -273,6 +276,9 @@ static bool selftest(ocl_context_t *cont)
 extern "C" s32 rc5_72_unit_func_ocl_1pipe (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
 extern "C" s32 rc5_72_unit_func_ocl_2pipe (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
 extern "C" s32 rc5_72_unit_func_ocl_4pipe (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
+extern "C" s32 rc5_72_unit_func_ocl_1pipe_nv (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
+extern "C" s32 rc5_72_unit_func_ocl_2pipe_nv (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
+extern "C" s32 rc5_72_unit_func_ocl_4pipe_nv (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
 #endif
 
 /* some static flags which are set on per-core basis */
@@ -424,6 +430,49 @@ static s32 rc5_72_unit_func_ocl_npipe(RC5_72UnitWork *rc5_72unitwork, u32 *itera
       //Log("Up:Time: %f, runsize=%u, diff=%u\n", float(d), cont->runSize, diffm*cont->runSizeMultiplier);
     }
 
+    /*
+    if (d > 12.0 || (d < 8.0 && rest0 == cont->runSize))
+    {
+      // 1. Determine proportional scaling ratio based on a 10ms target
+      double safe_d = (d < 0.001) ? 0.001 : d; // Prevent division-by-zero on ultra-fast runs
+      double ratio = 10.0 / safe_d;
+
+      // 2. Clamp the adjustment to prevent massive overshoots.
+      // Start-up timing is mostly API overhead, not pure compute latency.
+      if (ratio > 2.0) ratio = 1.2; // Max 20% increase per step
+      if (ratio < 0.5) ratio = 0.5; // Max 20% decrease per step
+
+      // 3. Calculate ideal size 
+      u32 ideal_runSize = (u32)(cont->runSize * ratio);
+
+      // 4. Apply changes and align to the runSizeMultiplier
+      if (ideal_runSize > cont->runSize)
+      {
+        u32 diffm = (ideal_runSize - cont->runSize) / cont->runSizeMultiplier;
+        if (diffm == 0) diffm = 1;
+
+        if (cont->runSize < cont->maxWorkSize)
+        {
+          cont->runSize += diffm * cont->runSizeMultiplier;
+          // Safety catch to ensure we don't exceed max allowable size
+          if (cont->runSize > cont->maxWorkSize) cont->runSize = cont->maxWorkSize;
+        }
+        Log("Up:Time: %f, runsize=%u, diff=%u\n", float(d), cont->runSize, diffm * cont->runSizeMultiplier);
+      }
+      else if (ideal_runSize < cont->runSize)
+      {
+        u32 diffm = (cont->runSize - ideal_runSize) / cont->runSizeMultiplier;
+        if (diffm == 0) diffm = 1;
+
+        if (cont->runSize > (diffm * cont->runSizeMultiplier))
+        {
+          cont->runSize -= diffm * cont->runSizeMultiplier;
+        }
+        Log("Down:Time: %f, runsize=%u\n", float(d), cont->runSize);
+      }
+    }
+    */
+
     key_incr(&tmp_unit.L0.hi, &tmp_unit.L0.mid, &tmp_unit.L0.lo, rest0 * pipes_count);
     iter_offset += rest0 * pipes_count;
   }
@@ -508,3 +557,25 @@ s32 rc5_72_unit_func_ocl_4pipe(RC5_72UnitWork *rc5_72unitwork, u32 *iterations, 
 
   return rc5_72_unit_func_ocl_npipe(rc5_72unitwork, iterations, CORE_4PIPE, 4, ocl_rc572_4pipe_src, "ocl_rc572_4pipe", &flags);
 }
+
+s32 rc5_72_unit_func_ocl_1pipe_nv(RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *)
+{
+  static struct core_static_flags flags;
+
+  return rc5_72_unit_func_ocl_npipe(rc5_72unitwork, iterations, CORE_1PIPE_NV, 1, ocl_rc572_1pipe_nv_src, "ocl_rc572_1pipe_nv", &flags);
+}
+
+s32 rc5_72_unit_func_ocl_2pipe_nv(RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *)
+{
+  static struct core_static_flags flags;
+
+  return rc5_72_unit_func_ocl_npipe(rc5_72unitwork, iterations, CORE_2PIPE_NV, 2, ocl_rc572_2pipe_nv_src, "ocl_rc572_2pipe_nv", &flags);
+}
+
+s32 rc5_72_unit_func_ocl_4pipe_nv(RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *)
+{
+  static struct core_static_flags flags;
+
+  return rc5_72_unit_func_ocl_npipe(rc5_72unitwork, iterations, CORE_4PIPE_NV, 4, ocl_rc572_4pipe_nv_src, "ocl_rc572_4pipe_nv", &flags);
+}
+
