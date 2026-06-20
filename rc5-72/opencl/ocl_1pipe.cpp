@@ -344,8 +344,9 @@ static s32 rc5_72_unit_func_ocl_npipe(RC5_72UnitWork *rc5_72unitwork, u32 *itera
     RaiseExitRequestTrigger();
     return -1;          //err
   }
-
+  
   u32 iter_offset = 0;
+
   while (kiter) {
     u32 rest0;
 
@@ -382,7 +383,7 @@ static s32 rc5_72_unit_func_ocl_npipe(RC5_72UnitWork *rc5_72unitwork, u32 *itera
       RaiseExitRequestTrigger();
       return -1;          //err
     }
-
+    
     cl_ulong startTime;
     cl_ulong endTime;
     cl_int   status_p1, status_p2;
@@ -430,22 +431,25 @@ static s32 rc5_72_unit_func_ocl_npipe(RC5_72UnitWork *rc5_72unitwork, u32 *itera
       //Log("Up:Time: %f, runsize=%u, diff=%u\n", float(d), cont->runSize, diffm*cont->runSizeMultiplier);
     }
 
-    /*
-    if (d > 12.0 || (d < 8.0 && rest0 == cont->runSize))
+    /* 
+    // An improved proportional tracking loop - mix
+    if (rest0 == cont->runSize)
     {
       // 1. Determine proportional scaling ratio based on a 10ms target
-      double safe_d = (d < 0.001) ? 0.001 : d; // Prevent division-by-zero on ultra-fast runs
-      double ratio = 10.0 / safe_d;
+      double safe_d = (d < 0.001) ? 0.001 : d; 
+      double raw_ratio = 10.0 / safe_d;
 
-      // 2. Clamp the adjustment to prevent massive overshoots.
-      // Start-up timing is mostly API overhead, not pure compute latency.
-      if (ratio > 2.0) ratio = 1.2; // Max 20% increase per step
-      if (ratio < 0.5) ratio = 0.5; // Max 20% decrease per step
+      // 2. Apply a dampening filter (Gain = 0.5) to smooth out OS timing jitter
+      double ratio = 1.0 + (raw_ratio - 1.0) * 0.5;
 
-      // 3. Calculate ideal size 
+      // 3. Clamping
+      if (ratio > 1.20) ratio = 1.20; // Max 20% increase per step
+      if (ratio < 0.70) ratio = 0.70; // Max 30% decrease per step
+
+      // 4. Calculate ideal size 
       u32 ideal_runSize = (u32)(cont->runSize * ratio);
 
-      // 4. Apply changes and align to the runSizeMultiplier
+      // 5. Apply changes and align to the runSizeMultiplier
       if (ideal_runSize > cont->runSize)
       {
         u32 diffm = (ideal_runSize - cont->runSize) / cont->runSizeMultiplier;
@@ -454,10 +458,10 @@ static s32 rc5_72_unit_func_ocl_npipe(RC5_72UnitWork *rc5_72unitwork, u32 *itera
         if (cont->runSize < cont->maxWorkSize)
         {
           cont->runSize += diffm * cont->runSizeMultiplier;
-          // Safety catch to ensure we don't exceed max allowable size
-          if (cont->runSize > cont->maxWorkSize) cont->runSize = cont->maxWorkSize;
+          if (cont->runSize > cont->maxWorkSize)
+            cont->runSize = cont->maxWorkSize;
+          //Log("Up:Time: %f, runsize=%u, diff=%u\n", float(d), cont->runSize, diffm*cont->runSizeMultiplier);
         }
-        Log("Up:Time: %f, runsize=%u, diff=%u\n", float(d), cont->runSize, diffm * cont->runSizeMultiplier);
       }
       else if (ideal_runSize < cont->runSize)
       {
@@ -467,8 +471,8 @@ static s32 rc5_72_unit_func_ocl_npipe(RC5_72UnitWork *rc5_72unitwork, u32 *itera
         if (cont->runSize > (diffm * cont->runSizeMultiplier))
         {
           cont->runSize -= diffm * cont->runSizeMultiplier;
+          //Log("Down:Time: %f, runsize=%u\n", float(d), cont->runSize);
         }
-        Log("Down:Time: %f, runsize=%u\n", float(d), cont->runSize);
       }
     }
     */
