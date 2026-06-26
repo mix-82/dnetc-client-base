@@ -469,28 +469,42 @@ bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *ke
   if (status == CL_SUCCESS)
   {
     const char *clOption = "-cl-std=CL1.1";  // support older macOS
-    char nvOption[32] = "";
     char buildOptions[64];
 
     int sm_ver = GetNvidiaComputeCapability(cont->deviceID); 
-    if (sm_ver > 0)
-      snprintf(nvOption, sizeof(nvOption), "-D NV_SM=%d", sm_ver);
+    if (sm_ver > 0)  // NVIDIA
+    {
+      char nvOption1[16] = "";
+      char nvOption2[32] = "";
 
-    snprintf(buildOptions, sizeof(buildOptions), "%s %s", clOption, nvOption);
+      snprintf(nvOption1, sizeof(nvOption1), "-D NV_SM=%d", sm_ver); // SM version
+
+      if (sm_ver >= 50)  // Optimize for Maxwell and newer
+        if (strstr(kernelName, "2pipe"))
+          snprintf(nvOption2, sizeof(nvOption2), "-cl-nv-maxrregcount=64");  // maximize 2-pipe occupancy
+        else if (strstr(kernelName, "4pipe"))
+          snprintf(nvOption2, sizeof(nvOption2), "-cl-nv-maxrregcount=128");  // maximize 4-pipe ILP
+   
+      snprintf(buildOptions, sizeof(buildOptions), "%s %s %s", clOption, nvOption1, nvOption2); // NVIDIA build options
+    }
+    else
+        snprintf(buildOptions, sizeof(buildOptions), "%s", clOption);  // AMD, Intel, etc. build options
 
     status = clBuildProgram(cont->program, 1, &cont->deviceID, buildOptions, NULL, NULL);
     
     if (status != CL_SUCCESS)  // fallback
     {
       //Log("clBuildProgram() failed with build options %s\n", buildOptions);
-      if (sm_ver > 0)
-      {
-        snprintf(buildOptions, sizeof(buildOptions), "%s", nvOption);
-        status = clBuildProgram(cont->program, 1, &cont->deviceID, buildOptions, NULL, NULL);
-      }
-      else
-        status = clBuildProgram(cont->program, 1, &cont->deviceID, NULL, NULL, NULL);
+      status = clBuildProgram(cont->program, 1, &cont->deviceID, NULL, NULL, NULL); // generic fallback build options
     }
+
+    size_t log_size;
+    clGetProgramBuildInfo(cont->program, cont->deviceID, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
+
+    char *log = (char *)malloc(log_size);
+    clGetProgramBuildInfo(cont->program, cont->deviceID, CL_PROGRAM_BUILD_LOG, log_size, log, NULL);
+    LogRaw("%s\n", log);
+    free(log);
   }
   if (ocl_diagnose(status, "building cl program", cont) != CL_SUCCESS)
   {
