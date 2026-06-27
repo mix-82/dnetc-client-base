@@ -436,19 +436,121 @@ bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *ke
 }
 */
 
-int GetNvidiaComputeCapability(cl_device_id device)
+bool GetNvidiaComputeCapability(cl_device_id device, int &sm_version)
 {
-    cl_uint vendor;
-    if (clGetDeviceInfo(device, CL_DEVICE_VENDOR_ID, sizeof(vendor), &vendor, NULL) != CL_SUCCESS)
-      return 0;
-    if (vendor != 0x10DE)
-      return 0; // Not NVIDIA
+  cl_uint vendor;
 
-    cl_uint sm_major = 0, sm_minor = 0;
-    clGetDeviceInfo(device, 0x4000, sizeof(sm_major), &sm_major, NULL);
-    clGetDeviceInfo(device, 0x4001, sizeof(sm_minor), &sm_minor, NULL);
+  sm_version = 0;
+  if (clGetDeviceInfo(device, CL_DEVICE_VENDOR_ID, sizeof(vendor), &vendor, NULL) != CL_SUCCESS)
+    return false;
+  if (vendor != 0x10DE)
+    return false; // Not NVIDIA
+
+  cl_uint sm_major = 0, sm_minor = 0;
+  cl_int maj_status = clGetDeviceInfo(device, 0x4000, sizeof(sm_major), &sm_major, NULL);
+  cl_int min_status = clGetDeviceInfo(device, 0x4001, sizeof(sm_minor), &sm_minor, NULL);
+  
+  if (maj_status == CL_SUCCESS && min_status == CL_SUCCESS)
+  {
+    sm_version = (int)sm_major * 10 + (int)sm_minor;
+    return true;
+  }
+
+  LogTo(LOGTO_FILE, "Failed to query SM Version from an NVIDIA gpu\n");
+
+  return false;
+}
+
+bool GetAmdWaveConfig(cl_device_id device, int &waves_2pipe, int &waves_4pipe)
+{
+  // Default to 0 for CDNA, unknown architectures, and future generations
+  waves_2pipe = 0;
+  waves_4pipe = 0;
+
+  cl_uint vendor;
+  if (clGetDeviceInfo(device, CL_DEVICE_VENDOR_ID, sizeof(vendor), &vendor, NULL) != CL_SUCCESS)
+    return false;
     
-    return (int)sm_major * 10 + (int)sm_minor;
+  if (vendor != 0x1002) // AMD
+    return false;
+
+  int gfx_hex = 0;
+  bool found_gfx_ver = false;
+
+  // Try to parse the official OpenCL Device Name String
+  char nameBuffer[256] = {0};
+  if (clGetDeviceInfo(device, CL_DEVICE_NAME, sizeof(nameBuffer), nameBuffer, NULL) == CL_SUCCESS)
+  {
+    char *gfx_ptr = strstr(nameBuffer, "gfx");
+    if (gfx_ptr != NULL)
+    {
+      gfx_hex = (int)strtol(gfx_ptr + 3, NULL, 16);
+      found_gfx_ver = true;
+      LogTo(LOGTO_FILE, "Parsed an AMD gfx%x from CL_DEVICE_NAME\n", gfx_hex);
+    }
+  }
+
+  // Try AMD's Proprietary Integer Extension 
+  if (!found_gfx_ver)
+  {
+    cl_uint gfxip_major = 0;
+    cl_uint gfxip_minor = 0;
+        
+    cl_int maj_status = clGetDeviceInfo(device, 0x404A, sizeof(gfxip_major), &gfxip_major, NULL);
+    cl_int min_status = clGetDeviceInfo(device, 0x404B, sizeof(gfxip_minor), &gfxip_minor, NULL);
+        
+    if (maj_status == CL_SUCCESS && min_status == CL_SUCCESS)
+    {
+      if (gfxip_major >= 6 && gfxip_major < 13)
+      {
+        gfx_hex = ((int)gfxip_major << 8) | (int)gfxip_minor;
+        found_gfx_ver = true;
+        LogTo(LOGTO_FILE, "Queried an AMD gfx%x from CL_DEVICE_GFXIP\n", gfx_hex);
+      }
+    }
+  }
+
+  // Select optimal wavefront size
+  if (found_gfx_ver)
+  {
+    if (gfx_hex >= 0x600 && gfx_hex < 0x900)
+    {
+      // GCN 1.0 - 4.0 (gfx600 to gfx8xx)
+      // Static 256 VGPR limit per wavefront context
+      waves_2pipe = 4;
+      waves_4pipe = 2;
+    }
+    else if (gfx_hex >= 0x900 && gfx_hex <= 0x90c && gfx_hex != 0x908 && gfx_hex != 0x90a)
+    {
+      // Vega / GCN 5.0 (gfx900 to gfx90c)
+      // Static 256 VGPR limit per wavefront context
+      waves_2pipe = 4;
+      waves_4pipe = 2;
+    }
+    else if (gfx_hex >= 0x1000 && gfx_hex < 0x1100)
+    {
+      // RDNA 1 & 2 (gfx1000 to gfx103x)
+      // 1024 VGPR Pool / 8 VGPR Granularity
+      waves_2pipe = 16;
+      waves_4pipe = 8;
+    }
+    else if (gfx_hex >= 0x1100 && gfx_hex < 0x1300)
+    {
+      // RDNA 3 & 4 (gfx1100 to gfx12xx)
+      // 1536 VGPR Pool / 24 VGPR Granularity
+      waves_2pipe = 16;
+      waves_4pipe = 12;
+    }
+
+    if (waves_2pipe == 0 && waves_4pipe == 0)
+      LogTo(LOGTO_FILE, "Failed to find AMD gfx%x in wavefront size lookup table\n", gfx_hex);
+
+    return true;
+  }
+
+  LogTo(LOGTO_FILE, "Failed to parse or query an AMD gfx compute id\n");
+
+  return false;
 }
 
 bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *kernelName)
@@ -470,41 +572,58 @@ bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *ke
   {
     const char *clOption = "-cl-std=CL1.1";  // support older macOS
     char buildOptions[64];
+    int nv_sm_ver = 0;
+    int amd_waves2 = 0;
+    int amd_waves4 = 0;
 
-    int sm_ver = GetNvidiaComputeCapability(cont->deviceID); 
-    if (sm_ver > 0)  // NVIDIA
+    if (GetNvidiaComputeCapability(cont->deviceID, nv_sm_ver))  // NVIDIA
     {
       char nvOption1[16] = "";
       char nvOption2[32] = "";
 
-      snprintf(nvOption1, sizeof(nvOption1), "-D NV_SM=%d", sm_ver); // SM version
+      snprintf(nvOption1, sizeof(nvOption1), "-D NV_SM=%d", nv_sm_ver); // SM version
 
-      if (sm_ver >= 50)  // Optimize for Maxwell and newer
-        if (strstr(kernelName, "2pipe"))
+      if (nv_sm_ver >= 50)  // Optimize for Maxwell and newer
+      {
+        if (strstr(kernelName, "2pipe_nv"))
           snprintf(nvOption2, sizeof(nvOption2), "-cl-nv-maxrregcount=64");  // maximize 2-pipe occupancy
-        else if (strstr(kernelName, "4pipe"))
+        else if (strstr(kernelName, "4pipe_nv"))
           snprintf(nvOption2, sizeof(nvOption2), "-cl-nv-maxrregcount=128");  // maximize 4-pipe ILP
+      }
    
       snprintf(buildOptions, sizeof(buildOptions), "%s %s %s", clOption, nvOption1, nvOption2); // NVIDIA build options
     }
+    else if (GetAmdWaveConfig(cont->deviceID, amd_waves2, amd_waves4))
+    {
+      char amdOption[16] = "";
+
+      if (strstr(kernelName, "2pipe_nv"))
+        snprintf(amdOption, sizeof(amdOption), "-D AMD_WAVES=%d", amd_waves2);  // maximize 2-pipe occupancy
+      else if (strstr(kernelName, "4pipe_nv"))
+        snprintf(amdOption, sizeof(amdOption), "-D AMD_WAVES=%d", amd_waves4);  // maximize 4-pipe occupancy
+
+      snprintf(buildOptions, sizeof(buildOptions), "%s %s", clOption, amdOption); // AMD build options
+    }
     else
-        snprintf(buildOptions, sizeof(buildOptions), "%s", clOption);  // AMD, Intel, etc. build options
+        snprintf(buildOptions, sizeof(buildOptions), "%s", clOption);  // Generic manufacturer build options
 
     status = clBuildProgram(cont->program, 1, &cont->deviceID, buildOptions, NULL, NULL);
+     
+    if (status == CL_SUCCESS)
+        LogTo(LOGTO_FILE, "clBuildProgram() successful with build options %s\n", buildOptions);
+    else if (status != CL_SUCCESS)
+        LogTo(LOGTO_FILE, "clBuildProgram() failed with build options %s\n", buildOptions);
+
     
     if (status != CL_SUCCESS)  // fallback
     {
-      //Log("clBuildProgram() failed with build options %s\n", buildOptions);
-      status = clBuildProgram(cont->program, 1, &cont->deviceID, NULL, NULL, NULL); // generic fallback build options
+      status = clBuildProgram(cont->program, 1, &cont->deviceID, NULL, NULL, NULL); // fallback build options
+      
+      if (status == CL_SUCCESS)
+        LogTo(LOGTO_FILE, "clBuildProgram() successful with fallback build options %s\n");
+      else if (status != CL_SUCCESS)
+        LogTo(LOGTO_FILE, "clBuildProgram() failed with fallback build options %s\n");
     }
-
-    size_t log_size;
-    clGetProgramBuildInfo(cont->program, cont->deviceID, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
-
-    char *log = (char *)malloc(log_size);
-    clGetProgramBuildInfo(cont->program, cont->deviceID, CL_PROGRAM_BUILD_LOG, log_size, log, NULL);
-    LogRaw("%s\n", log);
-    free(log);
   }
   if (ocl_diagnose(status, "building cl program", cont) != CL_SUCCESS)
   {

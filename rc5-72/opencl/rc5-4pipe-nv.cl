@@ -48,6 +48,18 @@
   #define SWAP(x)     (((uint)(x) << 24) | (((uint)(x) & 0x0000FF00u) << 8) | (((uint)(x) >> 8) & 0x0000FF00u) | ((uint)(x) >> 24))
 #endif
 
+#if (defined(__AMDGCN__) || defined(__AMD__)) && defined(__clang__) // AMD Modern LLVM / ROCm Path
+  #if defined(__has_attribute) && defined(AMD_WAVES)
+    #if __has_attribute(amdgpu_waves_per_eu) && (AMD_WAVES > 0)
+      #define COMPILER_HINT __attribute__((amdgpu_waves_per_eu(AMD_WAVES)))
+    #endif
+  #endif
+#endif
+
+#ifndef COMPILER_HINT
+  #define COMPILER_HINT
+#endif
+
 #define P 0xB7E15163
 #define Q 0x9E3779B9
 
@@ -65,7 +77,7 @@
   A = ROTL(A^B, B) + S[a]; \
   B = ROTL(B^A, A) + S[a+1]
 
-__kernel void ocl_rc572_4pipe_nv( __constant uint *rc5_72unitwork, volatile __global uint *outbuf)
+__kernel void ocl_rc572_4pipe_nv( __constant uint *rc5_72unitwork, volatile __global uint *outbuf) COMPILER_HINT
 {
   uint4 L[3];
   uint4 S[26];
