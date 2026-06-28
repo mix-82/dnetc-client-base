@@ -222,220 +222,6 @@ static unsigned char* Decompress(const unsigned char *inbuf, unsigned length)
   return outbuf;
 }
 
-
-/*
-bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *kernelName)
-{
-  unsigned char *decompressed_src;
-  FILE *f;
-	  
-	if (strcmp(kernelName, "ocl_rc572_ref") == 0)
-	{
-		f=fopen("./rc5-72/opencl/rc5-ref.cl","rb");
-		if(f==NULL) {
-			Log("Couldn't load 'rc5-ref.cl'");
-			return false;
-		}
-	}
-	else if (strcmp(kernelName, "ocl_rc572_1pipe") == 0)
-	{
-		f=fopen("./rc5-72/opencl/rc5-1pipe.cl","rb");
-		if(f==NULL) {
-			Log("Couldn't load 'rc5-1pipe.cl'");
-			return false;
-		}
-	}
-	else if (strcmp(kernelName, "ocl_rc572_2pipe") == 0)
-	{
-		f=fopen("./rc5-72/opencl/rc5-2pipe.cl","rb");
-		if(f==NULL) {
-			Log("Couldn't load 'rc5-2pipe.cl'");
-			return false;
-		}
-	}
-	else if (strcmp(kernelName, "ocl_rc572_4pipe") == 0)
-	{
-		f=fopen("./rc5-72/opencl/rc5-4pipe.cl","rb");
-		if(f==NULL) {
-			Log("Couldn't load 'rc5-4pipe.cl'");
-			return false;
-		}
-	}
-	else if (strcmp(kernelName, "ocl_rc572_1pipe_2i") == 0)
-	{
-		f=fopen("./rc5-72/opencl/rc5-1pipe-2i.cl","rb");
-		if(f==NULL) {
-			Log("Couldn't load 'rc5-1pipe-2i.cl'");
-			return false;
-		}
-	}
-    else if (strcmp(kernelName, "ocl_rc572_1pipe_4i") == 0)
-	{
-		f=fopen("./rc5-72/opencl/rc5-1pipe-4i.cl","rb");
-		if(f==NULL) {
-			Log("Couldn't load 'rc5-1pipe-4i.cl'");
-			return false;
-		}
-	}
-    else if (strcmp(kernelName, "ocl_rc572_1pipe_8i") == 0)
-	{
-		f=fopen("./rc5-72/opencl/rc5-1pipe-8i.cl","rb");
-		if(f==NULL) {
-			Log("Couldn't load 'rc5-1pipe-8i.cl'");
-			return false;
-		}
-	}
-    else if (strcmp(kernelName, "ocl_rc572_1pipe_16i") == 0)
-	{
-		f=fopen("./rc5-72/opencl/rc5-1pipe-16i.cl","rb");
-		if(f==NULL) {
-			Log("Couldn't load 'rc5-1pipe-16i.cl'");
-			return false;
-		}
-	}
-    else if (strcmp(kernelName, "ocl_rc572_1pipe_32i") == 0)
-	{
-		f=fopen("./rc5-72/opencl/rc5-1pipe-32i.cl","rb");
-		if(f==NULL) {
-			Log("Couldn't load 'rc5-1pipe-32i.cl'");
-			return false;
-		}
-	}
-    else if (strcmp(kernelName, "ocl_rc572_1pipe_64i") == 0)
-	{
-		f=fopen("./rc5-72/opencl/rc5-1pipe-64i.cl","rb");
-		if(f==NULL) {
-			Log("Couldn't load 'rc5-1pipe-64i.cl'");
-			return false;
-		}
-	}
-    else if (strcmp(kernelName, "ocl_rc572_1pipe_128i") == 0)
-	{
-		f=fopen("./rc5-72/opencl/rc5-1pipe-128i.cl","rb");
-		if(f==NULL) {
-			Log("Couldn't load 'rc5-1pipe-128i.cl'");
-			return false;
-		}
-	}
-    else if (strcmp(kernelName, "ocl_rc572_1pipe_256i") == 0)
-	{
-		f=fopen("./rc5-72/opencl/rc5-1pipe-256i.cl","rb");
-		if(f==NULL) {
-			Log("Couldn't load 'rc5-1pipe-256i.cl'");
-			return false;
-		}
-	}
-    else if (strcmp(kernelName, "ocl_rc572_1pipe_512i") == 0)
-	{
-		f=fopen("./rc5-72/opencl/rc5-1pipe-512i.cl","rb");
-		if(f==NULL) {
-			Log("Couldn't load 'rc5-1pipe-512i.cl'");
-			return false;
-		}
-	}
-    else if (strcmp(kernelName, "ocl_rc572_1pipe_1024i") == 0)
-	{
-		f=fopen("./rc5-72/opencl/rc5-1pipe-1024i.cl","rb");
-		if(f==NULL) {
-			Log("Couldn't load 'rc5-1pipe-1024i.cl'");
-			return false;
-		}
-	}
-	else
-	{
-			Log("Couldn't load unknown CL file ");
-			Log(kernelName);
-			return false;
-	}
-	
-    fseek (f , 0 , SEEK_END);
-    unsigned lSize = ftell (f)+1;
-
-    if(lSize>1000000) {
-        fclose(f);
-        Log("Error in CL file");
-        return false;
-    }
-
-    decompressed_src=(unsigned char*)malloc(lSize);
-
-    rewind(f);
-    fread(decompressed_src,lSize-1,1,f);
-    decompressed_src[lSize-1]=0;
-
-    fclose(f);
-  
-  if (decompressed_src == NULL)
-    return false;
-        
-  cl_int status;
-  cont->program = clCreateProgramWithSource(cont->clcontext, 1, (const char**)&decompressed_src, NULL, &status);
-  free(decompressed_src);
-  if (status == CL_SUCCESS)
-  {
-    status = clBuildProgram(cont->program, 1, &cont->deviceID, "-cl-std=CL1.2", NULL, NULL);
-
-  }
-  if (ocl_diagnose(status, "building cl program", cont) != CL_SUCCESS)
-  {
-    //static char buf[0x10001]={0};
-    size_t log_size;
-
-    clGetProgramBuildInfo( cont->program,
-                           cont->deviceID,
-                           CL_PROGRAM_BUILD_LOG,
-                           0,
-                           NULL,
-                           &log_size );
-
-    char *buf = (char *) malloc(log_size);
-    clGetProgramBuildInfo( cont->program,
-                           cont->deviceID,
-                           CL_PROGRAM_BUILD_LOG,
-                           log_size,
-                           buf,
-                           NULL );
-    
-    buf[log_size - 1] = '\0';
-    Log("Build log returned %ld bytes\n", (long)log_size);
-    LogRaw("Build Log:\n");
-    LogRaw("%s\n", buf);
-   
-    free(buf);
-
-    return false;
-  }
-
-    size_t binary_size = 0;
-    clGetProgramInfo(cont->program, CL_PROGRAM_BINARY_SIZES, sizeof(size_t), &binary_size, NULL);
-
-    if (binary_size > 0)
-    {
-        // 2. Allocate space for the binary pointer array
-        unsigned char* binary_buffer = (unsigned char*)malloc(binary_size);
-                
-        // OpenCL requires an array of pointers matching the number of devices
-        unsigned char* binaries[1] = { binary_buffer };
-                
-        // 3. Retrieve the payload
-        clGetProgramInfo(cont->program, CL_PROGRAM_BINARIES, sizeof(unsigned char*) * 1, binaries, NULL);
-                
-        // 4. Dump to disk
-        FILE* f = fopen("./rc5-72/opencl/rc5_compiled.ptx", "wb");
-        fwrite(binary_buffer, 1, binary_size, f);
-        fclose(f);
-            
-        free(binary_buffer);
-    }
-
-  cont->kernel = clCreateKernel(cont->program, kernelName, &status);
-  if (ocl_diagnose(status, "building kernel", cont) != CL_SUCCESS)
-    return false;
-
-  return true;
-}
-*/
-
 bool GetNvidiaComputeCapability(cl_device_id device, int &sm_version)
 {
   cl_uint vendor;
@@ -453,19 +239,44 @@ bool GetNvidiaComputeCapability(cl_device_id device, int &sm_version)
   if (maj_status == CL_SUCCESS && min_status == CL_SUCCESS)
   {
     sm_version = (int)sm_major * 10 + (int)sm_minor;
+    LogTo(LOGTO_FILE, "Queried NVIDIA SM_%d from CL_DEVICE_COMPUTE_CAPABILITY\n", sm_version);
     return true;
   }
-
-  LogTo(LOGTO_FILE, "Failed to query SM Version from an NVIDIA gpu\n");
+  else
+    LogTo(LOGTO_FILE, "Failed to query NVIDIA SM version\n");
 
   return false;
 }
 
-bool GetAmdWaveConfig(cl_device_id device, int &waves_2pipe, int &waves_4pipe)
+bool GetNvidiaRegisterHint(int sm_version, int &regs_2pipe, int &regs_4pipe)
 {
-  // Default to 0 for CDNA, unknown architectures, and future generations
-  waves_2pipe = 0;
-  waves_4pipe = 0;
+  regs_2pipe = 0;
+  regs_4pipe = 0;
+
+  if ((sm_version >= 50 && sm_version <= 121) && sm_version != 75) // Maxwell, Pascal, Volta, Hopper, Ada, Blackwell
+  {
+    regs_2pipe = 80;
+    regs_4pipe = 80;
+  }
+  else if (sm_version == 75) // Turing
+  {
+    regs_2pipe = 64;
+    regs_4pipe = 128;
+  }
+
+  if (regs_2pipe > 0 && regs_4pipe > 0)
+  {
+    return true;   
+  }
+  else
+    LogTo(LOGTO_FILE, "Failed to find NVIDIA SM_%d in register hint lookup table\n", sm_version);
+
+  return false;
+}
+
+bool GetAmdComputeCapability(cl_device_id device, int &gfx_hex)
+{
+  gfx_hex = 0x0000;
 
   cl_uint vendor;
   if (clGetDeviceInfo(device, CL_DEVICE_VENDOR_ID, sizeof(vendor), &vendor, NULL) != CL_SUCCESS)
@@ -474,7 +285,6 @@ bool GetAmdWaveConfig(cl_device_id device, int &waves_2pipe, int &waves_4pipe)
   if (vendor != 0x1002) // AMD
     return false;
 
-  int gfx_hex = 0;
   bool found_gfx_ver = false;
 
   // Try to parse the official OpenCL Device Name String
@@ -510,48 +320,58 @@ bool GetAmdWaveConfig(cl_device_id device, int &waves_2pipe, int &waves_4pipe)
     }
   }
 
-  // Select optimal wavefront size
   if (found_gfx_ver)
-  {
-    if (gfx_hex >= 0x600 && gfx_hex < 0x900)
-    {
-      // GCN 1.0 - 4.0 (gfx600 to gfx8xx)
-      // Static 256 VGPR limit per wavefront context
-      waves_2pipe = 4;
-      waves_4pipe = 2;
-    }
-    else if (gfx_hex >= 0x900 && gfx_hex <= 0x90c && gfx_hex != 0x908 && gfx_hex != 0x90a)
-    {
-      // Vega / GCN 5.0 (gfx900 to gfx90c)
-      // Static 256 VGPR limit per wavefront context
-      waves_2pipe = 4;
-      waves_4pipe = 2;
-    }
-    else if (gfx_hex >= 0x1000 && gfx_hex < 0x1100)
-    {
-      // RDNA 1 & 2 (gfx1000 to gfx103x)
-      // 1024 VGPR Pool / 8 VGPR Granularity
-      waves_2pipe = 16;
-      waves_4pipe = 8;
-    }
-    else if (gfx_hex >= 0x1100 && gfx_hex < 0x1300)
-    {
-      // RDNA 3 & 4 (gfx1100 to gfx12xx)
-      // 1536 VGPR Pool / 24 VGPR Granularity
-      waves_2pipe = 16;
-      waves_4pipe = 12;
-    }
-
-    if (waves_2pipe == 0 && waves_4pipe == 0)
-      LogTo(LOGTO_FILE, "Failed to find AMD gfx%x in wavefront size lookup table\n", gfx_hex);
-
     return true;
-  }
-
-  LogTo(LOGTO_FILE, "Failed to parse or query an AMD gfx compute id\n");
+  else
+    LogTo(LOGTO_FILE, "Failed to parse or query an AMD gfx compute id\n");
 
   return false;
 }
+
+bool GetAmdWavesHint(int gfx_hex, int &waves_2pipe, int &waves_4pipe)
+{
+  waves_2pipe = 0;
+  waves_4pipe = 0;
+
+  if (gfx_hex >= 0x600 && gfx_hex < 0x900)
+  {
+    // GCN 1.0 - 4.0 (gfx600 to gfx8xx)
+    // Static 256 VGPR limit per wavefront context
+    waves_2pipe = 4;
+    waves_4pipe = 2;
+  }
+  else if (gfx_hex >= 0x900 && gfx_hex <= 0x90c && gfx_hex != 0x908 && gfx_hex != 0x90a)
+  {
+    // Vega / GCN 5.0 (gfx900 to gfx90c)
+    // Static 256 VGPR limit per wavefront context
+    waves_2pipe = 4;
+    waves_4pipe = 2;
+  }
+  else if (gfx_hex >= 0x1000 && gfx_hex < 0x1100)
+  {
+    // RDNA 1 & 2 (gfx1000 to gfx103x)
+    // 1024 VGPR Pool / 8 VGPR Granularity
+    waves_2pipe = 16;
+    waves_4pipe = 8;
+  }
+  else if (gfx_hex >= 0x1100 && gfx_hex < 0x1300)
+  {
+    // RDNA 3 & 4 (gfx1100 to gfx12xx)
+    // 1536 VGPR Pool / 24 VGPR Granularity
+    waves_2pipe = 16;
+    waves_4pipe = 12;
+  }
+
+  if (waves_2pipe > 0 && waves_4pipe > 0)
+  {
+    return true;   
+  }
+  else
+    LogTo(LOGTO_FILE, "Failed to find AMD gfx%x in wavefront hint lookup table\n", gfx_hex);
+
+  return false;
+}
+
 
 bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *kernelName)
 {
@@ -571,40 +391,45 @@ bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *ke
   if (status == CL_SUCCESS)
   {
     const char *clOption = "-cl-std=CL1.1";  // support older macOS
-    char buildOptions[64];
-    int nv_sm_ver = 0;
-    int amd_waves2 = 0;
-    int amd_waves4 = 0;
+    char buildOptions[80];
+    int nv_sm;
+    int amd_gfx;
 
-    if (GetNvidiaComputeCapability(cont->deviceID, nv_sm_ver))  // NVIDIA
+    if (GetNvidiaComputeCapability(cont->deviceID, nv_sm))  // NVIDIA
     {
       char nvOption1[16] = "";
+
+      snprintf(nvOption1, sizeof(nvOption1), "-D NV_SM=%d", nv_sm); // SM version
+
       char nvOption2[32] = "";
+      int nv_maxreg2, nv_maxreg4;
 
-      snprintf(nvOption1, sizeof(nvOption1), "-D NV_SM=%d", nv_sm_ver); // SM version
-
-      if (nv_sm_ver >= 50)  // Optimize for Maxwell and newer
+      if (GetNvidiaRegisterHint(nv_sm, nv_maxreg2, nv_maxreg4)) // maximize 2-pipe and 4-pipe ILP and occupancy
       {
         if (strstr(kernelName, "2pipe_nv"))
-          snprintf(nvOption2, sizeof(nvOption2), "-cl-nv-maxrregcount=64");  // maximize 2-pipe occupancy
+          snprintf(nvOption2, sizeof(nvOption2), "-cl-nv-maxrregcount=%d", nv_maxreg2);
         else if (strstr(kernelName, "4pipe_nv"))
-          snprintf(nvOption2, sizeof(nvOption2), "-cl-nv-maxrregcount=128");  // maximize 4-pipe ILP
+          snprintf(nvOption2, sizeof(nvOption2), "-cl-nv-maxrregcount=%d", nv_maxreg4);
       }
    
       snprintf(buildOptions, sizeof(buildOptions), "%s %s %s", clOption, nvOption1, nvOption2); // NVIDIA build options
     }
-    else if (GetAmdWaveConfig(cont->deviceID, amd_waves2, amd_waves4))
+    else if (GetAmdComputeCapability(cont->deviceID, amd_gfx)) // AMD
     {
       char amdOption[16] = "";
+      int amd_waves2, amd_waves4;
 
-      if (strstr(kernelName, "2pipe_nv"))
-        snprintf(amdOption, sizeof(amdOption), "-D AMD_WAVES=%d", amd_waves2);  // maximize 2-pipe occupancy
-      else if (strstr(kernelName, "4pipe_nv"))
-        snprintf(amdOption, sizeof(amdOption), "-D AMD_WAVES=%d", amd_waves4);  // maximize 4-pipe occupancy
+      if (GetAmdWavesHint(amd_gfx, amd_waves2, amd_waves4)) // maximize 2-pipe and 4-pipe ILP and occupancy
+      {
+        if (strstr(kernelName, "2pipe_nv"))
+          snprintf(amdOption, sizeof(amdOption), "-D AMD_WAVES=%d", amd_waves2);
+        else if (strstr(kernelName, "4pipe_nv"))
+          snprintf(amdOption, sizeof(amdOption), "-D AMD_WAVES=%d", amd_waves4);
+      }
 
       snprintf(buildOptions, sizeof(buildOptions), "%s %s", clOption, amdOption); // AMD build options
     }
-    else
+    else // GENERIC
         snprintf(buildOptions, sizeof(buildOptions), "%s", clOption);  // Generic manufacturer build options
 
     status = clBuildProgram(cont->program, 1, &cont->deviceID, buildOptions, NULL, NULL);
@@ -614,15 +439,14 @@ bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *ke
     else if (status != CL_SUCCESS)
         LogTo(LOGTO_FILE, "clBuildProgram() failed with build options %s\n", buildOptions);
 
-    
     if (status != CL_SUCCESS)  // fallback
     {
       status = clBuildProgram(cont->program, 1, &cont->deviceID, NULL, NULL, NULL); // fallback build options
       
       if (status == CL_SUCCESS)
-        LogTo(LOGTO_FILE, "clBuildProgram() successful with fallback build options %s\n");
+        LogTo(LOGTO_FILE, "clBuildProgram() successful with fallback build options\n");
       else if (status != CL_SUCCESS)
-        LogTo(LOGTO_FILE, "clBuildProgram() failed with fallback build options %s\n");
+        LogTo(LOGTO_FILE, "clBuildProgram() failed with fallback build options\n");
     }
   }
   if (ocl_diagnose(status, "building cl program", cont) != CL_SUCCESS)

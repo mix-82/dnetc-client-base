@@ -397,8 +397,9 @@ static s32 rc5_72_unit_func_ocl_npipe(RC5_72UnitWork *rc5_72unitwork, u32 *itera
       RaiseExitRequestTrigger();
       return -1;          //err
     }
-
+    
     double d;
+
     if (status_p1 == CL_SUCCESS && status_p2 == CL_SUCCESS) // this is status of clGetEventProfilingInfo
       d = 1e-6 * (endTime - startTime);
     else
@@ -431,7 +432,7 @@ static s32 rc5_72_unit_func_ocl_npipe(RC5_72UnitWork *rc5_72unitwork, u32 *itera
       //Log("Up:Time: %f, runsize=%u, diff=%u\n", float(d), cont->runSize, diffm*cont->runSizeMultiplier);
     }
 
-    /* 
+    /*
     // An improved proportional tracking loop - mix
     if (rest0 == cont->runSize)
     {
@@ -443,8 +444,8 @@ static s32 rc5_72_unit_func_ocl_npipe(RC5_72UnitWork *rc5_72unitwork, u32 *itera
       double ratio = 1.0 + (raw_ratio - 1.0) * 0.5;
 
       // 3. Clamping
-      if (ratio > 1.20) ratio = 1.20; // Max 20% increase per step
-      if (ratio < 0.70) ratio = 0.70; // Max 30% decrease per step
+      if (ratio > 1.10) ratio = 1.10; // Max 10% increase per step
+      if (ratio < 0.90) ratio = 0.90; // Max 10% decrease per step
 
       // 4. Calculate ideal size 
       u32 ideal_runSize = (u32)(cont->runSize * ratio);
@@ -471,7 +472,7 @@ static s32 rc5_72_unit_func_ocl_npipe(RC5_72UnitWork *rc5_72unitwork, u32 *itera
         if (cont->runSize > (diffm * cont->runSizeMultiplier))
         {
           cont->runSize -= diffm * cont->runSizeMultiplier;
-          //Log("Down:Time: %f, runsize=%u\n", float(d), cont->runSize);
+          //Log("Down:Time: %f, runsize=%u, diff=%u\n", float(d), cont->runSize, diffm*cont->runSizeMultiplier);
         }
       }
     }
