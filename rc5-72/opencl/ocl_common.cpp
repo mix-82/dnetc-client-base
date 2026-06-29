@@ -239,37 +239,43 @@ bool GetNvidiaComputeCapability(cl_device_id device, int &sm_version)
   if (maj_status == CL_SUCCESS && min_status == CL_SUCCESS)
   {
     sm_version = (int)sm_major * 10 + (int)sm_minor;
+
     LogTo(LOGTO_FILE, "Queried NVIDIA SM_%d from CL_DEVICE_COMPUTE_CAPABILITY\n", sm_version);
+
     return true;
   }
-  else
-    LogTo(LOGTO_FILE, "Failed to query NVIDIA SM version\n");
+ 
+  LogTo(LOGTO_FILE, "Failed to query NVIDIA SM version\n");
 
   return false;
 }
 
 bool GetNvidiaRegisterHint(int sm_version, int &regs_2pipe, int &regs_4pipe)
 {
+  // Initialize to failure states
   regs_2pipe = 0;
   regs_4pipe = 0;
 
-  if ((sm_version >= 50 && sm_version <= 121) && sm_version != 75) // Maxwell, Pascal, Volta, Hopper, Ada, Blackwell
+  if (sm_version >= 50 && sm_version <= 72) // Maxwell, Pascal, Volta
   {
     regs_2pipe = 80;
     regs_4pipe = 80;
   }
-  else if (sm_version == 75) // Turing
+  else if (sm_version >= 75 && sm_version <= 89) // Turing, Ampere, Ada Lovelace
   {
     regs_2pipe = 64;
     regs_4pipe = 128;
   }
+  else if (sm_version >= 90 && sm_version <= 121) // Hopper, Blackwell
+  {
+    regs_2pipe = 80;
+    regs_4pipe = 80;
+  }
 
   if (regs_2pipe > 0 && regs_4pipe > 0)
-  {
     return true;   
-  }
-  else
-    LogTo(LOGTO_FILE, "Failed to find NVIDIA SM_%d in register hint lookup table\n", sm_version);
+    
+  LogTo(LOGTO_FILE, "Failed to find NVIDIA SM_%d in register hint lookup table\n", sm_version);
 
   return false;
 }
@@ -296,6 +302,7 @@ bool GetAmdComputeCapability(cl_device_id device, int &gfx_hex)
     {
       gfx_hex = (int)strtol(gfx_ptr + 3, NULL, 16);
       found_gfx_ver = true;
+
       LogTo(LOGTO_FILE, "Parsed an AMD gfx%x from CL_DEVICE_NAME\n", gfx_hex);
     }
   }
@@ -315,6 +322,7 @@ bool GetAmdComputeCapability(cl_device_id device, int &gfx_hex)
       {
         gfx_hex = ((int)gfxip_major << 8) | (int)gfxip_minor;
         found_gfx_ver = true;
+
         LogTo(LOGTO_FILE, "Queried an AMD gfx%x from CL_DEVICE_GFXIP\n", gfx_hex);
       }
     }
@@ -322,8 +330,8 @@ bool GetAmdComputeCapability(cl_device_id device, int &gfx_hex)
 
   if (found_gfx_ver)
     return true;
-  else
-    LogTo(LOGTO_FILE, "Failed to parse or query an AMD gfx compute id\n");
+  
+  LogTo(LOGTO_FILE, "Failed to parse or query an AMD gfx compute id\n");
 
   return false;
 }
@@ -366,8 +374,8 @@ bool GetAmdWavesHint(int gfx_hex, int &waves_2pipe, int &waves_4pipe)
   {
     return true;   
   }
-  else
-    LogTo(LOGTO_FILE, "Failed to find AMD gfx%x in wavefront hint lookup table\n", gfx_hex);
+
+  LogTo(LOGTO_FILE, "Failed to find AMD gfx%x in wavefront hint lookup table\n", gfx_hex);
 
   return false;
 }
