@@ -1,3 +1,4 @@
+//CORENAME=ocl_rc572_2pipe_nv_src
 #if (defined(__NVPTX__) || defined(__NVIDIA_CUDA__)) && defined(NV_SM) // NVIDIA
   #if (NV_SM >= 32) // funnel shift supported
     #define ROTL(x, s) ({ \

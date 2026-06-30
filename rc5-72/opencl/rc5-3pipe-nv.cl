@@ -1,20 +1,18 @@
-//CORENAME=ocl_rc572_4pipe_nv_src
+//CORENAME=ocl_rc572_3pipe_nv_src
 #if (defined(__NVPTX__) || defined(__NVIDIA_CUDA__)) && defined(NV_SM) // NVIDIA
   #if (NV_SM >= 32) // funnel shift supported
     #define ROTL(x, s) ({ \
-        uint4 _x = (uint4)(x), _s = (uint4)(s), _res; \
+        uint3 _x = (uint3)(x), _s = (uint3)(s), _res; \
         __asm__ ("shf.l.wrap.b32 %0, %1, %1, %2;" : "=r"(_res.s0) : "r"(_x.s0), "r"(_s.s0)); \
         __asm__ ("shf.l.wrap.b32 %0, %1, %1, %2;" : "=r"(_res.s1) : "r"(_x.s1), "r"(_s.s1)); \
         __asm__ ("shf.l.wrap.b32 %0, %1, %1, %2;" : "=r"(_res.s2) : "r"(_x.s2), "r"(_s.s2)); \
-        __asm__ ("shf.l.wrap.b32 %0, %1, %1, %2;" : "=r"(_res.s3) : "r"(_x.s3), "r"(_s.s3)); \
         _res; \
     })
     #define ROTL3(x) ({ \
-        uint4 _x = (uint4)(x), _res; \
+        uint3 _x = (uint3)(x), _res; \
         __asm__ ("shf.l.wrap.b32 %0, %1, %1, 3;" : "=r"(_res.s0) : "r"(_x.s0)); \
         __asm__ ("shf.l.wrap.b32 %0, %1, %1, 3;" : "=r"(_res.s1) : "r"(_x.s1)); \
         __asm__ ("shf.l.wrap.b32 %0, %1, %1, 3;" : "=r"(_res.s2) : "r"(_x.s2)); \
-        __asm__ ("shf.l.wrap.b32 %0, %1, %1, 3;" : "=r"(_res.s3) : "r"(_x.s3)); \
         _res; \
     })
     #define ROTL1(x, s) ({ \
@@ -23,8 +21,8 @@
         _res; \
     })
   #else
-    #define ROTL(x, s)  rotate((uint4)(x), (uint4)(s))
-    #define ROTL3(x)    rotate((uint4)(x), (uint4)3u)
+    #define ROTL(x, s)  rotate((uint3)(x), (uint3)(s))
+    #define ROTL3(x)    rotate((uint3)(x), (uint3)3u)
     #define ROTL1(x, s) rotate((uint)(x), (uint)(s))
   #endif
   #if (NV_SM >= 20) // permute supported
@@ -38,13 +36,13 @@
   #endif
 #elif defined(cl_amd_media_ops) && !defined(__clang__) // AMD LEGACY
   #pragma OPENCL EXTENSION cl_amd_media_ops : enable
-  #define ROTL(x, s)  amd_bitalign((uint4)(x), (uint4)(x), (uint4)32u - (uint4)(s))
-  #define ROTL3(x)    amd_bitalign((uint4)(x), (uint4)(x), (uint4)29u)
+  #define ROTL(x, s)  amd_bitalign((uint3)(x), (uint3)(x), (uint3)32u - (uint3)(s))
+  #define ROTL3(x)    amd_bitalign((uint3)(x), (uint3)(x), (uint3)29u)
   #define ROTL1(x, s) amd_bitalign((uint)(x), (uint)(x), 32u - (uint)(s))
   #define SWAP(x)     ((amd_bytealign((uint)(x), (uint)(x), 1u) & 0xFF00FF00u) | (amd_bytealign((uint)(x), (uint)(x), 3u) & 0x00FF00FFu))
 #else // STANDARD OPENCL
-  #define ROTL(x, s)  rotate((uint4)(x), (uint4)(s))
-  #define ROTL3(x)    rotate((uint4)(x), (uint4)3u)
+  #define ROTL(x, s)  rotate((uint3)(x), (uint3)(s))
+  #define ROTL3(x)    rotate((uint3)(x), (uint3)3u)
   #define ROTL1(x, s) rotate((uint)(x), (uint)(s))
   #define SWAP(x)     (((uint)(x) << 24) | (((uint)(x) & 0x0000FF00u) << 8) | (((uint)(x) >> 8) & 0x0000FF00u) | ((uint)(x) >> 24))
 #endif
@@ -78,37 +76,56 @@
   A = ROTL(A^B, B) + S[a]; \
   B = ROTL(B^A, A) + S[a+1]
 
-__kernel void ocl_rc572_4pipe_nv( __constant uint *rc5_72unitwork, volatile __global uint *outbuf) COMPILER_HINT
+__kernel void ocl_rc572_3pipe_nv( __constant uint *rc5_72unitwork, volatile __global uint *outbuf) COMPILER_HINT
 {
-  uint4 L[3];
-  uint4 S[26];
-  uint4 A, B;
-  uint4 t;
+  uint3 L[3];
+  uint3 S[26];
+  uint3 A, B;
+  uint3 t;
 
-  L[2].x = rc5_72unitwork[0];   //L0hi;
-  L[1].x = rc5_72unitwork[1];   //L0mid;
-  L[0] = (uint4)rc5_72unitwork[8];   
-  S[1] = (uint4)rc5_72unitwork[9];
+  L[2] = (uint3)rc5_72unitwork[0];
+  L[1] = (uint3)rc5_72unitwork[1];
+  L[0] = (uint3)rc5_72unitwork[8];
+  S[1] = (uint3)rc5_72unitwork[9];
 
-  L[2].x += get_global_id(0) * 4;
-  uint l1_t1 = L[1].x;
-  uint l1_t2 = l1_t1 + (L[2].x >> 8);
-  L[2].x &= 0x000000ff;
-  if(l1_t2 < l1_t1)
+  L[2] += (uint3)(get_global_id(0) * 3);
+  L[2].y += 1;
+  L[2].z += 2;
+
+  uint3 l1_t2 = L[1] + (L[2] >> (uint3)(8));
+
+  L[2] &= 0x000000ff;
+
+  if(l1_t2.z <  L[1].z)  // if the 3rd key needs to carry, then check them all
   {
-    uint l0_t = SWAP(rc5_72unitwork[2]);
-    l0_t += 1;
-    L[0] = (uint4)ROTL1(0xBF0A8B1D + SWAP(l0_t), 0x1d);
-    S[1] = (uint4)ROTL1(L[0].x + 0xBF0A8B1D + 0x5618cb1c, 3u);
+    uint l0_t = SWAP(rc5_72unitwork[2]) + 1;
+    uint l0_carry = ROTL1(0xBF0A8B1D + SWAP(l0_t), 0x1d);
+    uint s1_carry = ROTL1(l0_carry + 0xBF0A8B1D + 0x5618cb1c, 3u);
+
+    if (l1_t2.x < L[1].x)
+    {
+      L[0].x = l0_carry;
+      S[1].x = s1_carry;
+    }
+
+    if (l1_t2.y < L[1].y)
+    {
+      L[0].y = l0_carry;
+      S[1].y = s1_carry;
+    }
+
+    L[0].z = l0_carry;
+    S[1].z = s1_carry;
   }
-  L[1].x = SWAP(l1_t2);
-  
-  S[0] = (uint4)0xBF0A8B1D;
-  t.x = S[1].x + L[0].x;
-  L[1] = (uint4)ROTL1(L[1].x + t.x, t.x);
-  L[2].y = L[2].x + 1;
-  L[2].z = L[2].x + 2;
-  L[2].w = L[2].x + 3;
+
+  L[1].x = SWAP(l1_t2.x);
+  L[1].y = SWAP(l1_t2.y);
+  L[1].z = SWAP(l1_t2.z);
+ 
+  S[0] = (uint3)0xBF0A8B1D;
+
+  t = S[1] + L[0];
+  L[1] = ROTL(L[1] + t, t);
 
   ROUND1( 2,  1, 1, 2);
   ROUND1( 3,  2, 2, 0);
@@ -189,7 +206,7 @@ __kernel void ocl_rc572_4pipe_nv( __constant uint *rc5_72unitwork, volatile __gl
 
   S[24] = ROTL3(S[24] + S[23] + L[0]); 
 
-  A = rc5_72unitwork[4] + S[0];	//plain_lo
+  A = rc5_72unitwork[4] + S[0]; //plain_lo
   B = rc5_72unitwork[5] + S[1]; //plain_hi
 
   ENCRYPT(2);
@@ -206,20 +223,20 @@ __kernel void ocl_rc572_4pipe_nv( __constant uint *rc5_72unitwork, volatile __gl
 
   A = ROTL(A^B, B) + S[24]; 
 
-  if((A.x == rc5_72unitwork[6]) || (A.y == rc5_72unitwork[6]) || (A.z == rc5_72unitwork[6]) || (A.w == rc5_72unitwork[6]))
+  if((A.x == rc5_72unitwork[6]) || (A.y == rc5_72unitwork[6]) || (A.z == rc5_72unitwork[6]))
   {
     uint idx, val, attrib;
 
     t = S[24] + L[0]; 
     L[1] = ROTL(L[1] + t, t);
 
-    S[25] = ROTL3(S[25] + S[24] +L[1]);
-    B = ROTL(B^A,A)+S[25];
+    S[25] = ROTL3(S[25] + S[24] + L[1]);
+    B = ROTL(B^A, A) + S[25];
 
     if(A.x == rc5_72unitwork[6])
     {
       idx = atomic_add(&outbuf[0], 1) * 2 + 1;
-      val = get_global_id(0) * 4 + rc5_72unitwork[3]; //keyN+offset
+      val = get_global_id(0) * 3 + rc5_72unitwork[3]; //keyN+offset
       attrib = (B.x == rc5_72unitwork[7]) ? 0x80000000 : 0;
       outbuf[idx] = attrib;
       outbuf[idx+1] = val;
@@ -227,7 +244,7 @@ __kernel void ocl_rc572_4pipe_nv( __constant uint *rc5_72unitwork, volatile __gl
     if(A.y == rc5_72unitwork[6])
     {
       idx = atomic_add(&outbuf[0], 1) * 2 + 1;
-      val = get_global_id(0) * 4 + rc5_72unitwork[3] + 1; //keyN+offset
+      val = get_global_id(0) * 3 + rc5_72unitwork[3] + 1; //keyN+offset
       attrib = (B.y == rc5_72unitwork[7]) ? 0x80000000 : 0;
       outbuf[idx] = attrib;
       outbuf[idx+1] = val;
@@ -235,16 +252,8 @@ __kernel void ocl_rc572_4pipe_nv( __constant uint *rc5_72unitwork, volatile __gl
     if(A.z == rc5_72unitwork[6])
     {
       idx = atomic_add(&outbuf[0], 1) * 2 + 1;
-      val = get_global_id(0) * 4 + rc5_72unitwork[3] + 2; //keyN+offset
+      val = get_global_id(0) * 3 + rc5_72unitwork[3] + 2; //keyN+offset
       attrib = (B.z == rc5_72unitwork[7]) ? 0x80000000 : 0;
-      outbuf[idx] = attrib;
-      outbuf[idx+1] = val;
-    }
-    if(A.w == rc5_72unitwork[6])
-    {
-      idx = atomic_add(&outbuf[0], 1) * 2 + 1;
-      val = get_global_id(0) * 4 + rc5_72unitwork[3] + 3; //keyN+offset
-      attrib = (B.w == rc5_72unitwork[7]) ? 0x80000000 : 0;
       outbuf[idx] = attrib;
       outbuf[idx+1] = val;
     }

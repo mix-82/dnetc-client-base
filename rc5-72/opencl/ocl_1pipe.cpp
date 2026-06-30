@@ -16,6 +16,7 @@
 #include "rc5-4pipe.cpp"
 #include "rc5-1pipe-nv.cpp"
 #include "rc5-2pipe-nv.cpp"
+#include "rc5-3pipe-nv.cpp"
 #include "rc5-4pipe-nv.cpp"
 
 #define CONST_SIZE (sizeof(cl_uint)*16)
@@ -278,6 +279,7 @@ extern "C" s32 rc5_72_unit_func_ocl_2pipe (RC5_72UnitWork *rc5_72unitwork, u32 *
 extern "C" s32 rc5_72_unit_func_ocl_4pipe (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
 extern "C" s32 rc5_72_unit_func_ocl_1pipe_nv (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
 extern "C" s32 rc5_72_unit_func_ocl_2pipe_nv (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
+extern "C" s32 rc5_72_unit_func_ocl_3pipe_nv (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
 extern "C" s32 rc5_72_unit_func_ocl_4pipe_nv (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
 #endif
 
@@ -575,6 +577,13 @@ s32 rc5_72_unit_func_ocl_2pipe_nv(RC5_72UnitWork *rc5_72unitwork, u32 *iteration
   static struct core_static_flags flags;
 
   return rc5_72_unit_func_ocl_npipe(rc5_72unitwork, iterations, CORE_2PIPE_NV, 2, ocl_rc572_2pipe_nv_src, "ocl_rc572_2pipe_nv", &flags);
+}
+
+s32 rc5_72_unit_func_ocl_3pipe_nv(RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *)
+{
+  static struct core_static_flags flags;
+
+  return rc5_72_unit_func_ocl_npipe(rc5_72unitwork, iterations, CORE_3PIPE_NV, 3, ocl_rc572_3pipe_nv_src, "ocl_rc572_3pipe_nv", &flags);
 }
 
 s32 rc5_72_unit_func_ocl_4pipe_nv(RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *)

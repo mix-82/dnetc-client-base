@@ -250,29 +250,32 @@ bool GetNvidiaComputeCapability(cl_device_id device, int &sm_version)
   return false;
 }
 
-bool GetNvidiaRegisterHint(int sm_version, int &regs_2pipe, int &regs_4pipe)
+bool GetNvidiaRegisterHint(int sm_version, int &regs_2pipe, int &regs_3pipe, int &regs_4pipe)
 {
-  // Initialize to failure states
   regs_2pipe = 0;
+  regs_3pipe = 0;
   regs_4pipe = 0;
 
   if (sm_version >= 50 && sm_version <= 72) // Maxwell, Pascal, Volta
   {
     regs_2pipe = 80;
+    regs_3pipe = 128;
     regs_4pipe = 80;
   }
   else if (sm_version >= 75 && sm_version <= 89) // Turing, Ampere, Ada Lovelace
   {
     regs_2pipe = 64;
+    regs_3pipe = 128;
     regs_4pipe = 128;
   }
   else if (sm_version >= 90 && sm_version <= 121) // Hopper, Blackwell
   {
     regs_2pipe = 80;
+    regs_3pipe = 80;
     regs_4pipe = 80;
   }
 
-  if (regs_2pipe > 0 && regs_4pipe > 0)
+  if (regs_2pipe > 0 && regs_3pipe > 0 && regs_4pipe > 0)
     return true;   
     
   LogTo(LOGTO_FILE, "Failed to find NVIDIA SM_%d in register hint lookup table\n", sm_version);
@@ -336,9 +339,10 @@ bool GetAmdComputeCapability(cl_device_id device, int &gfx_hex)
   return false;
 }
 
-bool GetAmdWavesHint(int gfx_hex, int &waves_2pipe, int &waves_4pipe)
+bool GetAmdWavesHint(int gfx_hex, int &waves_2pipe, int &waves_3pipe, int &waves_4pipe)
 {
   waves_2pipe = 0;
+  waves_3pipe = 0;
   waves_4pipe = 0;
 
   if (gfx_hex >= 0x600 && gfx_hex < 0x900)
@@ -346,6 +350,7 @@ bool GetAmdWavesHint(int gfx_hex, int &waves_2pipe, int &waves_4pipe)
     // GCN 1.0 - 4.0 (gfx600 to gfx8xx)
     // Static 256 VGPR limit per wavefront context
     waves_2pipe = 4;
+    waves_3pipe = 2;
     waves_4pipe = 2;
   }
   else if (gfx_hex >= 0x900 && gfx_hex <= 0x90c && gfx_hex != 0x908 && gfx_hex != 0x90a)
@@ -353,24 +358,35 @@ bool GetAmdWavesHint(int gfx_hex, int &waves_2pipe, int &waves_4pipe)
     // Vega / GCN 5.0 (gfx900 to gfx90c)
     // Static 256 VGPR limit per wavefront context
     waves_2pipe = 4;
+    waves_3pipe = 2;
     waves_4pipe = 2;
   }
   else if (gfx_hex >= 0x1000 && gfx_hex < 0x1100)
   {
     // RDNA 1 & 2 (gfx1000 to gfx103x)
     // 1024 VGPR Pool / 8 VGPR Granularity
-    waves_2pipe = 16;
+    waves_2pipe = 14;  // 14 seems faster than 16
+    waves_3pipe = 10;
     waves_4pipe = 8;
   }
-  else if (gfx_hex >= 0x1100 && gfx_hex < 0x1300)
+  else if (gfx_hex >= 0x1100 && gfx_hex < 0x1200)
   {
-    // RDNA 3 & 4 (gfx1100 to gfx12xx)
+    // RDNA 3 (gfx11xx)
     // 1536 VGPR Pool / 24 VGPR Granularity
+    waves_2pipe = 14;
+    waves_3pipe = 10;
+    waves_4pipe = 8;
+  }
+    else if (gfx_hex >= 0x1200 && gfx_hex < 0x1300)
+  {
+    // RDNA 4 (gfx12xx)
+    // 1536 VGPR Pool / variable (16 or 32) VGPR Granularity
     waves_2pipe = 16;
+    waves_3pipe = 14;
     waves_4pipe = 12;
   }
 
-  if (waves_2pipe > 0 && waves_4pipe > 0)
+  if (waves_2pipe > 0 && waves_3pipe > 0 && waves_4pipe > 0)
   {
     return true;   
   }
@@ -410,12 +426,14 @@ bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *ke
       snprintf(nvOption1, sizeof(nvOption1), "-D NV_SM=%d", nv_sm); // SM version
 
       char nvOption2[32] = "";
-      int nv_maxreg2, nv_maxreg4;
+      int nv_maxreg2, nv_maxreg3, nv_maxreg4;
 
-      if (GetNvidiaRegisterHint(nv_sm, nv_maxreg2, nv_maxreg4)) // maximize 2-pipe and 4-pipe ILP and occupancy
+      if (GetNvidiaRegisterHint(nv_sm, nv_maxreg2, nv_maxreg3, nv_maxreg4)) // maximize ILP and occupancy
       {
         if (strstr(kernelName, "2pipe_nv"))
           snprintf(nvOption2, sizeof(nvOption2), "-cl-nv-maxrregcount=%d", nv_maxreg2);
+        else if (strstr(kernelName, "3pipe_nv"))
+          snprintf(nvOption2, sizeof(nvOption2), "-cl-nv-maxrregcount=%d", nv_maxreg3);
         else if (strstr(kernelName, "4pipe_nv"))
           snprintf(nvOption2, sizeof(nvOption2), "-cl-nv-maxrregcount=%d", nv_maxreg4);
       }
@@ -425,12 +443,14 @@ bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *ke
     else if (GetAmdComputeCapability(cont->deviceID, amd_gfx)) // AMD
     {
       char amdOption[16] = "";
-      int amd_waves2, amd_waves4;
+      int amd_waves2, amd_waves3, amd_waves4;
 
-      if (GetAmdWavesHint(amd_gfx, amd_waves2, amd_waves4)) // maximize 2-pipe and 4-pipe ILP and occupancy
+      if (GetAmdWavesHint(amd_gfx, amd_waves2, amd_waves3, amd_waves4)) // maximize ILP and occupancy
       {
         if (strstr(kernelName, "2pipe_nv"))
           snprintf(amdOption, sizeof(amdOption), "-D AMD_WAVES=%d", amd_waves2);
+        else if (strstr(kernelName, "3pipe_nv"))
+          snprintf(amdOption, sizeof(amdOption), "-D AMD_WAVES=%d", amd_waves3);
         else if (strstr(kernelName, "4pipe_nv"))
           snprintf(amdOption, sizeof(amdOption), "-D AMD_WAVES=%d", amd_waves4);
       }
