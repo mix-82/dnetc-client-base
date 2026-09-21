@@ -1,5 +1,5 @@
 //CORENAME=ocl_rc572_1pipe_nv_src
-#if (defined(__NVPTX__) || defined(__NVIDIA_CUDA__)) && defined(NV_SM) // NVIDIA
+#if defined(__NVPTX__) && defined(NV_SM) // NVIDIA OPTIMIZED
   #if (NV_SM >= 32) // funnel shift supported
     #define ROTL(x, s) ({ \
         uint _x = (uint)(x), _s = (uint)(s), _res; \
@@ -11,9 +11,6 @@
         __asm__ ("shf.l.wrap.b32 %0, %1, %1, 3;" : "=r"(_res) : "r"(_x)); \
         _res; \
     })
-  #else
-    #define ROTL(x, s) rotate((uint)(x), (uint)(s))
-    #define ROTL3(x)   rotate((uint)(x), 3u)
   #endif
   #if (NV_SM >= 20) // permute supported
     #define SWAP(x) ({ \
@@ -21,25 +18,29 @@
         __asm__ ("prmt.b32 %0, %1, 0, 0x0123;" : "=r"(_res) : "r"(_x)); \
         _res; \
     })
-  #else
-    #define SWAP(x) (((uint)(x) << 24) | (((uint)(x) & 0x0000FF00u) << 8) | (((uint)(x) >> 8) & 0x0000FF00u) | ((uint)(x) >> 24))
   #endif
-#elif defined(cl_amd_media_ops) && !defined(__clang__) // AMD LEGACY
+#elif defined(cl_amd_media_ops) && !defined(__clang__) // AMD LEGACY OPTIMIZED
   #pragma OPENCL EXTENSION cl_amd_media_ops : enable
   #define ROTL(x, s)  amd_bitalign((uint)(x), (uint)(x), 32u - (uint)(s))
   #define ROTL3(x)    amd_bitalign((uint)(x), (uint)(x), 29u)
-  #define SWAP(x)     ((amd_bytealign((uint)(x), (uint)(x), 1u) & 0xFF00FF00u) | (amd_bytealign((uint)(x), (uint)(x), 3u) & 0x00FF00FFu))
-#else // STANDARD OPENCL
-  #define ROTL(x, s)  rotate((uint)(x), (uint)(s))
-  #define ROTL3(x)    rotate((uint)(x), 3u)
-  #define SWAP(x)     (((uint)(x) << 24) | (((uint)(x) & 0x0000FF00u) << 8) | (((uint)(x) >> 8) & 0x0000FF00u) | ((uint)(x) >> 24))
+  #define SWAP(x)     bitselect(amd_bytealign((uint)(x), (uint)(x), 3u), amd_bytealign((uint)(x), (uint)(x), 1u), 0xFF00FF00u)
 #endif
 
-#define P 0xB7E15163
-#define Q 0x9E3779B9
+#ifndef ROTL // STANDARD OPENCL
+  #define ROTL(x, s) rotate((uint)(x), (uint)(s))
+#endif 
+#ifndef ROTL3
+  #define ROTL3(x) rotate((uint)(x), 3u)
+#endif
+#ifndef SWAP
+  #define SWAP(x) (((uint)(x) << 24) | (((uint)(x) & 0x0000FF00u) << 8) | (((uint)(x) >> 8) & 0x0000FF00u) | ((uint)(x) >> 24))
+#endif
+
+#define P 0xB7E15163u
+#define Q 0x9E3779B9u
 
 #define ROUND1(a, b, c, d) \
-  S[a] = ROTL3(S[b] + P + a*Q + L[c]); \
+  S[a] = ROTL3(S[b] + (P + a * Q) + L[c]); \
   t = S[a] + L[c]; \
   L[d] = ROTL(L[d] + t, t)
 
@@ -52,7 +53,7 @@
   A = ROTL(A^B, B) + S[a]; \
   B = ROTL(B^A, A) + S[a+1]
 
-__kernel void ocl_rc572_1pipe_nv( __constant uint *rc5_72unitwork, volatile __global uint *outbuf)
+__kernel void ocl_rc572_1pipe_nv( __constant const uint * rc5_72unitwork, volatile __global uint * outbuf)
 {
   uint L[3];
   uint S[26];
@@ -64,7 +65,7 @@ __kernel void ocl_rc572_1pipe_nv( __constant uint *rc5_72unitwork, volatile __gl
   L[0] = rc5_72unitwork[8];   
   S[1] = rc5_72unitwork[9];
 
-  L[2] += get_global_id(0);
+  L[2] += (uint)get_global_id(0);
   uint l1_t1 = L[1];
   uint l1_t2 = l1_t1 + (L[2] >> 8);
   L[2] &= 0x000000ff;

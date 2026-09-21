@@ -222,7 +222,7 @@ static unsigned char* Decompress(const unsigned char *inbuf, unsigned length)
   return outbuf;
 }
 
-bool GetNvidiaComputeCapability(cl_device_id device, int &sm_version)
+bool GetNVComputeCapability(cl_device_id device, int &sm_version)
 {
   cl_uint vendor;
 
@@ -250,7 +250,7 @@ bool GetNvidiaComputeCapability(cl_device_id device, int &sm_version)
   return false;
 }
 
-bool GetNvidiaRegisterHint(int sm_version, int &regs_2pipe, int &regs_3pipe, int &regs_4pipe)
+bool GetNVRegisterHint(int sm_version, int &regs_2pipe, int &regs_3pipe, int &regs_4pipe)
 {
   regs_2pipe = 0;
   regs_3pipe = 0;
@@ -283,7 +283,7 @@ bool GetNvidiaRegisterHint(int sm_version, int &regs_2pipe, int &regs_3pipe, int
   return false;
 }
 
-bool GetAmdComputeCapability(cl_device_id device, int &gfx_hex)
+bool GetAMDComputeCapability(cl_device_id device, int &gfx_hex)
 {
   gfx_hex = 0x0000;
 
@@ -291,43 +291,51 @@ bool GetAmdComputeCapability(cl_device_id device, int &gfx_hex)
   if (clGetDeviceInfo(device, CL_DEVICE_VENDOR_ID, sizeof(vendor), &vendor, NULL) != CL_SUCCESS)
     return false;
     
-  if (vendor != 0x1002) // AMD
+  if (vendor != 0x1002) // AMD PCI Vendor ID
     return false;
 
   bool found_gfx_ver = false;
 
-  // Try to parse the official OpenCL Device Name String
+  // 1. Try to parse the official OpenCL Device Name String
   char nameBuffer[256] = {0};
   if (clGetDeviceInfo(device, CL_DEVICE_NAME, sizeof(nameBuffer), nameBuffer, NULL) == CL_SUCCESS)
   {
     char *gfx_ptr = strstr(nameBuffer, "gfx");
+    if (gfx_ptr == NULL)
+      gfx_ptr = strstr(nameBuffer, "GFX");
+
     if (gfx_ptr != NULL)
     {
-      gfx_hex = (int)strtol(gfx_ptr + 3, NULL, 16);
-      found_gfx_ver = true;
+      char *end_ptr = NULL;
+      long parsed_val = strtol(gfx_ptr + 3, &end_ptr, 16);
+      
+      // Ensure strtol actually advanced (meaning it consumed valid hex digits)
+      if (parsed_val > 0 && end_ptr != (gfx_ptr + 3)) 
+      {
+        gfx_hex = (int)parsed_val;
+        found_gfx_ver = true;
 
-      LogTo(LOGTO_FILE, "Parsed an AMD gfx%x from CL_DEVICE_NAME\n", gfx_hex);
+        LogTo(LOGTO_FILE, "Parsed an AMD gfx%x from CL_DEVICE_NAME\n", gfx_hex);
+      }
     }
   }
 
-  // Try AMD's Proprietary Integer Extension 
+  // 2. Fallback: Query AMD's Proprietary Integer Extensions (CL_DEVICE_GFXIP_MAJOR/MINOR_AMD)
   if (!found_gfx_ver)
   {
     cl_uint gfxip_major = 0;
     cl_uint gfxip_minor = 0;
         
-    cl_int maj_status = clGetDeviceInfo(device, 0x404A, sizeof(gfxip_major), &gfxip_major, NULL);
-    cl_int min_status = clGetDeviceInfo(device, 0x404B, sizeof(gfxip_minor), &gfxip_minor, NULL);
+    cl_int maj_status = clGetDeviceInfo(device, 0x404A, sizeof(gfxip_major), &gfxip_major, NULL); // CL_DEVICE_GFXIP_MAJOR_AMD
+    cl_int min_status = clGetDeviceInfo(device, 0x404B, sizeof(gfxip_minor), &gfxip_minor, NULL); // CL_DEVICE_GFXIP_MINOR_AMD
         
     if (maj_status == CL_SUCCESS && min_status == CL_SUCCESS)
     {
-      if (gfxip_major >= 6 && gfxip_major < 13)
-      {
-        gfx_hex = ((int)gfxip_major << 8) | (int)gfxip_minor;
-        found_gfx_ver = true;
+      // Convert decimal Major/Minor pair to standard hex format
+      gfx_hex = (((gfxip_major / 10) << 12) | ((gfxip_major % 10) << 8) | (gfxip_minor << 4));
+      found_gfx_ver = true;
 
-        LogTo(LOGTO_FILE, "Queried an AMD gfx%x from CL_DEVICE_GFXIP\n", gfx_hex);
-      }
+      LogTo(LOGTO_FILE, "Queried an AMD gfx%x from CL_DEVICE_GFXIP fallback\n", gfx_hex);
     }
   }
 
@@ -335,63 +343,71 @@ bool GetAmdComputeCapability(cl_device_id device, int &gfx_hex)
     return true;
   
   LogTo(LOGTO_FILE, "Failed to parse or query an AMD gfx compute id\n");
-
   return false;
 }
 
-bool GetAmdWavesHint(int gfx_hex, int &waves_2pipe, int &waves_3pipe, int &waves_4pipe)
+bool GetAMDRegisterHint(int gfx_hex, int &regs_2pipe, int &regs_3pipe, int &regs_4pipe) // VGPRs
 {
-  waves_2pipe = 0;
-  waves_3pipe = 0;
-  waves_4pipe = 0;
+  regs_2pipe = 0;
+  regs_3pipe = 0;
+  regs_4pipe = 0;
 
   if (gfx_hex >= 0x600 && gfx_hex < 0x900)
   {
     // GCN 1.0 - 4.0 (gfx600 to gfx8xx)
-    // Static 256 VGPR limit per wavefront context
-    waves_2pipe = 4;
-    waves_3pipe = 2;
-    waves_4pipe = 2;
+    // 256 VGPRs per SIMD - 4 VGPR Granularity - 10 waves max
+    regs_2pipe = 64;    // 4 waves - 40% occupancy
+    regs_3pipe = 84;    // 3 waves - 30% occupancy
+    regs_4pipe = 128;   // 2 waves - 20% occupancy
   }
   else if (gfx_hex >= 0x900 && gfx_hex <= 0x90c && gfx_hex != 0x908 && gfx_hex != 0x90a)
   {
     // Vega / GCN 5.0 (gfx900 to gfx90c)
-    // Static 256 VGPR limit per wavefront context
-    waves_2pipe = 4;
-    waves_3pipe = 2;
-    waves_4pipe = 2;
+    // 256 VGPRs per SIMD - 4 VGPR Granularity - 10 waves max
+    regs_2pipe = 64;    // 4 waves - 40% occupancy
+    regs_3pipe = 84;    // 3 waves - 30% occupancy
+    regs_4pipe = 128;   // 2 waves - 20% occupancy
   }
-  else if (gfx_hex >= 0x1000 && gfx_hex < 0x1100)
+  else if (gfx_hex >= 0x1000 && gfx_hex < 0x1030)
   {
-    // RDNA 1 & 2 (gfx1000 to gfx103x)
-    // 1024 VGPR Pool / 8 VGPR Granularity
-    waves_2pipe = 14;  // 14 seems faster than 16
-    waves_3pipe = 10;
-    waves_4pipe = 8;
+    // RDNA 1 (gfx1010 to gfx1013)
+    // 1024 VGPRs per SIMD - 8 VGPR Granularity - 20 waves max
+    regs_2pipe = 64;    // 16 waves - 80% occupancy
+    regs_3pipe = 96;    // 10 waves - 50% occupancy
+    regs_4pipe = 128;   //  8 waves - 40% occupancy
+  }
+  else if (gfx_hex >= 0x1030 && gfx_hex < 0x1100)
+  {
+    // RDNA 2 (gfx1030 to gfx1036)
+    // 1024 VGPRs per SIMD - 16 VGPR Granularity - 16 waves max
+    regs_2pipe = 64;    // 16 waves - 100% occupancy
+    regs_3pipe = 96;    // 10 waves - 63% occupancy
+    regs_4pipe = 128;   //  8 waves - 50% occupancy
   }
   else if (gfx_hex >= 0x1100 && gfx_hex < 0x1200)
   {
     // RDNA 3 (gfx11xx)
-    // 1536 VGPR Pool / 24 VGPR Granularity
-    waves_2pipe = 14;
-    waves_3pipe = 10;
-    waves_4pipe = 8;
+    // 1536 VGPRs per SIMD - 24 VGPR Granularity - 16 waves max
+    regs_2pipe = 96;    // 16 waves - 100% occupancy
+    regs_3pipe = 120;   // 12 waves - 75% occupancy
+    regs_4pipe = 144;   // 10 waves - 63% occupancy
   }
     else if (gfx_hex >= 0x1200 && gfx_hex < 0x1300)
   {
     // RDNA 4 (gfx12xx)
-    // 1536 VGPR Pool / variable (16 or 32) VGPR Granularity
-    waves_2pipe = 16;
-    waves_3pipe = 14;
-    waves_4pipe = 12;
+    // 1536 VGPRs per SIMD - 24 VGPR Granularity - 16 waves max
+    // (Dynamic VGPR mode is disabled)
+    regs_2pipe = 96;    // 16 waves - 100% occupancy
+    regs_3pipe = 120;   // 12 waves - 75% occupancy
+    regs_4pipe = 144;   // 10 waves - 63% occupancy
   }
 
-  if (waves_2pipe > 0 && waves_3pipe > 0 && waves_4pipe > 0)
+  if (regs_2pipe > 0 && regs_3pipe > 0 && regs_4pipe > 0)
   {
     return true;   
   }
 
-  LogTo(LOGTO_FILE, "Failed to find AMD gfx%x in wavefront hint lookup table\n", gfx_hex);
+  LogTo(LOGTO_FILE, "Failed to find AMD gfx%x in VGPR register hint lookup table\n", gfx_hex);
 
   return false;
 }
@@ -416,10 +432,10 @@ bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *ke
   {
     const char *clOption = "-cl-std=CL1.1";  // support older macOS
     char buildOptions[80];
-    int nv_sm;
-    int amd_gfx;
+    int nv_sm = 0;
+    int amd_gfx = 0;
 
-    if (GetNvidiaComputeCapability(cont->deviceID, nv_sm))  // NVIDIA
+    if (GetNVComputeCapability(cont->deviceID, nv_sm))  // NVIDIA
     {
       char nvOption1[16] = "";
 
@@ -428,7 +444,7 @@ bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *ke
       char nvOption2[32] = "";
       int nv_maxreg2, nv_maxreg3, nv_maxreg4;
 
-      if (GetNvidiaRegisterHint(nv_sm, nv_maxreg2, nv_maxreg3, nv_maxreg4)) // maximize ILP and occupancy
+      if (GetNVRegisterHint(nv_sm, nv_maxreg2, nv_maxreg3, nv_maxreg4)) // maximize ILP and occupancy
       {
         if (strstr(kernelName, "2pipe_nv"))
           snprintf(nvOption2, sizeof(nvOption2), "-cl-nv-maxrregcount=%d", nv_maxreg2);
@@ -440,32 +456,36 @@ bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *ke
    
       snprintf(buildOptions, sizeof(buildOptions), "%s %s %s", clOption, nvOption1, nvOption2); // NVIDIA build options
     }
-    else if (GetAmdComputeCapability(cont->deviceID, amd_gfx)) // AMD
+    else if (GetAMDComputeCapability(cont->deviceID, amd_gfx)) // AMD
     {
-      char amdOption[16] = "";
-      int amd_waves2, amd_waves3, amd_waves4;
+      char amdOption1[24] = "";
 
-      if (GetAmdWavesHint(amd_gfx, amd_waves2, amd_waves3, amd_waves4)) // maximize ILP and occupancy
+      snprintf(amdOption1, sizeof(amdOption1), "-D AMD_GFX=0x%x", amd_gfx); // SM version
+
+      char amdOption2[16] = "";
+      int amd_maxreg2, amd_maxreg3, amd_maxreg4;
+
+      if (GetAMDRegisterHint(amd_gfx, amd_maxreg2, amd_maxreg3, amd_maxreg4)) // maximize ILP and occupancy
       {
         if (strstr(kernelName, "2pipe_nv"))
-          snprintf(amdOption, sizeof(amdOption), "-D AMD_WAVES=%d", amd_waves2);
+          snprintf(amdOption2, sizeof(amdOption2), "-D AMD_VGPR=%d", amd_maxreg2);
         else if (strstr(kernelName, "3pipe_nv"))
-          snprintf(amdOption, sizeof(amdOption), "-D AMD_WAVES=%d", amd_waves3);
+          snprintf(amdOption2, sizeof(amdOption2), "-D AMD_VGPR=%d", amd_maxreg3);
         else if (strstr(kernelName, "4pipe_nv"))
-          snprintf(amdOption, sizeof(amdOption), "-D AMD_WAVES=%d", amd_waves4);
+          snprintf(amdOption2, sizeof(amdOption2), "-D AMD_VGPR=%d", amd_maxreg4);
       }
 
-      snprintf(buildOptions, sizeof(buildOptions), "%s %s", clOption, amdOption); // AMD build options
+      snprintf(buildOptions, sizeof(buildOptions), "%s %s", clOption, amdOption1, amdOption2); // AMD build options
     }
     else // GENERIC
-        snprintf(buildOptions, sizeof(buildOptions), "%s", clOption);  // Generic manufacturer build options
+      snprintf(buildOptions, sizeof(buildOptions), "%s", clOption);  // Generic manufacturer build options
 
     status = clBuildProgram(cont->program, 1, &cont->deviceID, buildOptions, NULL, NULL);
      
     if (status == CL_SUCCESS)
-        LogTo(LOGTO_FILE, "clBuildProgram() successful with build options %s\n", buildOptions);
+      LogTo(LOGTO_FILE, "clBuildProgram() successful with build options %s\n", buildOptions);
     else if (status != CL_SUCCESS)
-        LogTo(LOGTO_FILE, "clBuildProgram() failed with build options %s\n", buildOptions);
+      LogTo(LOGTO_FILE, "clBuildProgram() failed with build options %s\n", buildOptions);
 
     if (status != CL_SUCCESS)  // fallback
     {
@@ -477,6 +497,74 @@ bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *ke
         LogTo(LOGTO_FILE, "clBuildProgram() failed with fallback build options\n");
     }
   }
+
+  /*
+  if (status == CL_SUCCESS)  // Dump PTX compilation for NVIDIA only
+  {
+    cl_uint num_devices = 0;
+    clGetProgramInfo(cont->program, CL_PROGRAM_NUM_DEVICES, sizeof(cl_uint), &num_devices, NULL);
+
+    if (num_devices > 0)
+    {
+      cl_device_id *devices = (cl_device_id*)malloc(sizeof(cl_device_id) * num_devices);
+      size_t *binary_sizes = (size_t*)malloc(sizeof(size_t) * num_devices);
+      unsigned char **binaries = (unsigned char**)calloc(num_devices, sizeof(unsigned char*));
+
+      clGetProgramInfo(cont->program, CL_PROGRAM_DEVICES, sizeof(cl_device_id) * num_devices, devices, NULL);
+      clGetProgramInfo(cont->program, CL_PROGRAM_BINARY_SIZES, sizeof(size_t) * num_devices, binary_sizes, NULL);
+
+      int target_idx = -1;
+      for (cl_uint i = 0; i < num_devices; i++)
+      {
+        if (devices[i] == cont->deviceID)
+          target_idx = (int)i;
+
+        if (binary_sizes[i] > 0)
+        {
+          // Allocate +1 to guarantee a null terminator for safe string handling
+          binaries[i] = (unsigned char*)malloc(binary_sizes[i] + 1);
+          if (binaries[i] != NULL)
+            binaries[i][binary_sizes[i]] = '\0';
+        }
+      }
+
+      clGetProgramInfo(cont->program, CL_PROGRAM_BINARIES, sizeof(unsigned char*) * num_devices, binaries, NULL);
+
+      if (target_idx >= 0 && binaries[target_idx] != NULL)
+      {
+        char ptx_filepath[256];
+        snprintf(ptx_filepath, sizeof(ptx_filepath), "./rc5-72/opencl/disassembly/%s.ptx", kernelName);
+
+        FILE* f = fopen(ptx_filepath, "wb");
+        if (f != NULL)
+        {
+          // NVIDIA PTX is ASCII text. strlen() cleanly strips any trailing null-padding bytes
+          size_t text_len = strlen((const char*)binaries[target_idx]);
+          if (text_len == 0 || text_len > binary_sizes[target_idx])
+            text_len = binary_sizes[target_idx];
+
+          fwrite(binaries[target_idx], 1, text_len, f);
+          fclose(f);
+        }
+        else
+        {
+          LogTo(LOGTO_FILE, "Error: Could not open %s for writing.\n", ptx_filepath);
+        }
+      }
+
+      // Cleanup
+      for (cl_uint i = 0; i < num_devices; i++)
+      {
+        if (binaries[i] != NULL)
+          free(binaries[i]);
+      }
+      free(binaries);
+      free(binary_sizes);
+      free(devices);
+    }
+  }
+  */
+
   if (ocl_diagnose(status, "building cl program", cont) != CL_SUCCESS)
   {
     //static char buf[0x10001]={0};

@@ -18,6 +18,10 @@
 #include "rc5-2pipe-nv.cpp"
 #include "rc5-3pipe-nv.cpp"
 #include "rc5-4pipe-nv.cpp"
+#include "rc5-8pipe-nv.cpp"
+#include "rc5-2pipe-nv-round1.cpp"
+#include "rc5-4pipe-nv-round1.cpp"
+#include "rc5-8pipe-nv-round1.cpp"
 
 #define CONST_SIZE (sizeof(cl_uint)*16)
 #define OUT_SIZE (sizeof(cl_uint)*128)
@@ -67,6 +71,16 @@ static bool init_rc5_72_ocl_npipe(ocl_context_t *cont, unsigned core_ID, const c
     if (status == CL_SUCCESS)
       cont->runSizeMultiplier = prefm * cus * 4; //Hack for now. We need 4 wavefronts per CU to hide latency
   }
+
+  LogTo(LOGTO_FILE, "Raw Calculated Run Size Multiplier:  %d\n", cont->runSizeMultiplier);
+
+  // align to 256
+  cont->runSizeMultiplier = (cont->runSizeMultiplier + 255) & ~255;
+  if (cont->runSizeMultiplier < 256)
+      cont->runSizeMultiplier = 256;
+
+  LogTo(LOGTO_FILE, "Aligned Run Size Multiplier:  %d\n", cont->runSizeMultiplier);
+
   //Log("Multiplier = %u\n", cont->runSizeMultiplier);
   unsigned t = cont->runSize/cont->runSizeMultiplier;
   if (t == 0) t = 1;
@@ -280,7 +294,11 @@ extern "C" s32 rc5_72_unit_func_ocl_4pipe (RC5_72UnitWork *rc5_72unitwork, u32 *
 extern "C" s32 rc5_72_unit_func_ocl_1pipe_nv (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
 extern "C" s32 rc5_72_unit_func_ocl_2pipe_nv (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
 extern "C" s32 rc5_72_unit_func_ocl_3pipe_nv (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
+extern "C" s32 rc5_72_unit_func_ocl_8pipe_nv (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
 extern "C" s32 rc5_72_unit_func_ocl_4pipe_nv (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
+extern "C" s32 rc5_72_unit_func_ocl_2pipe_nv_round1 (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
+extern "C" s32 rc5_72_unit_func_ocl_4pipe_nv_round1 (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
+extern "C" s32 rc5_72_unit_func_ocl_8pipe_nv_round1 (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
 #endif
 
 /* some static flags which are set on per-core basis */
@@ -591,5 +609,33 @@ s32 rc5_72_unit_func_ocl_4pipe_nv(RC5_72UnitWork *rc5_72unitwork, u32 *iteration
   static struct core_static_flags flags;
 
   return rc5_72_unit_func_ocl_npipe(rc5_72unitwork, iterations, CORE_4PIPE_NV, 4, ocl_rc572_4pipe_nv_src, "ocl_rc572_4pipe_nv", &flags);
+}
+
+s32 rc5_72_unit_func_ocl_8pipe_nv(RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *)
+{
+  static struct core_static_flags flags;
+
+  return rc5_72_unit_func_ocl_npipe(rc5_72unitwork, iterations, CORE_8PIPE_NV, 8, ocl_rc572_8pipe_nv_src, "ocl_rc572_8pipe_nv", &flags);
+}
+
+s32 rc5_72_unit_func_ocl_2pipe_nv_round1(RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *)
+{
+  static struct core_static_flags flags;
+
+  return rc5_72_unit_func_ocl_npipe(rc5_72unitwork, iterations, CORE_2PIPE_NV_ROUND1, 2, ocl_rc572_2pipe_nv_round1_src, "ocl_rc572_2pipe_nv_round1", &flags);
+}
+
+s32 rc5_72_unit_func_ocl_4pipe_nv_round1(RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *)
+{
+  static struct core_static_flags flags;
+
+  return rc5_72_unit_func_ocl_npipe(rc5_72unitwork, iterations, CORE_4PIPE_NV_ROUND1, 4, ocl_rc572_4pipe_nv_round1_src, "ocl_rc572_4pipe_nv_round1", &flags);
+}
+
+s32 rc5_72_unit_func_ocl_8pipe_nv_round1(RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *)
+{
+  static struct core_static_flags flags;
+
+  return rc5_72_unit_func_ocl_npipe(rc5_72unitwork, iterations, CORE_8PIPE_NV_ROUND1, 8, ocl_rc572_8pipe_nv_round1_src, "ocl_rc572_8pipe_nv_round1", &flags);
 }
 

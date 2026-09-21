@@ -1,5 +1,5 @@
 //CORENAME=ocl_rc572_3pipe_nv_src
-#if (defined(__NVPTX__) || defined(__NVIDIA_CUDA__)) && defined(NV_SM) // NVIDIA
+#if defined(__NVPTX__) && defined(NV_SM) // NVIDIA OPTIMIZED
   #if (NV_SM >= 32) // funnel shift supported
     #define ROTL(x, s) ({ \
         uint3 _x = (uint3)(x), _s = (uint3)(s), _res; \
@@ -20,10 +20,6 @@
         __asm__ ("shf.l.wrap.b32 %0, %1, %1, %2;" : "=r"(_res) : "r"(_x), "r"(_s)); \
         _res; \
     })
-  #else
-    #define ROTL(x, s)  rotate((uint3)(x), (uint3)(s))
-    #define ROTL3(x)    rotate((uint3)(x), (uint3)3u)
-    #define ROTL1(x, s) rotate((uint)(x), (uint)(s))
   #endif
   #if (NV_SM >= 20) // permute supported
     #define SWAP(x) ({ \
@@ -31,39 +27,33 @@
         __asm__ ("prmt.b32 %0, %1, 0, 0x0123;" : "=r"(_res) : "r"(_x)); \
         _res; \
     })
-  #else
-    #define SWAP(x) (((uint)(x) << 24) | (((uint)(x) & 0x0000FF00u) << 8) | (((uint)(x) >> 8) & 0x0000FF00u) | ((uint)(x) >> 24))
   #endif
-#elif defined(cl_amd_media_ops) && !defined(__clang__) // AMD LEGACY
+#elif defined(cl_amd_media_ops) && !defined(__clang__) // AMD LEGACY OPTIMIZED
   #pragma OPENCL EXTENSION cl_amd_media_ops : enable
-  #define ROTL(x, s)  amd_bitalign((uint3)(x), (uint3)(x), (uint3)32u - (uint3)(s))
-  #define ROTL3(x)    amd_bitalign((uint3)(x), (uint3)(x), (uint3)29u)
+  #define ROTL(x, s)  amd_bitalign((uint3)(x), (uint3)(x), (uint3)(32u) - (uint3)(s))
+  #define ROTL3(x)    amd_bitalign((uint3)(x), (uint3)(x), (uint3)(29u))
   #define ROTL1(x, s) amd_bitalign((uint)(x), (uint)(x), 32u - (uint)(s))
-  #define SWAP(x)     ((amd_bytealign((uint)(x), (uint)(x), 1u) & 0xFF00FF00u) | (amd_bytealign((uint)(x), (uint)(x), 3u) & 0x00FF00FFu))
-#else // STANDARD OPENCL
-  #define ROTL(x, s)  rotate((uint3)(x), (uint3)(s))
-  #define ROTL3(x)    rotate((uint3)(x), (uint3)3u)
+  #define SWAP(x)     bitselect(amd_bytealign((uint)(x), (uint)(x), 3u), amd_bytealign((uint)(x), (uint)(x), 1u), 0xFF00FF00u)
+#endif
+
+#ifndef ROTL // STANDARD OPENCL
+  #define ROTL(x, s) rotate((uint3)(x), (uint3)(s))
+#endif
+#ifndef ROTL3
+  #define ROTL3(x) rotate((uint3)(x), (uint3)(3u))
+#endif
+#ifndef ROTL1
   #define ROTL1(x, s) rotate((uint)(x), (uint)(s))
-  #define SWAP(x)     (((uint)(x) << 24) | (((uint)(x) & 0x0000FF00u) << 8) | (((uint)(x) >> 8) & 0x0000FF00u) | ((uint)(x) >> 24))
+#endif
+#ifndef SWAP
+  #define SWAP(x) (((uint)(x) << 24) | (((uint)(x) & 0x0000FF00u) << 8) | (((uint)(x) >> 8) & 0x0000FF00u) | ((uint)(x) >> 24))
 #endif
 
-#if (defined(__AMDGCN__) || defined(__AMD__)) && defined(__clang__) // AMD Modern LLVM / ROCm Path
-  #if defined(__has_attribute) && defined(AMD_WAVES)
-    #if __has_attribute(amdgpu_waves_per_eu) && (AMD_WAVES > 0)
-      #define COMPILER_HINT __attribute__((amdgpu_waves_per_eu(AMD_WAVES)))
-    #endif
-  #endif
-#endif
-
-#ifndef COMPILER_HINT
-  #define COMPILER_HINT
-#endif
-
-#define P 0xB7E15163
-#define Q 0x9E3779B9
+#define P 0xB7E15163u
+#define Q 0x9E3779B9u
 
 #define ROUND1(a, b, c, d) \
-  S[a] = ROTL3(S[b] + P + a*Q + L[c]); \
+  S[a] = ROTL3(S[b] + (P + a * Q) + L[c]); \
   t = S[a] + L[c]; \
   L[d] = ROTL(L[d] + t, t)
 
@@ -76,7 +66,7 @@
   A = ROTL(A^B, B) + S[a]; \
   B = ROTL(B^A, A) + S[a+1]
 
-__kernel void ocl_rc572_3pipe_nv( __constant uint *rc5_72unitwork, volatile __global uint *outbuf) COMPILER_HINT
+__kernel void ocl_rc572_3pipe_nv( __constant const uint * rc5_72unitwork, volatile __global uint * outbuf)
 {
   uint3 L[3];
   uint3 S[26];
@@ -101,19 +91,17 @@ __kernel void ocl_rc572_3pipe_nv( __constant uint *rc5_72unitwork, volatile __gl
     uint l0_t = SWAP(rc5_72unitwork[2]) + 1;
     uint l0_carry = ROTL1(0xBF0A8B1D + SWAP(l0_t), 0x1d);
     uint s1_carry = ROTL1(l0_carry + 0xBF0A8B1D + 0x5618cb1c, 3u);
-
+   
     if (l1_t2.x < L[1].x)
     {
       L[0].x = l0_carry;
       S[1].x = s1_carry;
     }
-
     if (l1_t2.y < L[1].y)
     {
       L[0].y = l0_carry;
       S[1].y = s1_carry;
     }
-
     L[0].z = l0_carry;
     S[1].z = s1_carry;
   }
@@ -206,7 +194,7 @@ __kernel void ocl_rc572_3pipe_nv( __constant uint *rc5_72unitwork, volatile __gl
 
   S[24] = ROTL3(S[24] + S[23] + L[0]); 
 
-  A = rc5_72unitwork[4] + S[0]; //plain_lo
+  A = rc5_72unitwork[4] + S[0];	//plain_lo
   B = rc5_72unitwork[5] + S[1]; //plain_hi
 
   ENCRYPT(2);
