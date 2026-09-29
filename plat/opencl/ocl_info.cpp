@@ -17,6 +17,7 @@
 
 #include "logstuff.h"
 #include "deviceid.cpp"
+#include "compiler_info.cpp"
 #include "../rc5-72/opencl/ocl_common.h"
 
 /* For printing 64-bit values. Probably it should be in common client compiler-specific stuff. */
@@ -207,6 +208,87 @@ static void OpenCLPrintDeviceStringProperty(cl_device_id device, cl_device_info 
   }
 }
 
+static void OpenCLPrintCompilationInfo(ocl_context_t *cont)
+{
+  size_t globalWorkSize[1];
+  cl_int status;
+  cl_uint nvptx, amd_media_ops, clang;
+  cl_uint *outPtr;
+  int nv, nv_sm, amd, amd_gfx, nv_reg, nv_maxreg2, nv_maxreg4, amd_reg, amd_maxreg2, amd_maxreg4;
+  
+  nvptx = 0;
+  amd_media_ops = 0;
+  clang = 0;
+  
+  OCLReinitializeDevice(cont);
+
+  cont->clcontext = clCreateContext(NULL, 1, &cont->deviceID, NULL, NULL, &status);
+  if (status != CL_SUCCESS)
+    goto finished;
+  
+  cont->cmdQueue = clCreateCommandQueue(cont->clcontext, cont->deviceID, 0, &status);
+  if (status != CL_SUCCESS)
+    goto finished;
+
+  cont->out_buffer = clCreateBuffer(cont->clcontext, CL_MEM_ALLOC_HOST_PTR, 4 * sizeof(cl_uint), NULL, &status);
+  if (status != CL_SUCCESS)
+    goto finished;
+
+  if (!BuildCLProgram(cont, compiler_info_src, "compiler_info"))
+    goto finished;
+
+  status = clSetKernelArg(cont->kernel, 0, sizeof(cl_mem), &cont->out_buffer);
+  if (status != CL_SUCCESS)
+    goto finished;
+	
+  globalWorkSize[0] = 1;
+  status = clEnqueueNDRangeKernel(cont->cmdQueue, cont->kernel, 1, NULL, globalWorkSize, NULL, 0, NULL, NULL);
+  if (status != CL_SUCCESS)
+     goto finished;
+
+  outPtr = (cl_uint*) clEnqueueMapBuffer(cont->cmdQueue, cont->out_buffer, CL_TRUE, CL_MAP_READ, 0, 4 * sizeof(cl_uint), 0, NULL, NULL, &status);
+  if (status == CL_SUCCESS)
+  {
+    nvptx = outPtr[0];
+    amd_media_ops = outPtr[1];
+    clang = outPtr[2];
+    clEnqueueUnmapMemObject(cont->cmdQueue, cont->out_buffer, outPtr, 0, NULL, NULL);
+  }
+  
+finished:
+  OCLReinitializeDevice(cont);
+
+  nv = GetNVComputeCapability(cont->deviceID, nv_sm);
+  if (nv)
+    nv_reg = GetNVRegisterHint(nv_sm, nv_maxreg2, nv_maxreg4);
+  
+  amd = GetAMDComputeCapability(cont->deviceID, amd_gfx);
+  if (amd)
+    amd_reg = GetAMDRegisterHint(amd_gfx, amd_maxreg2, amd_maxreg4);
+
+  LogRaw("%30s:", "Built-in defined");
+
+  if (nvptx) LogRaw(" __NVPTX__");
+  if (amd_media_ops) LogRaw(" cl_amd_media_ops");
+  if (clang) LogRaw(" __clang__");
+  
+  LogRaw("\n");
+
+  LogRaw("%30s:", "Parameter defined");
+
+  if (nv) LogRaw(" (1-pipe) -D NV_SM=%d\n", nv_sm);
+  if (nv && nv_reg) LogRaw("%31s (2-pipe) -D NV_SM=%d -cl-nv-maxrregcount=%d\n", "", nv_sm, nv_maxreg2);
+  if (nv && !nv_reg) LogRaw("%31s (2-pipe) -D NV_SM=%d\n", "", nv_sm);
+  if (nv && nv_reg) LogRaw("%31s (4-pipe) -D NV_SM=%d -cl-nv-maxrregcount=%d\n", "", nv_sm, nv_maxreg4);
+  if (nv && !nv_reg) LogRaw("%31s (4-pipe) -D NV_SM=%d\n", "", nv_sm);
+
+  if (amd) LogRaw(" (1-pipe) -D AMD_GFX=0x%x\n", amd_gfx);
+  if (amd && amd_reg) LogRaw("%31s (2-pipe) -D AMD_GFX=0x%x -D AMD_VGPR=%d\n", "", amd_gfx, amd_maxreg2);
+  if (amd && !amd_reg) LogRaw("%31s (2-pipe) -D AMD_GFX=0x%x\n", "", amd_gfx);
+  if (amd && amd_reg) LogRaw("%31s (4-pipe) -D AMD_GFX=0x%x -D AMD_VGPR=%d\n", "", amd_gfx, amd_maxreg4);
+  if (amd && !amd_reg) LogRaw("%31s (4-pipe) -D AMD_GFX=0x%x\n", "", amd_gfx);
+}
+
 void OpenCLPrintExtendedGpuInfo(int device)
 {
   const char *data;
@@ -331,5 +413,11 @@ void OpenCLPrintExtendedGpuInfo(int device)
     LogRaw("%30s: %u%s\n", "Device address bits", devbits, (devbits == sizeof(size_t) * 8 ? "" : " - NOT MATCHED -"));
 
   OpenCLPrintDeviceStringProperty(cont->deviceID, CL_DEVICE_EXTENSIONS, "Device extensions");
+
+  /* Split platform and device info */
+  LogRaw("\nCompiler Info:\n");
+  LogRaw("--------------\n");
+
+  OpenCLPrintCompilationInfo(cont);
 }
 
