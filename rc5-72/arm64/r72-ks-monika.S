@@ -26,8 +26,8 @@ rc5_72_unit_func_monika_4pipe:
 
 loopStart:
         sub w16, w16, #1
-        mov w9, #29
-        sub w7, wzr, w9
+        //mov w9, #29
+        //sub w7, wzr, w9
         mov w5, #-32
         //add w5, w9, #3 // Use this to hold 32 later.
         //dup v30.4s, w7
@@ -159,10 +159,9 @@ loopStart:
 
 
 #define VROR(v, vb) \
-        dup v30.4s, w7 SEPARATOR \
         shl v31.4s, v, #3 SEPARATOR \
-        ushl v29.4s, v, v30.4s SEPARATOR \
-        eor vb, v29.16b, v31.16b SEPARATOR
+        sri v31.4s, v, #29 SEPARATOR \
+        mov vb, v31.16b SEPARATOR
 
 #define VROLV(firstV, secondV, firstVB, secondVB) \
         dup v30.4s, w10 SEPARATOR \
