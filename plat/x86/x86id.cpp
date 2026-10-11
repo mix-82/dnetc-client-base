@@ -55,6 +55,8 @@ union PageInfos {
 #define X86_07_00_EBX_AVX2 (1 << 5)
 #define X86_HAS_AVX512F    (1 << 16)
 #define X86_HAS_AVX512CD   (1 << 28)
+#define X86_HAS_AVX512VL   (1U << 31)
+
 
 /* 0x80000001:ECX */
 #define X86_HAS_LZCNT     (1 <<  5)
@@ -850,6 +852,10 @@ u32 x86GetFeatures(void)
             if (infos.regs.ebx & X86_HAS_AVX512F) {
               if (infos.regs.ebx & X86_HAS_AVX512CD) {
                 features |= CPU_F_AVX512;
+              }
+              /* Check for AVX-512VL (Vector Length Extensions) */
+              if (infos.regs.ebx & X86_HAS_AVX512VL) {
+                features |= CPU_F_AVX512VL;
               }
             }
           }
