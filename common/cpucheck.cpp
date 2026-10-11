@@ -2898,6 +2898,9 @@ void GetProcessorInformationStrings( int device, const char ** scpuid, const cha
     if (features & CPU_F_AVX512) {
       strcat( namebuf, "AVX512 ");
     }
+    if (features & CPU_F_AVX512VL) {
+      strcat( namebuf, "AVX512VL " );
+    }
   #elif (CLIENT_CPU == CPU_POWERPC) || (CLIENT_CPU == CPU_CELLBE)
     sprintf(namebuf, "%08lX\n\tname: %s", rawid, cpuid_s );
   #else

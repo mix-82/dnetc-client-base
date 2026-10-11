@@ -123,7 +123,7 @@ OGR="ogr"
 
 # select the projects to include in the client
 HAVE_RC5_72="1"
-HAVE_OGR="1"
+HAVE_OGR="0"
 HAVE_OGR_P2="0"
 
 # define these to "0" in add_sources() if you add your own list of cores + options
@@ -680,7 +680,8 @@ add_sources() # $1=os, $2=arch, $3=custom
                        rc5-72/amd64/r72-kbe.asm \
                        rc5-72/amd64/r72-avx2.asm \
                        rc5-72/amd64/r72-go2c.asm \
-                       rc5-72/amd64/r72-go2d.asm"
+                       rc5-72/amd64/r72-go2d.asm \
+                       rc5-72/amd64/r72-avx512vl.asm"
     fi # HAVE_RC5_72
 
     if [ "$HAVE_OGR" = "1" ]; then
@@ -3281,7 +3282,7 @@ case "$1" in
 
     *linux-amd64)               # generic. works everywhere
         infer_arch_and_version "Linux"
-        TARGET_NASM="yasm"
+        TARGET_NASM="nasm"
         TARGET_NASM_FMT="elf64"
         TARGET_AS="gcc -c"          # can make aout if TARGET_CCFLAGS+=-aout
         TARGET_CC="g++"
