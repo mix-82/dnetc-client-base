@@ -434,6 +434,7 @@ align 16
     jne     .round
 
 .encryptSetup:
+    ; C = plainlo + S[0], D = plainhi + S[1]
     vpbroadcastd  T1, [RC5_72UnitWork_plainlo]
     vpbroadcastd  T3, [RC5_72UnitWork_plainhi]
     
@@ -446,6 +447,7 @@ align 16
     vpaddd  C4, T1, S4(0)
     vpaddd  D4, T3, S4(1)
 
+    ; rax points to S[2] (Round 1 subkeys)
     lea     rax, [work_S + 2*128]
     xor     ebx, ebx
 
@@ -453,7 +455,7 @@ align 16
 .encrypt:
     inc     ebx
 
-    ; Interleaved C = ((C ^ D) <<< D) + S[2r]
+    ; C = ((C ^ D) <<< D) + S[2r]
     vpxord  C1, C1, D1
     vpxord  C2, C2, D2
     vpxord  C3, C3, D3
@@ -469,7 +471,7 @@ align 16
     vpaddd  C3, C3, [rax+64]
     vpaddd  C4, C4, [rax+96]
 
-    ; Interleaved D = ((D ^ C) <<< C) + S[2r+1]
+    ; D = ((D ^ C) <<< C) + S[2r+1]
     vpxord  D1, D1, C1
     vpxord  D2, D2, C2
     vpxord  D3, D3, C3
@@ -485,12 +487,13 @@ align 16
     vpaddd  D3, D3, [rax+192]
     vpaddd  D4, D4, [rax+224]
 
-    add     rax, 256
+    add     rax, 256                 ; Advance 2 subkeys (2 * 128 bytes)
     cmp     ebx, 11
     jne     .encrypt
 
 .encryptEnd:
     ; Final half-round: C = ((C ^ D) <<< D) + S[24]
+    ; We defer computing D until we verify if C matches cipherlo
     vpxord  C1, C1, D1
     vpxord  C2, C2, D2
     vpxord  C3, C3, D3
@@ -507,7 +510,7 @@ align 16
     vpaddd  C4, C4, S4(24)
 
 .checkKey1:
-    ; --- SAFE 8-LANE OPMASK CHECKS ---
+    ; Check if any of the 8 lanes in Pipe 1 match cipherlo
     vpcmpeqd    k1, C1, [work_C_0]
     kmovw       eax, k1
     and         eax, 0xFF
@@ -552,6 +555,9 @@ align 16
     jmp     .key_setup_1_outer_loop
 
 .checkKey1Hi:
+    ; Pipe 1 matched cipherlo! 
+    ; Now compute final round second half (D) and test against cipherhi.
+    ; S[25] was intentionally deferred until now
     kmovw   eax, k1
     and     eax, 0xFF
     popcnt  edx, eax
@@ -562,18 +568,22 @@ align 16
     mov     [RC5_72UnitWork_CMCmid], L0mid
     mov     [RC5_72UnitWork_CMClo], L0lo
 
+    ; Compute deferred final subkey: S[25] = (S[25] + A + B) <<< 3
     vpaddd  A1, A1, S1(25)
     vpaddd  A1, A1, B1_1
     vprold  A1, A1, 3
 
+    ; Complete Round high word: D = ((D ^ C) <<< C) + S[25]
     vpxord  D1, D1, C1
     vprolvd D1, D1, C1
     vpaddd  D1, D1, A1
 
-    vpcmpeqd    k1, D1, [work_C_1]
+    ; Compare with cipherhi into scratch mask k5, then cross-verify lane match
+    vpcmpeqd    k5, D1, [work_C_1]
+    kandw       k1, k1, k5               ; k1 = (matched low) AND (matched high) in same lane
     kmovw       eax, k1
     and         eax, 0xFF
-    jz          .checkKey2
+    jz          .checkKey2               ; False half-match: check remaining pipes
     jmp         .saveFoundKey
 
 .checkKey2Hi:
@@ -588,19 +598,23 @@ align 16
     mov     [RC5_72UnitWork_CMCmid], L0mid
     mov     [RC5_72UnitWork_CMClo], L0lo
 
+    ; Compute deferred final subkey for Pipe 2
     vpaddd  A2, A2, S2(25)
     vpaddd  A2, A2, B2_1
     vprold  A2, A2, 3
 
+    ; Complete Round high word
     vpxord  D2, D2, C2
     vprolvd D2, D2, C2
     vpaddd  D2, D2, A2
 
-    vpcmpeqd    k2, D2, [work_C_1]
+    ; Cross-verify lane match
+    vpcmpeqd    k5, D2, [work_C_1]
+    kandw       k2, k2, k5               ; k2 = (matched low) AND (matched high) in same lane
     kmovw       eax, k2
     and         eax, 0xFF
     jz          .checkKey3
-    shl         eax, 8
+    shl         eax, 8                   ; Pipe 2 maps to key indices 8-15
     jmp         .saveFoundKey
 
 .checkKey3Hi:
@@ -615,19 +629,23 @@ align 16
     mov     [RC5_72UnitWork_CMCmid], L0mid
     mov     [RC5_72UnitWork_CMClo], L0lo
 
+    ; Compute deferred final subkey for Pipe 3
     vpaddd  A3, A3, S3(25)
     vpaddd  A3, A3, B3_1
     vprold  A3, A3, 3
 
+    ; Complete Round high word
     vpxord  D3, D3, C3
     vprolvd D3, D3, C3
     vpaddd  D3, D3, A3
 
-    vpcmpeqd    k3, D3, [work_C_1]
+    ; Cross-verify lane match
+    vpcmpeqd    k5, D3, [work_C_1]
+    kandw       k3, k3, k5               ; k3 = (matched low) AND (matched high) in same lane
     kmovw       eax, k3
     and         eax, 0xFF
     jz          .checkKey4
-    shl         eax, 16
+    shl         eax, 16                  ; Pipe 3 maps to key indices 16-23
     jmp         .saveFoundKey
 
 .checkKey4Hi:
@@ -642,21 +660,26 @@ align 16
     mov     [RC5_72UnitWork_CMCmid], L0mid
     mov     [RC5_72UnitWork_CMClo], L0lo
 
+    ; Compute deferred final subkey for Pipe 4
     vpaddd  A4, A4, S4(25)
     vpaddd  A4, A4, B4_1
     vprold  A4, A4, 3
 
+    ; Complete Round 12 high word
     vpxord  D4, D4, C4
     vprolvd D4, D4, C4
     vpaddd  D4, D4, A4
 
-    vpcmpeqd    k4, D4, [work_C_1]
+    ; Cross-verify lane match
+    vpcmpeqd    k5, D4, [work_C_1]
+    kandw       k4, k4, k5               ; k4 = (matched low) AND (matched high) in same lane
     kmovw       eax, k4
     and         eax, 0xFF
-    jz          .nextKey
-    shl         eax, 24
+    jz          .nextKey                 ; False match on final pipe: advance to next key
+    shl         eax, 24                  ; Pipe 4 maps to key indices 24-31
 
 .saveFoundKey:
+    ; WINNING KEY FOUND!
     bsf     eax, eax                 ; eax = key index in current batch (0..31)
 
     ; Record CMChi for the winning key
@@ -722,40 +745,36 @@ align 16
     vzeroupper
     ret
 
-%macro IS_CONST 1
-    dd _mm512_set1_d(%1), _mm512_set1_d(%1)
-%endmacro
-
 section .rodata
 align 64
 .I1:    dd  0,  1,  2,  3,  4,  5,  6,  7
 .I2:    dd  8,  9, 10, 11, 12, 13, 14, 15
 .I3:    dd 16, 17, 18, 19, 20, 21, 22, 23
 .I4:    dd 24, 25, 26, 27, 28, 29, 30, 31
-.IS3:   IS_CONST 0x9287BE8E
-.IS4:   IS_CONST 0x30BF3847
-.IS5:   IS_CONST 0xCEF6B200
-.IS6:   IS_CONST 0x6D2E2BB9
-.IS7:   IS_CONST 0x0B65A572
-.IS8:   IS_CONST 0xA99D1F2B
-.IS9:   IS_CONST 0x47D498E4
-.IS10:  IS_CONST 0xE60C129D
-.IS11:  IS_CONST 0x84438C56
-.IS12:  IS_CONST 0x227B060F
-.IS13:  IS_CONST 0xC0B27FC8
-.IS14:  IS_CONST 0x5EE9F981
-.IS15:  IS_CONST 0xFD21733A
-.IS16:  IS_CONST 0x9B58ECF3
-.IS17:  IS_CONST 0x399066AC
-.IS18:  IS_CONST 0xD7C7E065
-.IS19:  IS_CONST 0x75FF5A1E
-.IS20:  IS_CONST 0x1436D3D7
-.IS21:  IS_CONST 0xB26E4D90
-.IS22:  IS_CONST 0x50A5C749
-.IS23:  IS_CONST 0xEEDD4102
-.IS24:  IS_CONST 0x8D14BABB
-.IS25:  IS_CONST 0x2B4C3474
-.IS0:   IS_CONST 0xBF0A8B1D
+.IS3:   times 32 dd 0x9287BE8E
+.IS4:   times 32 dd 0x30BF3847
+.IS5:   times 32 dd 0xCEF6B200
+.IS6:   times 32 dd 0x6D2E2BB9
+.IS7:   times 32 dd 0x0B65A572
+.IS8:   times 32 dd 0xA99D1F2B
+.IS9:   times 32 dd 0x47D498E4
+.IS10:  times 32 dd 0xE60C129D
+.IS11:  times 32 dd 0x84438C56
+.IS12:  times 32 dd 0x227B060F
+.IS13:  times 32 dd 0xC0B27FC8
+.IS14:  times 32 dd 0x5EE9F981
+.IS15:  times 32 dd 0xFD21733A
+.IS16:  times 32 dd 0x9B58ECF3
+.IS17:  times 32 dd 0x399066AC
+.IS18:  times 32 dd 0xD7C7E065
+.IS19:  times 32 dd 0x75FF5A1E
+.IS20:  times 32 dd 0x1436D3D7
+.IS21:  times 32 dd 0xB26E4D90
+.IS22:  times 32 dd 0x50A5C749
+.IS23:  times 32 dd 0xEEDD4102
+.IS24:  times 32 dd 0x8D14BABB
+.IS25:  times 32 dd 0x2B4C3474
+.IS0:   times 32 dd 0xBF0A8B1D
 
 %ifidn __OUTPUT_FORMAT__, elf64
 section .note.GNU-stack noalloc noexec nowrite progbits
