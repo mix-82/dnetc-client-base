@@ -1,19 +1,17 @@
-; RC5-72 AVX-512VL core (256-bit Vector Length)
-; 32-Pipeline (32-Key) Implementation
-; Created by Mix
-; Inspired by Yasuhiro Katsui's AVX2 core
+; RC5-72 AVX-512VL core (256-bit vectors), 32 keys per batch
+; 4 pipes x 8 lanes. Created by Mix, inspired by Yasuhiro Katsui's AVX2 core.
 ;
-; 32-pipeline core (four 8-wide pipelines on 256-bit YMM registers)
-; Uses native 1-cycle vector rotate instructions (VPROLVD / VPROLD)
-; Uses EVEX-compliant vmovdqa32 and vpxord mnemonics for ymm16-ymm31
-; Requires: AVX-512F + AVX-512VL (or AVX10/256)
-; Compatible with: AMD Zen 4, Zen 5; Intel 10th/11th Gen+, Xeon Scalable
+; Uses native vector rotates (VPROLVD / VPROLD) and ymm16-ymm23.
+; Requires: AVX-512F + AVX-512VL, POPCNT. The OS must enable opmask and
+; ZMM_Hi256/Hi16_ZMM state (XCR0 bits 5-7).
+; Runs on: Intel Skylake-SP/X, Cascade/Cooper Lake, Cannon Lake, Ice Lake,
+; Tiger Lake, Rocket Lake, Sapphire/Emerald/Granite Rapids; AMD Zen 4, Zen 5.
 
 section .text
 BITS 64
 
-[GLOBAL _rc5_72_unit_func_avx512vl]
-[GLOBAL rc5_72_unit_func_avx512vl]
+[GLOBAL _rc5_72_unit_func_avx512y]
+[GLOBAL rc5_72_unit_func_avx512y]
 
 %define _mm512_set1_d(N) N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N
 
@@ -76,8 +74,6 @@ defwork work_pre_S2
 %assign work_size work_size + 32
 %assign work_offset work_size
 
-defwork32 work_C_0
-defwork32 work_C_1
 defwork32 work_S, (26*4)    ; 4 pipes * 32 bytes = 128 bytes per subkey
 
 ; Concatenate two work areas together
@@ -160,8 +156,8 @@ defwork32 work_S, (26*4)    ; 4 pipes * 32 bytes = 128 bytes per subkey
 
 align 16
 startseg:
-_rc5_72_unit_func_avx512vl:
-rc5_72_unit_func_avx512vl:
+_rc5_72_unit_func_avx512y:
+rc5_72_unit_func_avx512y:
 
     sub     rsp, work_size
 
@@ -193,11 +189,6 @@ rc5_72_unit_func_avx512vl:
 
     mov     r10d, [rsi]
     shr     r10d, 5           ; Divide by 32 keys per batch
-
-    vpbroadcastd    T1, [RC5_72UnitWork_cipherlo]
-    vpbroadcastd    T2, [RC5_72UnitWork_cipherhi]
-    vmovdqa32       [work_C_0], T1
-    vmovdqa32       [work_C_1], T2
 
     mov     L0hi, [RC5_72UnitWork_L0hi]
     mov     L0mid, [RC5_72UnitWork_L0mid]
@@ -509,30 +500,17 @@ align 16
     vpaddd  C3, C3, S3(24)
     vpaddd  C4, C4, S4(24)
 
-.checkKey1:
-    ; Check if any of the 8 lanes in Pipe 1 match cipherlo
-    vpcmpeqd    k1, C1, [work_C_0]
-    kmovw       eax, k1
-    and         eax, 0xFF
-    jnz         .checkKey1Hi
-
-.checkKey2:
-    vpcmpeqd    k2, C2, [work_C_0]
-    kmovw       eax, k2
-    and         eax, 0xFF
-    jnz         .checkKey2Hi
-
-.checkKey3:
-    vpcmpeqd    k3, C3, [work_C_0]
-    kmovw       eax, k3
-    and         eax, 0xFF
-    jnz         .checkKey3Hi
-
-.checkKey4:
-    vpcmpeqd    k4, C4, [work_C_0]
-    kmovw       eax, k4
-    and         eax, 0xFF
-    jnz         .checkKey4Hi
+.checkKey:
+    ; Compare all 4 pipes, merge the four 8-bit masks into two 16-bit masks,
+    ; and take a single branch. Bit n of the merged mask is key n.
+    vpcmpeqd    k1, C1, [RC5_72UnitWork_cipherlo]{1to8}
+    vpcmpeqd    k2, C2, [RC5_72UnitWork_cipherlo]{1to8}
+    vpcmpeqd    k3, C3, [RC5_72UnitWork_cipherlo]{1to8}
+    vpcmpeqd    k4, C4, [RC5_72UnitWork_cipherlo]{1to8}
+    kunpckbw    k5, k2, k1          ; k5 = keys 0-15
+    kunpckbw    k6, k4, k3          ; k6 = keys 16-31
+    kortestw    k5, k6
+    jnz         .checkHi
 
 .nextKey:
     dec     r10d
@@ -554,148 +532,88 @@ align 16
     bswap   L0lo
     jmp     .key_setup_1_outer_loop
 
-.checkKey1Hi:
-    ; Pipe 1 matched cipherlo! 
-    ; Now compute final round second half (D) and test against cipherhi.
-    ; S[25] was intentionally deferred until now
-    kmovw   eax, k1
-    and     eax, 0xFF
-    popcnt  edx, eax
-    add     dword [RC5_72UnitWork_CMCcount], edx
-    bsr     ebx, eax
-    add     ebx, L0hi
-    mov     [RC5_72UnitWork_CMChi], ebx
-    mov     [RC5_72UnitWork_CMCmid], L0mid
-    mov     [RC5_72UnitWork_CMClo], L0lo
+.checkHi:
+    ; Rare path (about 1 batch in 2^27). Must not touch ecx: the mid loop
+    ; reuses it after .nextKey.
+    kmovw   eax, k5
+    kmovw   edx, k6
+    shl     edx, 16
+    or      eax, edx                ; eax = 32-bit low-word match mask
 
-    ; Compute deferred final subkey: S[25] = (S[25] + A + B) <<< 3
+    ; pipe 1: k=77 S[25], then high word D
     vpaddd  A1, A1, S1(25)
     vpaddd  A1, A1, B1_1
     vprold  A1, A1, 3
-
-    ; Complete Round high word: D = ((D ^ C) <<< C) + S[25]
     vpxord  D1, D1, C1
     vprolvd D1, D1, C1
     vpaddd  D1, D1, A1
-
-    ; Compare with cipherhi into scratch mask k5, then cross-verify lane match
-    vpcmpeqd    k5, D1, [work_C_1]
-    kandw       k1, k1, k5               ; k1 = (matched low) AND (matched high) in same lane
-    kmovw       eax, k1
-    and         eax, 0xFF
-    jz          .checkKey2               ; False half-match: check remaining pipes
-    jmp         .saveFoundKey
-
-.checkKey2Hi:
-    kmovw   eax, k2
-    and     eax, 0xFF
-    popcnt  edx, eax
-    add     dword [RC5_72UnitWork_CMCcount], edx
-    bsr     ebx, eax
-    add     ebx, 8
-    add     ebx, L0hi
-    mov     [RC5_72UnitWork_CMChi], ebx
-    mov     [RC5_72UnitWork_CMCmid], L0mid
-    mov     [RC5_72UnitWork_CMClo], L0lo
-
-    ; Compute deferred final subkey for Pipe 2
+    vpcmpeqd    k1, D1, [RC5_72UnitWork_cipherhi]{1to8}
+    ; pipe 2: k=77 S[25], then high word D
     vpaddd  A2, A2, S2(25)
     vpaddd  A2, A2, B2_1
     vprold  A2, A2, 3
-
-    ; Complete Round high word
     vpxord  D2, D2, C2
     vprolvd D2, D2, C2
     vpaddd  D2, D2, A2
-
-    ; Cross-verify lane match
-    vpcmpeqd    k5, D2, [work_C_1]
-    kandw       k2, k2, k5               ; k2 = (matched low) AND (matched high) in same lane
-    kmovw       eax, k2
-    and         eax, 0xFF
-    jz          .checkKey3
-    shl         eax, 8                   ; Pipe 2 maps to key indices 8-15
-    jmp         .saveFoundKey
-
-.checkKey3Hi:
-    kmovw   eax, k3
-    and     eax, 0xFF
-    popcnt  edx, eax
-    add     dword [RC5_72UnitWork_CMCcount], edx
-    bsr     ebx, eax
-    add     ebx, 16
-    add     ebx, L0hi
-    mov     [RC5_72UnitWork_CMChi], ebx
-    mov     [RC5_72UnitWork_CMCmid], L0mid
-    mov     [RC5_72UnitWork_CMClo], L0lo
-
-    ; Compute deferred final subkey for Pipe 3
+    vpcmpeqd    k2, D2, [RC5_72UnitWork_cipherhi]{1to8}
+    ; pipe 3: k=77 S[25], then high word D
     vpaddd  A3, A3, S3(25)
     vpaddd  A3, A3, B3_1
     vprold  A3, A3, 3
-
-    ; Complete Round high word
     vpxord  D3, D3, C3
     vprolvd D3, D3, C3
     vpaddd  D3, D3, A3
-
-    ; Cross-verify lane match
-    vpcmpeqd    k5, D3, [work_C_1]
-    kandw       k3, k3, k5               ; k3 = (matched low) AND (matched high) in same lane
-    kmovw       eax, k3
-    and         eax, 0xFF
-    jz          .checkKey4
-    shl         eax, 16                  ; Pipe 3 maps to key indices 16-23
-    jmp         .saveFoundKey
-
-.checkKey4Hi:
-    kmovw   eax, k4
-    and     eax, 0xFF
-    popcnt  edx, eax
-    add     dword [RC5_72UnitWork_CMCcount], edx
-    bsr     ebx, eax
-    add     ebx, 24
-    add     ebx, L0hi
-    mov     [RC5_72UnitWork_CMChi], ebx
-    mov     [RC5_72UnitWork_CMCmid], L0mid
-    mov     [RC5_72UnitWork_CMClo], L0lo
-
-    ; Compute deferred final subkey for Pipe 4
+    vpcmpeqd    k3, D3, [RC5_72UnitWork_cipherhi]{1to8}
+    ; pipe 4: k=77 S[25], then high word D
     vpaddd  A4, A4, S4(25)
     vpaddd  A4, A4, B4_1
     vprold  A4, A4, 3
-
-    ; Complete Round 12 high word
     vpxord  D4, D4, C4
     vprolvd D4, D4, C4
     vpaddd  D4, D4, A4
+    vpcmpeqd    k4, D4, [RC5_72UnitWork_cipherhi]{1to8}
+    kunpckbw k5, k2, k1
+    kunpckbw k6, k4, k3
+    kmovw   edx, k5
+    kmovw   r9d, k6
+    shl     r9d, 16
+    or      edx, r9d
+    and     edx, eax                ; edx = keys matching both words
+    jnz     .saveFoundKey
 
-    ; Cross-verify lane match
-    vpcmpeqd    k5, D4, [work_C_1]
-    kandw       k4, k4, k5               ; k4 = (matched low) AND (matched high) in same lane
-    kmovw       eax, k4
-    and         eax, 0xFF
-    jz          .nextKey                 ; False match on final pipe: advance to next key
-    shl         eax, 24                  ; Pipe 4 maps to key indices 24-31
+    ; partial match(es) only: count them, record the last one (as the reference does)
+    popcnt  r11d, eax
+    add     dword [RC5_72UnitWork_CMCcount], r11d
+    bsr     r9d, eax
+    add     r9d, L0hi
+    mov     [RC5_72UnitWork_CMChi], r9d
+    mov     [RC5_72UnitWork_CMCmid], L0mid
+    mov     [RC5_72UnitWork_CMClo], L0lo
+    jmp     .nextKey
 
 .saveFoundKey:
-    ; WINNING KEY FOUND!
-    bsf     eax, eax                 ; eax = key index in current batch (0..31)
+    ; f = first full match. Count only partial matches at or before f, and
+    ; record f as the last partial match: exactly what the reference does.
+    bsf     r9d, edx
+    mov     ecx, r9d
+    mov     r11d, 2
+    shl     r11d, cl
+    dec     r11d                    ; mask of keys 0..f (f=31 gives all ones)
+    and     eax, r11d
+    popcnt  r11d, eax
+    add     dword [RC5_72UnitWork_CMCcount], r11d
+    lea     r11d, [r9 + r13]
+    mov     [RC5_72UnitWork_CMChi], r11d
+    mov     [RC5_72UnitWork_CMCmid], L0mid
+    mov     [RC5_72UnitWork_CMClo], L0lo
 
-    ; Record CMChi for the winning key
-    mov     ebx, eax
-    add     ebx, L0hi
-    mov     [RC5_72UnitWork_CMChi], ebx
-
-    ; Calculate exact completed iterations:
-    ; completed_batches = (initial_iterations >> 5) - r10d
-    ; total_keys_done   = (completed_batches * 32) + eax
-    mov     edx, [rsi]               ; edx = initial iterations requested
-    shr     edx, 5                   ; edx = initial batches requested
-    sub     edx, r10d                ; edx = batches completed before current batch
-    shl     edx, 5                   ; edx = keys completed before current batch
-    add     edx, eax                 ; edx = total keys completed
-    mov     [rsi], edx               ; *iterations = exact key index completed
+    ; *iterations = keys before the winning one
+    mov     eax, [rsi]
+    shr     eax, 5
+    sub     eax, r10d
+    shl     eax, 5
+    add     eax, r9d
+    mov     [rsi], eax
 
     mov     [RC5_72UnitWork_L0mid], L0mid
     mov     [RC5_72UnitWork_L0lo], L0lo
@@ -745,7 +663,11 @@ align 16
     vzeroupper
     ret
 
-section .rodata
+%ifidn __OUTPUT_FORMAT__, win64
+section .rdata align=64
+%else
+section .rodata align=64
+%endif
 align 64
 .I1:    dd  0,  1,  2,  3,  4,  5,  6,  7
 .I2:    dd  8,  9, 10, 11, 12, 13, 14, 15

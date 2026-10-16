@@ -59,7 +59,7 @@ extern "C" s32 CDECL rc5_72_unit_func_avx2( RC5_72UnitWork *, u32 *, void *);
 # if defined(USE_ISPC_CORE)
 extern "C" s32 CDECL rc5_72_unit_func_ispc_16( RC5_72UnitWork *, u32 *, void *);
 # endif
-extern "C" s32 CDECL rc5_72_unit_func_avx512vl( RC5_72UnitWork *, u32 *, void *);
+extern "C" s32 CDECL rc5_72_unit_func_avx512y( RC5_72UnitWork *, u32 *, void *);
 #elif (CLIENT_CPU == CPU_ARM)
 extern "C" s32 rc5_72_unit_func_arm1( RC5_72UnitWork *, u32 *, void *);
 extern "C" s32 rc5_72_unit_func_arm2( RC5_72UnitWork *, u32 *, void *);
@@ -928,12 +928,12 @@ int selcoreSelectCore_rc572(Client *client, unsigned int threadindex,
         pipeline_count = 16;
         break;
       case 6:
-        unit_func.gen_72 = rc5_72_unit_func_avx512vl;
+        unit_func.gen_72 = rc5_72_unit_func_avx512y;
         pipeline_count = 16;                            /* 32 pipes unsupported */
         break;
       #else
       case 5:
-        unit_func.gen_72 = rc5_72_unit_func_avx512vl;
+        unit_func.gen_72 = rc5_72_unit_func_avx512y;
         pipeline_count = 16;                            /* 32 pipes unsupported */
         break;
       #endif
