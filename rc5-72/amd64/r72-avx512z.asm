@@ -1,19 +1,19 @@
-; RC5-72 AVX-512VL core (256-bit Vector Length)
-; 32-Pipeline (32-Key) Implementation
-; Created by Mix
-; Inspired by Yasuhiro Katsui's AVX2 core
+; RC5-72 AVX-512F core (512-bit zmm vectors), 32 keys per batch
+; 2 pipes x 16 lanes. Derived from Mix's 32-key AVX-512VL core
+; (r72-avx512y.asm), which was inspired by Yasuhiro Katsui's AVX2 core.
 ;
-; 32-pipeline core (four 8-wide pipelines on 256-bit YMM registers)
-; Uses native 1-cycle vector rotate instructions (VPROLVD / VPROLD)
-; Uses EVEX-compliant vmovdqa32 and vpxord mnemonics for ymm16-ymm31
-; Requires: AVX-512F + AVX-512VL (or AVX10/256)
-; Compatible with: AMD Zen 4, Zen 5; Intel 10th/11th Gen+, Xeon Scalable
+; Uses native vector rotates (VPROLVD / VPROLD). Uses AVX-512F instructions
+; only (no VL/BW/DQ), plus POPCNT. The OS must enable opmask and ZMM state
+; (XCR0 bits 5-7).
+; Needs no AVX-512 extension beyond F, so it can also run on Xeon Phi
+; (Knights Landing/Mill). On Skylake-SP/X and Cascade Lake, 512-bit code
+; can run at a lower turbo license than the 256-bit core (r72-avx512y.asm).
 
 section .text
 BITS 64
 
-[GLOBAL _rc5_72_unit_func_avx512vl]
-[GLOBAL rc5_72_unit_func_avx512vl]
+[GLOBAL _rc5_72_unit_func_avx512z]
+[GLOBAL rc5_72_unit_func_avx512z]
 
 %define _mm512_set1_d(N) N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N
 
@@ -72,13 +72,13 @@ defwork work_pre_B_2
 defwork work_pre_S1
 defwork work_pre_S2
 
-; Second pool of variables - aligned by 32, referenced via [RBP+xxx]
-%assign work_size work_size + 32
+; Second pool of variables - aligned by 64, referenced via [RBP+xxx]
+%assign work_size work_size + 64      ; room to align rbp to 64 (zmm stores)
 %assign work_offset work_size
 
 defwork32 work_C_0
 defwork32 work_C_1
-defwork32 work_S, (26*4)    ; 4 pipes * 32 bytes = 128 bytes per subkey
+defwork32 work_S, (26*4)    ; 2 pipes * 64 bytes = 128 bytes per subkey
 
 ; Concatenate two work areas together
 %assign work_size work_size + work32_size
@@ -110,58 +110,38 @@ defwork32 work_S, (26*4)    ; 4 pipes * 32 bytes = 128 bytes per subkey
 %undef  work_pre_S2
 %define work_pre_S2             rbp-4
 
-; 128-byte stride per subkey for 4 pipes
+; 128-byte stride per subkey for 2 pipes
 %define S1(N)   [work_S+((N)*128)]
-%define S2(N)   [work_S+((N)*128)+32]
-%define S3(N)   [work_S+((N)*128)+64]
-%define S4(N)   [work_S+((N)*128)+96]
+%define S2(N)   [work_S+((N)*128)+64]
 
 %define L0hi    r13d
 %define L0mid   r14d
 %define L0lo    r15d
 
 ; Scratch Registers
-%define T1      ymm0
-%define T2      ymm1
-%define T3      ymm2
-%define T4      ymm3
+%define T1      zmm0
+%define T2      zmm1
 
-; Pipe 1 (Keys 0-7)
-%define A1      ymm6
-%define B1_0    ymm8
-%define B1_1    ymm9
-%define B1_2    ymm10
-%define C1      ymm8
-%define D1      ymm11
+; Pipe 1 (Keys 0-15)
+%define A1      zmm6
+%define B1_0    zmm8
+%define B1_1    zmm9
+%define B1_2    zmm10
+%define C1      zmm24
+%define D1      zmm25
 
-; Pipe 2 (Keys 8-15)
-%define A2      ymm7
-%define B2_0    ymm11
-%define B2_1    ymm12
-%define B2_2    ymm13
-%define C2      ymm10
-%define D2      ymm13
-
-; Pipe 3 (Keys 16-23)
-%define A3      ymm16
-%define B3_0    ymm17
-%define B3_1    ymm18
-%define B3_2    ymm19
-%define C3      ymm17
-%define D3      ymm19
-
-; Pipe 4 (Keys 24-31)
-%define A4      ymm20
-%define B4_0    ymm21
-%define B4_1    ymm22
-%define B4_2    ymm23
-%define C4      ymm21
-%define D4      ymm23
+; Pipe 2 (Keys 16-31)
+%define A2      zmm7
+%define B2_0    zmm11
+%define B2_1    zmm12
+%define B2_2    zmm13
+%define C2      zmm26
+%define D2      zmm27
 
 align 16
 startseg:
-_rc5_72_unit_func_avx512vl:
-rc5_72_unit_func_avx512vl:
+_rc5_72_unit_func_avx512z:
+rc5_72_unit_func_avx512z:
 
     sub     rsp, work_size
 
@@ -189,15 +169,11 @@ rc5_72_unit_func_avx512vl:
     mov     [save_r15], r15
 
     lea     rbp, [rsp+work_offset]
-    and     rbp, -32
+    and     rbp, -64
 
     mov     r10d, [rsi]
     shr     r10d, 5           ; Divide by 32 keys per batch
 
-    vpbroadcastd    T1, [RC5_72UnitWork_cipherlo]
-    vpbroadcastd    T2, [RC5_72UnitWork_cipherhi]
-    vmovdqa32       [work_C_0], T1
-    vmovdqa32       [work_C_1], T2
 
     mov     L0hi, [RC5_72UnitWork_L0hi]
     mov     L0mid, [RC5_72UnitWork_L0mid]
@@ -237,31 +213,17 @@ align 16
     vmovdqa32       A2, A1
     vmovdqa32       B2_0, B1_0
     vmovdqa32       B2_1, B1_1
-    vmovdqa32       A3, A1
-    vmovdqa32       B3_0, B1_0
-    vmovdqa32       B3_1, B1_1
-    vmovdqa32       A4, A1
-    vmovdqa32       B4_0, B1_0
-    vmovdqa32       B4_1, B1_1
 
     vpbroadcastd    T1, [work_pre_S1]
     vmovdqa32 S1(1), T1
     vmovdqa32 S2(1), T1
-    vmovdqa32 S3(1), T1
-    vmovdqa32 S4(1), T1
     vmovdqa32 S1(2), A1
     vmovdqa32 S2(2), A1
-    vmovdqa32 S3(2), A1
-    vmovdqa32 S4(2), A1
 
     vpbroadcastd    B1_2, [RC5_72UnitWork_L0hi]
     vpbroadcastd    T1, [work_pre_B_2]
     vmovdqa32       B2_2, B1_2
-    vmovdqa32       B3_2, B1_2
-    vmovdqa32       B4_2, B1_2
     vmovdqa32       T2, T1
-    vmovdqa32       T3, T1
-    vmovdqa32       T4, T1
 
     ; Pre-rotate B natively
     vpaddd  B1_2, B1_2, [rel .I1]
@@ -272,13 +234,7 @@ align 16
     vpaddd  B2_2, B2_2, T2
     vprolvd B2_2, B2_2, T2
 
-    vpaddd  B3_2, B3_2, [rel .I3]
-    vpaddd  B3_2, B3_2, T3
-    vprolvd B3_2, B3_2, T3
 
-    vpaddd  B4_2, B4_2, [rel .I4]
-    vpaddd  B4_2, B4_2, T4
-    vprolvd B4_2, B4_2, T4
 
     lea     rax, [rel .IS3]
     lea     rdx, S1(3)
@@ -289,50 +245,36 @@ align 16
 align 16
 .round:
     ; === STEP A ===
-    ; 1. Issue all 4 loads early
+    ; 1. Issue both loads early
     vpaddd  A1, A1, [rax-128]
     cmp     ebx, 7
     cmove   rdx, r12                 ; Branchless wrap to S[1]
-    vpaddd  A2, A2, [rax-96]
-    vpaddd  A3, A3, [rax-64]
-    vpaddd  A4, A4, [rax-32]
+    vpaddd  A2, A2, [rax-64]
 
     ; 2. Add B_1 into A:
     vpaddd  A1, A1, B1_1
     vpaddd  A2, A2, B2_1
-    vpaddd  A3, A3, B3_1
-    vpaddd  A4, A4, B4_1
     add     ebx, 1
 
     ; 3. Fixed rotates:
     vprold  A1, A1, 3
     vprold  A2, A2, 3
-    vprold  A3, A3, 3
-    vprold  A4, A4, 3
 
     ; 4. Stores to stack:
     vmovdqa32 [rdx-128], A1
-    vmovdqa32 [rdx-96],  A2
-    vmovdqa32 [rdx-64],  A3
-    vmovdqa32 [rdx-32],  A4
+    vmovdqa32 [rdx-64],  A2
 
     ; 5. T = B_1 + A:
     vpaddd  T1, B1_1, A1
     vpaddd  T2, B2_1, A2
-    vpaddd  T3, B3_1, A3
-    vpaddd  T4, B4_1, A4
 
     ; 6. Add T into B_2:
     vpaddd  B1_2, B1_2, T1
     vpaddd  B2_2, B2_2, T2
-    vpaddd  B3_2, B3_2, T3
-    vpaddd  B4_2, B4_2, T4
 
     ; 7. Variable rotate B_2 by T:
     vprolvd B1_2, B1_2, T1
     vprolvd B2_2, B2_2, T2
-    vprolvd B3_2, B3_2, T3
-    vprolvd B4_2, B4_2, T4
 
 .round1:
     ; === STEP B ===
@@ -341,45 +283,31 @@ align 16
 
     ; 1. Loads:
     vpaddd  A1, A1, [rax]
-    vpaddd  A2, A2, [rax+32]
-    vpaddd  A3, A3, [rax+64]
-    vpaddd  A4, A4, [rax+96]
+    vpaddd  A2, A2, [rax+64]
 
     ; 2. Add B_2 into A:
     vpaddd  A1, A1, B1_2
     vpaddd  A2, A2, B2_2
-    vpaddd  A3, A3, B3_2
-    vpaddd  A4, A4, B4_2
 
     ; 3. Fixed rotates:
     vprold  A1, A1, 3
     vprold  A2, A2, 3
-    vprold  A3, A3, 3
-    vprold  A4, A4, 3
 
     ; 4. Stores:
     vmovdqa32 [rdx],    A1
-    vmovdqa32 [rdx+32], A2
-    vmovdqa32 [rdx+64], A3
-    vmovdqa32 [rdx+96], A4
+    vmovdqa32 [rdx+64], A2
 
     ; 5. T = B_2 + A:
     vpaddd  T1, B1_2, A1
     vpaddd  T2, B2_2, A2
-    vpaddd  T3, B3_2, A3
-    vpaddd  T4, B4_2, A4
 
     ; 6. Add T into B_0:
     vpaddd  B1_0, B1_0, T1
     vpaddd  B2_0, B2_0, T2
-    vpaddd  B3_0, B3_0, T3
-    vpaddd  B4_0, B4_0, T4
 
     ; 7. Variable rotate B_0 by T:
     vprolvd B1_0, B1_0, T1
     vprolvd B2_0, B2_0, T2
-    vprolvd B3_0, B3_0, T3
-    vprolvd B4_0, B4_0, T4
 
     ; === STEP C ===
     cmp     ebx, 16
@@ -388,64 +316,50 @@ align 16
 
     ; 1. Loads:
     vpaddd  A1, A1, [rax+128]
-    vpaddd  A2, A2, [rax+160]
-    vpaddd  A3, A3, [rax+192]
-    vpaddd  A4, A4, [rax+224]
+    vpaddd  A2, A2, [rax+192]
 
     ; 2. Add B_0 into A:
     vpaddd  A1, A1, B1_0
     vpaddd  A2, A2, B2_0
-    vpaddd  A3, A3, B3_0
-    vpaddd  A4, A4, B4_0
 
     ; 3. Fixed rotates:
     vprold  A1, A1, 3
     vprold  A2, A2, 3
-    vprold  A3, A3, 3
-    vprold  A4, A4, 3
 
     ; 4. Stores:
     vmovdqa32 [rdx+128], A1
-    vmovdqa32 [rdx+160], A2
-    vmovdqa32 [rdx+192], A3
-    vmovdqa32 [rdx+224], A4
+    vmovdqa32 [rdx+192], A2
+
+    ; The last pass (k=76) exits here. Its B_1 update only feeds S[25],
+    ; which is needed only after a low-word match, so it is done in .checkHi.
+    cmp     ebx, 24
+    je      .encryptSetup
 
     ; 5. T = B_0 + A:
     vpaddd  T1, B1_0, A1
     vpaddd  T2, B2_0, A2
-    vpaddd  T3, B3_0, A3
-    vpaddd  T4, B4_0, A4
 
     ; 6. Add T into B_1:
     vpaddd  B1_1, B1_1, T1
     vpaddd  B2_1, B2_1, T2
-    vpaddd  B3_1, B3_1, T3
-    vpaddd  B4_1, B4_1, T4
 
     ; 7. Variable rotate B_1 by T:
     vprolvd B1_1, B1_1, T1
     vprolvd B2_1, B2_1, T2
-    vprolvd B3_1, B3_1, T3
-    vprolvd B4_1, B4_1, T4
 
     add     rax, 384
     add     rdx, 384
-    cmp     ebx, 24
-    jne     .round
+    jmp     .round
 
 .encryptSetup:
     ; C = plainlo + S[0], D = plainhi + S[1]
     vpbroadcastd  T1, [RC5_72UnitWork_plainlo]
-    vpbroadcastd  T3, [RC5_72UnitWork_plainhi]
+    vpbroadcastd  T2, [RC5_72UnitWork_plainhi]
     
     vpaddd  C1, T1, S1(0)
-    vpaddd  D1, T3, S1(1)
+    vpaddd  D1, T2, S1(1)
     vpaddd  C2, T1, S2(0)
-    vpaddd  D2, T3, S2(1)
-    vpaddd  C3, T1, S3(0)
-    vpaddd  D3, T3, S3(1)
-    vpaddd  C4, T1, S4(0)
-    vpaddd  D4, T3, S4(1)
+    vpaddd  D2, T2, S2(1)
 
     ; rax points to S[2] (Round 1 subkeys)
     lea     rax, [work_S + 2*128]
@@ -458,34 +372,22 @@ align 16
     ; C = ((C ^ D) <<< D) + S[2r]
     vpxord  C1, C1, D1
     vpxord  C2, C2, D2
-    vpxord  C3, C3, D3
-    vpxord  C4, C4, D4
 
     vprolvd C1, C1, D1
     vprolvd C2, C2, D2
-    vprolvd C3, C3, D3
-    vprolvd C4, C4, D4
 
     vpaddd  C1, C1, [rax]
-    vpaddd  C2, C2, [rax+32]
-    vpaddd  C3, C3, [rax+64]
-    vpaddd  C4, C4, [rax+96]
+    vpaddd  C2, C2, [rax+64]
 
     ; D = ((D ^ C) <<< C) + S[2r+1]
     vpxord  D1, D1, C1
     vpxord  D2, D2, C2
-    vpxord  D3, D3, C3
-    vpxord  D4, D4, C4
 
     vprolvd D1, D1, C1
     vprolvd D2, D2, C2
-    vprolvd D3, D3, C3
-    vprolvd D4, D4, C4
 
     vpaddd  D1, D1, [rax+128]
-    vpaddd  D2, D2, [rax+160]
-    vpaddd  D3, D3, [rax+192]
-    vpaddd  D4, D4, [rax+224]
+    vpaddd  D2, D2, [rax+192]
 
     add     rax, 256                 ; Advance 2 subkeys (2 * 128 bytes)
     cmp     ebx, 11
@@ -496,43 +398,20 @@ align 16
     ; We defer computing D until we verify if C matches cipherlo
     vpxord  C1, C1, D1
     vpxord  C2, C2, D2
-    vpxord  C3, C3, D3
-    vpxord  C4, C4, D4
 
     vprolvd C1, C1, D1
     vprolvd C2, C2, D2
-    vprolvd C3, C3, D3
-    vprolvd C4, C4, D4
 
     vpaddd  C1, C1, S1(24)
     vpaddd  C2, C2, S2(24)
-    vpaddd  C3, C3, S3(24)
-    vpaddd  C4, C4, S4(24)
 
-.checkKey1:
-    ; Check if any of the 8 lanes in Pipe 1 match cipherlo
-    vpcmpeqd    k1, C1, [work_C_0]
-    kmovw       eax, k1
-    and         eax, 0xFF
-    jnz         .checkKey1Hi
-
-.checkKey2:
-    vpcmpeqd    k2, C2, [work_C_0]
-    kmovw       eax, k2
-    and         eax, 0xFF
-    jnz         .checkKey2Hi
-
-.checkKey3:
-    vpcmpeqd    k3, C3, [work_C_0]
-    kmovw       eax, k3
-    and         eax, 0xFF
-    jnz         .checkKey3Hi
-
-.checkKey4:
-    vpcmpeqd    k4, C4, [work_C_0]
-    kmovw       eax, k4
-    and         eax, 0xFF
-    jnz         .checkKey4Hi
+.checkKey:
+    ; Compare both pipes and take a single branch. Bit n of the merged
+    ; k2:k1 mask is key n.
+    vpcmpeqd    k1, C1, [RC5_72UnitWork_cipherlo]{1to16}
+    vpcmpeqd    k2, C2, [RC5_72UnitWork_cipherlo]{1to16}
+    kortestw    k1, k2              ; k1 = keys 0-15, k2 = keys 16-31
+    jnz         .checkHi
 
 .nextKey:
     dec     r10d
@@ -554,148 +433,76 @@ align 16
     bswap   L0lo
     jmp     .key_setup_1_outer_loop
 
-.checkKey1Hi:
-    ; Pipe 1 matched cipherlo! 
-    ; Now compute final round second half (D) and test against cipherhi.
-    ; S[25] was intentionally deferred until now
+.checkHi:
+    ; Rare path (about 1 batch in 2^27). Must not touch ecx: the mid loop
+    ; reuses it after .nextKey.
     kmovw   eax, k1
-    and     eax, 0xFF
-    popcnt  edx, eax
-    add     dword [RC5_72UnitWork_CMCcount], edx
-    bsr     ebx, eax
-    add     ebx, L0hi
-    mov     [RC5_72UnitWork_CMChi], ebx
-    mov     [RC5_72UnitWork_CMCmid], L0mid
-    mov     [RC5_72UnitWork_CMClo], L0lo
+    kmovw   edx, k2
+    shl     edx, 16
+    or      eax, edx                ; eax = 32-bit low-word match mask
 
-    ; Compute deferred final subkey: S[25] = (S[25] + A + B) <<< 3
+    ; pipe 1: deferred k=76 B_1 update, k=77 S[25], then high word D
+    vpaddd  T1, B1_0, A1
+    vpaddd  B1_1, B1_1, T1
+    vprolvd B1_1, B1_1, T1
     vpaddd  A1, A1, S1(25)
     vpaddd  A1, A1, B1_1
     vprold  A1, A1, 3
-
-    ; Complete Round high word: D = ((D ^ C) <<< C) + S[25]
     vpxord  D1, D1, C1
     vprolvd D1, D1, C1
     vpaddd  D1, D1, A1
-
-    ; Compare with cipherhi into scratch mask k5, then cross-verify lane match
-    vpcmpeqd    k5, D1, [work_C_1]
-    kandw       k1, k1, k5               ; k1 = (matched low) AND (matched high) in same lane
-    kmovw       eax, k1
-    and         eax, 0xFF
-    jz          .checkKey2               ; False half-match: check remaining pipes
-    jmp         .saveFoundKey
-
-.checkKey2Hi:
-    kmovw   eax, k2
-    and     eax, 0xFF
-    popcnt  edx, eax
-    add     dword [RC5_72UnitWork_CMCcount], edx
-    bsr     ebx, eax
-    add     ebx, 8
-    add     ebx, L0hi
-    mov     [RC5_72UnitWork_CMChi], ebx
-    mov     [RC5_72UnitWork_CMCmid], L0mid
-    mov     [RC5_72UnitWork_CMClo], L0lo
-
-    ; Compute deferred final subkey for Pipe 2
+    vpcmpeqd    k1, D1, [RC5_72UnitWork_cipherhi]{1to16}
+    ; pipe 2: deferred k=76 B_1 update, k=77 S[25], then high word D
+    vpaddd  T1, B2_0, A2
+    vpaddd  B2_1, B2_1, T1
+    vprolvd B2_1, B2_1, T1
     vpaddd  A2, A2, S2(25)
     vpaddd  A2, A2, B2_1
     vprold  A2, A2, 3
-
-    ; Complete Round high word
     vpxord  D2, D2, C2
     vprolvd D2, D2, C2
     vpaddd  D2, D2, A2
+    vpcmpeqd    k2, D2, [RC5_72UnitWork_cipherhi]{1to16}
+    kmovw   edx, k1
+    kmovw   r9d, k2
+    shl     r9d, 16
+    or      edx, r9d
+    and     edx, eax                ; edx = keys matching both words
+    jnz     .saveFoundKey
 
-    ; Cross-verify lane match
-    vpcmpeqd    k5, D2, [work_C_1]
-    kandw       k2, k2, k5               ; k2 = (matched low) AND (matched high) in same lane
-    kmovw       eax, k2
-    and         eax, 0xFF
-    jz          .checkKey3
-    shl         eax, 8                   ; Pipe 2 maps to key indices 8-15
-    jmp         .saveFoundKey
-
-.checkKey3Hi:
-    kmovw   eax, k3
-    and     eax, 0xFF
-    popcnt  edx, eax
-    add     dword [RC5_72UnitWork_CMCcount], edx
-    bsr     ebx, eax
-    add     ebx, 16
-    add     ebx, L0hi
-    mov     [RC5_72UnitWork_CMChi], ebx
+    ; partial match(es) only: count them, record the last one (as the reference does)
+    popcnt  r11d, eax
+    add     dword [RC5_72UnitWork_CMCcount], r11d
+    bsr     r9d, eax
+    add     r9d, L0hi
+    mov     [RC5_72UnitWork_CMChi], r9d
     mov     [RC5_72UnitWork_CMCmid], L0mid
     mov     [RC5_72UnitWork_CMClo], L0lo
-
-    ; Compute deferred final subkey for Pipe 3
-    vpaddd  A3, A3, S3(25)
-    vpaddd  A3, A3, B3_1
-    vprold  A3, A3, 3
-
-    ; Complete Round high word
-    vpxord  D3, D3, C3
-    vprolvd D3, D3, C3
-    vpaddd  D3, D3, A3
-
-    ; Cross-verify lane match
-    vpcmpeqd    k5, D3, [work_C_1]
-    kandw       k3, k3, k5               ; k3 = (matched low) AND (matched high) in same lane
-    kmovw       eax, k3
-    and         eax, 0xFF
-    jz          .checkKey4
-    shl         eax, 16                  ; Pipe 3 maps to key indices 16-23
-    jmp         .saveFoundKey
-
-.checkKey4Hi:
-    kmovw   eax, k4
-    and     eax, 0xFF
-    popcnt  edx, eax
-    add     dword [RC5_72UnitWork_CMCcount], edx
-    bsr     ebx, eax
-    add     ebx, 24
-    add     ebx, L0hi
-    mov     [RC5_72UnitWork_CMChi], ebx
-    mov     [RC5_72UnitWork_CMCmid], L0mid
-    mov     [RC5_72UnitWork_CMClo], L0lo
-
-    ; Compute deferred final subkey for Pipe 4
-    vpaddd  A4, A4, S4(25)
-    vpaddd  A4, A4, B4_1
-    vprold  A4, A4, 3
-
-    ; Complete Round 12 high word
-    vpxord  D4, D4, C4
-    vprolvd D4, D4, C4
-    vpaddd  D4, D4, A4
-
-    ; Cross-verify lane match
-    vpcmpeqd    k5, D4, [work_C_1]
-    kandw       k4, k4, k5               ; k4 = (matched low) AND (matched high) in same lane
-    kmovw       eax, k4
-    and         eax, 0xFF
-    jz          .nextKey                 ; False match on final pipe: advance to next key
-    shl         eax, 24                  ; Pipe 4 maps to key indices 24-31
+    jmp     .nextKey
 
 .saveFoundKey:
-    ; WINNING KEY FOUND!
-    bsf     eax, eax                 ; eax = key index in current batch (0..31)
+    ; f = first full match. Count only partial matches at or before f, and
+    ; record f as the last partial match: exactly what the reference does.
+    bsf     r9d, edx
+    mov     ecx, r9d
+    mov     r11d, 2
+    shl     r11d, cl
+    dec     r11d                    ; mask of keys 0..f (f=31 gives all ones)
+    and     eax, r11d
+    popcnt  r11d, eax
+    add     dword [RC5_72UnitWork_CMCcount], r11d
+    lea     r11d, [r9 + r13]
+    mov     [RC5_72UnitWork_CMChi], r11d
+    mov     [RC5_72UnitWork_CMCmid], L0mid
+    mov     [RC5_72UnitWork_CMClo], L0lo
 
-    ; Record CMChi for the winning key
-    mov     ebx, eax
-    add     ebx, L0hi
-    mov     [RC5_72UnitWork_CMChi], ebx
-
-    ; Calculate exact completed iterations:
-    ; completed_batches = (initial_iterations >> 5) - r10d
-    ; total_keys_done   = (completed_batches * 32) + eax
-    mov     edx, [rsi]               ; edx = initial iterations requested
-    shr     edx, 5                   ; edx = initial batches requested
-    sub     edx, r10d                ; edx = batches completed before current batch
-    shl     edx, 5                   ; edx = keys completed before current batch
-    add     edx, eax                 ; edx = total keys completed
-    mov     [rsi], edx               ; *iterations = exact key index completed
+    ; *iterations = keys before the winning one
+    mov     eax, [rsi]
+    shr     eax, 5
+    sub     eax, r10d
+    shl     eax, 5
+    add     eax, r9d
+    mov     [rsi], eax
 
     mov     [RC5_72UnitWork_L0mid], L0mid
     mov     [RC5_72UnitWork_L0lo], L0lo
@@ -745,12 +552,14 @@ align 16
     vzeroupper
     ret
 
-section .rodata
+%ifidn __OUTPUT_FORMAT__, win64
+section .rdata align=64
+%else
+section .rodata align=64
+%endif
 align 64
-.I1:    dd  0,  1,  2,  3,  4,  5,  6,  7
-.I2:    dd  8,  9, 10, 11, 12, 13, 14, 15
-.I3:    dd 16, 17, 18, 19, 20, 21, 22, 23
-.I4:    dd 24, 25, 26, 27, 28, 29, 30, 31
+.I1:    dd  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15
+.I2:    dd 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
 .IS3:   times 32 dd 0x9287BE8E
 .IS4:   times 32 dd 0x30BF3847
 .IS5:   times 32 dd 0xCEF6B200
