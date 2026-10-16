@@ -57,7 +57,6 @@ union PageInfos {
 #define X86_HAS_AVX512CD   (1 << 28)
 #define X86_HAS_AVX512VL   (1U << 31)
 
-
 /* 0x80000001:ECX */
 #define X86_HAS_LZCNT     (1 <<  5)
 
@@ -847,13 +846,14 @@ u32 x86GetFeatures(void)
             if (infos.regs.ebx & X86_07_00_EBX_AVX2) {
               features |= CPU_F_AVX2;
             }
-	    /* Check for AVX512 */
-	    /* we declare it supported if it has just F and CD sub features */
-            if (infos.regs.ebx & X86_HAS_AVX512F) {
-              if (infos.regs.ebx & X86_HAS_AVX512CD) {
-                features |= CPU_F_AVX512;
-              }
-              /* Check for AVX-512VL (Vector Length Extensions) */
+            /* Check for AVX-512. The OS must also save/restore the opmask
+               registers and the full ZMM state: XCR0 bits 5, 6 and 7
+               (plus bits 1 and 2 checked above), i.e. (XCR0 & 0xE6) == 0xE6.
+               CPU_F_AVX512   = AVX-512F       (zmm core)
+               CPU_F_AVX512VL = AVX-512F + VL  (ymm core, uses ymm16-31) */
+            if ((infos.regs.ebx & X86_HAS_AVX512F) &&
+                (bvinfo.regs.eax & 0xE6) == 0xE6) {
+              features |= CPU_F_AVX512;
               if (infos.regs.ebx & X86_HAS_AVX512VL) {
                 features |= CPU_F_AVX512VL;
               }
