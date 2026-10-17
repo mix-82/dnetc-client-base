@@ -3305,7 +3305,7 @@ case "$1" in
         cross_prefix="x86_64-linux-"
         TARGET_IS_CROSSCOMPILE=1
 #       infer_arch_and_version "Linux"
-        TARGET_NASM="yasm"
+        TARGET_NASM="nasm"
         TARGET_NASM_FMT="elf64"
         TARGET_AS="${cross_prefix}gcc -c"
         TARGET_CC="${cross_prefix}gcc"
