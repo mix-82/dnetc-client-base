@@ -60,6 +60,7 @@ TARGET_ASFLAGS=""
 TARGET_NASM="nasm"     #<- set this to "" if you have no nasm
 TARGET_ISPC="ispc"
 TARGET_ISPC_FLAGS="--pic --wno-perf"
+TARGET_ISPC_TARGET="--target=avx512skx-i32x16"
 TARGET_NASM_FMT="elf"
 TARGET_STRIP="strip"
 TARGET_OGR_MULTI=""    #<-can be used to compile ogr.cpp with differing gcc opts
@@ -141,7 +142,7 @@ add_sources() # $1=os, $2=arch, $3=custom
 
   if [ "$2" = "amd64" ] && [ "$1" != "haiku" ]; then
     HAVE_ISPC="1"
-    TARGET_ISPC_FLAGS="$TARGET_ISPC_FLAGS --target=avx512skx-i32x16"
+    TARGET_ISPC_TARGET="--target=avx512skx-i32x16"   # default; see per-file targets below
   fi
 
   if [ "$HAVE_ISPC" = "1" ]; then
@@ -672,8 +673,8 @@ add_sources() # $1=os, $2=arch, $3=custom
     if [ "$HAVE_RC5_72" = "1" ]; then
       DEFAULT_RC5_72="0"     # don't add the ansi cores
       if [ "$HAVE_ISPC" = "1" ]; then
-        TARGET_ADDSRCS="$TARGET_ADDSRCS rc5-72/ispc/r72-ks-spmd.cpp"
-        TARGET_ADDISPCS="$TARGET_ADDISPCS rc5-72/ispc/r72-ks-spmd-ispc.ispc"
+        TARGET_ADDSRCS="$TARGET_ADDSRCS rc5-72/ispc/r72-ks-spmd.cpp rc5-72/ispc/r72-mix-spmd.cpp"
+        TARGET_ADDISPCS="$TARGET_ADDISPCS rc5-72/ispc/r72-ks-spmd-ispc.ispc rc5-72/ispc/r72-mix-spmd-ispc.ispc"
       fi
       TARGET_ADDNASMS="$TARGET_ADDNASMS \
                        rc5-72/amd64/r72-snjl.asm \
@@ -681,6 +682,7 @@ add_sources() # $1=os, $2=arch, $3=custom
                        rc5-72/amd64/r72-avx2.asm \
                        rc5-72/amd64/r72-go2c.asm \
                        rc5-72/amd64/r72-go2d.asm \
+                       rc5-72/amd64/r72-avx512z.asm \
                        rc5-72/amd64/r72-avx512y.asm"
     fi # HAVE_RC5_72
 
@@ -4218,7 +4220,12 @@ if [ -n "${TARGET_SRCOBJLIST}" ]; then
     # ------------------------------------
     elif [ "${TARGETTYP}" = "ispc" ]; then
       echo "$target:    ${TARGETSRC}" >> Makefile
-      echo "	\${ISPC} ${TARGET_ISPC_FLAGS} ${TARGETSRC} -o $target" >> Makefile
+      # per-file ISPC target: MIX SPMD processes 32 keys per call (two zmm per variable)
+      case "${TARGETSRC}" in
+        *r72-mix-spmd-ispc.ispc) ISPC_FILE_TARGET="--target=avx512skx-x32" ;;
+        *)                       ISPC_FILE_TARGET="${TARGET_ISPC_TARGET}" ;;
+      esac
+      echo "	\${ISPC} ${TARGET_ISPC_FLAGS} ${ISPC_FILE_TARGET} ${TARGETSRC} -o $target" >> Makefile
       echo "" >> Makefile
       TARGETSRC=""
     # ------------------------------------
