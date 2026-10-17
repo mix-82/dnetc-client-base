@@ -382,6 +382,8 @@ RC5_72_OBJS = \
         $(OUTPUTPATH)/r72-go2c.obj \
         $(OUTPUTPATH)/r72-go2d.obj \
         $(OUTPUTPATH)/r72-avx2.obj \
+        $(OUTPUTPATH)/r72-avx512z.obj \
+        $(OUTPUTPATH)/r72-avx512y.obj \
         $(OUTPUTPATH)/r72ansi1.obj \
         $(OUTPUTPATH)/r72ansi2.obj \
         $(OUTPUTPATH)/r72ansi4.obj
@@ -392,7 +394,9 @@ OPTS_MSVC = $(OPTS_MSVC) -DHAVE_RC5_72_CORES
 OPTS_MSVC = $(OPTS_MSVC) -DUSE_ISPC_CORE
 RC5_72_OBJS = $(RC5_72_OBJS) \
         $(OUTPUTPATH)/r72-ks-spmd.obj \
-        $(OUTPUTPATH)/r72-ks-spmd-ispc.obj
+        $(OUTPUTPATH)/r72-ks-spmd-ispc.obj \
+        $(OUTPUTPATH)/r72-mix-spmd.obj \
+        $(OUTPUTPATH)/r72-mix-spmd-ispc.obj
 !endif
 
 !elseif "$(PROCESSOR_ARCHITECTURE)" == "x86"
@@ -575,6 +579,10 @@ $(VC_CHECK):
 
 {$(RC572SRCPATH)/ispc}.ispc{$(OUTPUTPATH)}.obj:
         ispc --pic --wno-perf --target=avx512skx-i32x16 $(**:/=\) -o $(@:/=\)
+
+# MIX SPMD processes 32 keys per call: two zmm registers per variable
+$(OUTPUTPATH)/r72-mix-spmd-ispc.obj: $(RC572SRCPATH)/ispc/r72-mix-spmd-ispc.ispc
+        ispc --pic --wno-perf --target=avx512skx-x32 $(**:/=\) -o $(@:/=\)
 !endif
 
 {$(OGRSRCPATH)/amd64}.asm{$(OUTPUTPATH)}.obj:
