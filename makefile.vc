@@ -394,6 +394,7 @@ RC5_72_OBJS = \
         $(OUTPUTPATH)/r72-avx2.obj \
         $(OUTPUTPATH)/r72-avx512z.obj \
         $(OUTPUTPATH)/r72-avx512y.obj \
+        $(OUTPUTPATH)/r72-avx512z64.obj \
         $(OUTPUTPATH)/r72ansi1.obj \
         $(OUTPUTPATH)/r72ansi2.obj \
         $(OUTPUTPATH)/r72ansi4.obj

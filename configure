@@ -687,7 +687,8 @@ add_sources() # $1=os, $2=arch, $3=custom
         TARGET_CCFLAGS="$TARGET_CCFLAGS -DHAVE_RC5_72_AVX512_ASM"
         TARGET_ADDNASMS="$TARGET_ADDNASMS \
                          rc5-72/amd64/r72-avx512z.asm \
-                         rc5-72/amd64/r72-avx512y.asm"
+                         rc5-72/amd64/r72-avx512y.asm \
+                         rc5-72/amd64/r72-avx512z64.asm"
       fi
     fi # HAVE_RC5_72
 

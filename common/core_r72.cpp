@@ -63,6 +63,7 @@ extern "C" s32 CDECL rc5_72_unit_func_mix_spmd( RC5_72UnitWork *, u32 *, void *)
 # if defined(HAVE_RC5_72_AVX512_ASM)
 extern "C" s32 CDECL rc5_72_unit_func_avx512z( RC5_72UnitWork *, u32 *, void *);
 extern "C" s32 CDECL rc5_72_unit_func_avx512y( RC5_72UnitWork *, u32 *, void *);
+extern "C" s32 CDECL rc5_72_unit_func_avx512z64( RC5_72UnitWork *, u32 *, void *);
 # endif
 #elif (CLIENT_CPU == CPU_ARM)
 extern "C" s32 rc5_72_unit_func_arm1( RC5_72UnitWork *, u32 *, void *);
@@ -188,6 +189,7 @@ const char **corenames_for_contest_rc572()
       "MIX SPMD",             /* #6: ISPC, 32 keys/call (avx512skx-x32) */
       "MIX ZMM",              /* #7: asm, 512-bit, AVX-512F */
       "MIX YMM",              /* #8: asm, 256-bit, AVX-512F + VL */
+      "MIX ZMM64",            /* #9: asm, 512-bit, 64 keys/call, AVX-512F */
   #elif (CLIENT_CPU == CPU_ARM)
       "StrongARM 1-pipe",
       "ARM 2/3/6/7 1-pipe",
@@ -347,7 +349,7 @@ int apply_selcore_substitution_rules_rc572(int cindex, int device)
     unsigned long flags = GetProcessorFeatureFlags();
 
     #if !defined(HAVE_RC5_72_AVX512_ASM)
-    if (cindex == 7 || cindex == 8)               /* AVX-512 asm not built */
+    if (cindex == 7 || cindex == 8 || cindex == 9) /* AVX-512 asm not built */
       cindex = 6;
     #endif
     #if !defined(USE_ISPC_CORE)
@@ -360,7 +362,7 @@ int apply_selcore_substitution_rules_rc572(int cindex, int device)
     #endif
     if (!(flags & CPU_F_AVX512VL) && cindex == 8) /* MIX YMM needs F + VL */
       cindex = 7;
-    if (!(flags & CPU_F_AVX512) && (cindex == 5 || cindex == 6 || cindex == 7))
+    if (!(flags & CPU_F_AVX512) && (cindex == 5 || cindex == 6 || cindex == 7 || cindex == 9))
       cindex = 4;                                 /* no AVX-512F: use AVX2 */
     if (!(flags & CPU_F_AVX2) && cindex == 4)   /* AVX2 core */
       cindex = 3;
@@ -944,6 +946,10 @@ int selcoreSelectCore_rc572(Client *client, unsigned int threadindex,
       case 8:
         unit_func.gen_72 = rc5_72_unit_func_avx512y;
         pipeline_count = 32;                            /* 4 pipes x 8 lanes */
+        break;
+      case 9:
+        unit_func.gen_72 = rc5_72_unit_func_avx512z64;
+        pipeline_count = 64;                            /* 4 pipes x 16 lanes */
         break;
       #endif
     // -----------
