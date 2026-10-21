@@ -100,7 +100,8 @@ else
   # no AVX-512F: a request for #9 must fall back to #4 (YK AVX2)
   $D -runoffline -nodisk -c rc5-72 9 -h 0:01 > "$OUT/console-run-core9.txt" 2>&1
   timedout "$OUT/console-run-core9.txt" || STATUS=1
-  tr '\r' '\n' < "$OUT/console-run-core9.txt" | grep -a -q 'using core #4 ' || STATUS=1
+  # the client reports this as "... is not supported ... Using core #4 (YK AVX2) instead."
+  tr '\r' '\n' < "$OUT/console-run-core9.txt" | grep -a -q -i 'using core #4 ' || STATUS=1
 fi
 
 # rate at the last full round (completed packets a multiple of the CPU count)
@@ -127,7 +128,7 @@ lastround()
   echo "dnetc -stress: $SPASS of $((NSTRESS * 4)) stress tests passed on $NSTRESS cores"
   if [ "$AVX512" = no ]
   then
-    echo "-c rc5-72 9 ran as: $(tr '\r' '\n' < "$OUT/console-run-core9.txt" | grep -a -o -m1 -E 'using core #[0-9]+ \([^)]*\)' | sed 's/using //')"
+    echo "-c rc5-72 9 ran as: $(tr '\r' '\n' < "$OUT/console-run-core9.txt" | grep -a -o -i -m1 -E 'using core #[0-9]+ \([^)]*\)' | sed 's/^[Uu]sing //')"
   fi
   echo
   echo "dnetc -bench rc5-72 (1 thread):"
