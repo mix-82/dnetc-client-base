@@ -1,0 +1,6 @@
+r72bench
+r72b_c*.asm
+*.o
+r72bench.tar.gz
+bench-report.txt
+ci-out/
