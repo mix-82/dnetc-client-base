@@ -1,13 +1,14 @@
 #!/bin/sh
-# Build the client and r72bench and run the RC5-72 tester sequence:
+# Build the client, r72bench and ispcbench and run the RC5-72 tester sequence:
 #   dnetc -cpuinfo, -test, -stress, -bench
-# then, on CPUs with AVX-512F, r72bench and 4-minute offline runs on cores
-# 6, 7, 8 and 9; on CPUs without it, a 1-minute run that checks a request for
-# core #9 falls back to #4. Results go to tools/r72bench/ci-out/ (dnetc.log is
-# the client's own log, as testers send it).
+# then tools/ispcbench on every CPU with AVX2; then, on CPUs with AVX-512F,
+# r72bench and 4-minute offline runs on cores 6, 7, 8 and 9; on CPUs without
+# it, a 1-minute run that checks a request for core #9 falls back to #4.
+# Results go to tools/r72bench/ci-out/ (dnetc.log is the client's own log, as
+# testers send it).
 # Used by .github/workflows/avx512-bench.yml; also runs on any Linux x86-64
 # machine with nasm, ispc, gcc (static glibc) and python3.
-# SECS and ROUNDS (default 3 and 3) are passed to r72bench's run.sh.
+# SECS and ROUNDS (default 3 and 3) are passed to both kits' run.sh.
 
 set -u
 
@@ -67,6 +68,20 @@ then
   STATUS=1
 fi
 
+# ispcbench (MIX SPMD ISPC builds vs the asm cores): every CPU with AVX2
+if grep -q -w avx2 /proc/cpuinfo
+then
+  if make -C tools/ispcbench > "$OUT/ispcbench-build.log" 2>&1
+  then
+    (cd tools/ispcbench && SECS="$SECS" ROUNDS="$ROUNDS" sh run.sh > /dev/null 2>&1)
+    cp tools/ispcbench/ispc-report.txt "$OUT/" 2>/dev/null
+    grep -q "all tests passed" "$OUT/ispc-report.txt" 2>/dev/null || STATUS=1
+  else
+    echo "ispcbench build failed" >> "$OUT/ispcbench-build.log"
+    STATUS=1
+  fi
+fi
+
 # a timed run ended normally at its -h limit
 timedout()
 {
@@ -104,10 +119,13 @@ else
   tr '\r' '\n' < "$OUT/console-run-core9.txt" | grep -a -q -i 'using core #4 ' || STATUS=1
 fi
 
-# rate at the last full round (completed packets a multiple of the CPU count)
+# rate at the last full round (completed packets a multiple of the CPU count),
+# ignoring the summary the client prints when it stops at the time limit
 lastround()
 {
   tr '\r' '\n' < "$1" | sed 's/^\[[^]]*\] //' | awk -v n="$(nproc)" '
+    /Shutdown - reached time limit/ { stop = 1 }
+    stop { next }
     /Summary: [0-9]+ packets/ { p = $3; next }
     /Mkeys\/s\]/ && p != "" {
       if (p % n == 0) { t = $1; r = $0; sub(/.*\[/, "", r); sub(/\].*/, "", r); lp = p }
@@ -146,6 +164,12 @@ lastround()
     done
     echo
     grep -E '^(sweep|  core|  [zc][0-9 ]+\()' "$OUT/bench-report.txt" 2>/dev/null
+  fi
+  if [ -f "$OUT/ispc-report.txt" ]
+  then
+    echo
+    echo "ispcbench (MIX SPMD ISPC builds):"
+    grep -E '^(sweep|  core |  [a-z][a-z0-9]* +\()' "$OUT/ispc-report.txt"
   fi
   echo '```'
 } > "$OUT/summary.md"

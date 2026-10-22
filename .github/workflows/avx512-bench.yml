@@ -8,9 +8,10 @@ name: AVX-512 benchmark
 # Starts 6 identical jobs on GitHub-hosted ubuntu-latest runners, which come
 # from a mixed pool of CPUs (for example AMD EPYC 9V74 / Zen 4, EPYC 9V45 /
 # Zen 5, EPYC 7763 / Zen 3). Every job builds the client and runs the tester
-# sequence (-cpuinfo, -test, -stress, -bench). Jobs on CPUs with AVX-512F also
-# run tools/r72bench and 4-minute offline runs on cores 6-9; jobs without it
-# check that core #9 falls back to #4. No distributed.net work units are
+# sequence (-cpuinfo, -test, -stress, -bench), then tools/ispcbench (MIX SPMD
+# ISPC builds vs the asm cores) on CPUs with AVX2. Jobs on CPUs with AVX-512F
+# also run tools/r72bench and 4-minute offline runs on cores 6-9; jobs without
+# it check that core #9 falls back to #4. No distributed.net work units are
 # fetched or returned (-runoffline -nodisk).
 
 on:
@@ -19,10 +20,10 @@ on:
   workflow_dispatch:
     inputs:
       secs:
-        description: "Seconds per r72bench run"
+        description: "Seconds per r72bench/ispcbench run"
         default: "3"
       rounds:
-        description: "r72bench rounds per sweep"
+        description: "r72bench/ispcbench rounds per sweep"
         default: "3"
 
 permissions:
