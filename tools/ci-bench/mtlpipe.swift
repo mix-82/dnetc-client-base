@@ -24,7 +24,11 @@ print("  registryID: \(device.registryID)")
 print("  maxThreadsPerThreadgroup: \(device.maxThreadsPerThreadgroup)")
 print("  supportsFamily apple7: \(device.supportsFamily(.apple7))")
 print("  supportsFamily apple8: \(device.supportsFamily(.apple8))")
-print("  supportsFamily apple9: \(device.supportsFamily(.apple9))")
+#if swift(>=5.9) // .apple9 needs the macOS 14 SDK (Xcode 15)
+if #available(macOS 14.0, *) {
+  print("  supportsFamily apple9: \(device.supportsFamily(.apple9))")
+}
+#endif
 
 var source: String
 do {
