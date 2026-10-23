@@ -30,8 +30,8 @@ VARIANTS = {
     "V(((@L((V)(x)) << 32) | @L((V)(x))) >> @L((V)(32u) - ((V)(s) & (V)(31u))))",
     "ROTL(x, 3u)",
     "((uint)((((ulong)(uint)(x) << 32) | (uint)(x)) >> (32u - ((uint)(s) & 31u))))"),
-  "astype": ("64-bit funnel shift with the pair built by as_type (scalar only)",
-    "((uint)(as_type<ulong>(uint2((uint)(x), (uint)(x))) >> ((0u - (uint)(s)) & 31u)))",
+  "astype": ("funnel shift of the value paired with itself, pair built by as_type (ROTL_EXTR in the .cl)",
+    "V(as_type<@L>(PAIR) >> @L(((V)(0u) - (V)(s)) & (V)(31u)))",
     "ROTL(x, 3u)",
     "((uint)(as_type<ulong>(uint2((uint)(x), (uint)(x))) >> ((0u - (uint)(s)) & 31u)))"),
   "masked": ("rotate() with the amount masked to 5 bits first",
@@ -43,13 +43,12 @@ VARIANTS = {
     "(((V)(x) << 3) | ((V)(x) >> 29))",
     "(((uint)(x) << ((uint)(s) & 31u)) | ((uint)(x) >> ((0u - (uint)(s)) & 31u)))"),
 }
-VARIANTS["extr"] = VARIANTS["extr64"]
+VARIANTS["extr"] = VARIANTS["astype"]
 if variant not in VARIANTS:
     sys.exit("unknown variant %s; one of %s" % (variant, ", ".join(sorted(VARIANTS))))
-if variant == "astype" and pipes != 1:
-    sys.exit("variant astype is scalar only (1-pipe)")
 comment, rotl, rotl3, rotl1 = VARIANTS[variant]
-fix = lambda m: m.replace("(V)", "(%s)" % vec).replace("V(", "%s(" % vec).replace("@L(", "%s(" % lvec)
+pair = {1: "uint2((uint)(x), (uint)(x))", 2: "((uint2)(x)).xxyy", 4: "((uint4)(x)).xxyyzzww"}[pipes]
+fix = lambda m: m.replace("PAIR", pair).replace("(V)", "(%s)" % vec).replace("V(", "%s(" % vec).replace("@L>", "%s>" % lvec).replace("@L(", "%s(" % lvec)
 
 header = """/*
 * Copyright distributed.net 2012-2026 - All Rights Reserved

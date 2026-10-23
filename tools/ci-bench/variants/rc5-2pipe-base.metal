@@ -3,7 +3,7 @@
 * For use in distributed.net projects only.
 * Any other distribution or use of this source violates copyright.
 *
-* Metal Shading Language translation of rc5-72/opencl/rc5-4pipe.cl, used
+* Metal Shading Language translation of rc5-72/opencl/rc5-2pipe.cl, used
 * only to inspect what Apple's GPU compiler makes of the kernel (see
 * tools/ci-bench/ci-macos-gpu.sh). Not part of the client. Keep the
 * arithmetic identical to the OpenCL source.
@@ -13,10 +13,10 @@ using namespace metal;
 
 #define SWAP(x) (((uint)(x) << 24) | (((uint)(x) & 0x0000FF00u) << 8) | (((uint)(x) >> 8) & 0x0000FF00u) | ((uint)(x) >> 24))
 
-// EXPERIMENT: rotate as a 64-bit funnel shift (same as ROTL_EXTR in the .cl)
-#define ROTL(x, s)  uint4(((ulong4((uint4)(x)) << 32) | ulong4((uint4)(x))) >> ulong4(((uint4)(0u) - (uint4)(s)) & (uint4)(31u)))
-#define ROTL3(x)    ROTL(x, 3u)
-#define ROTL1(x, s) ((uint)((((ulong)(uint)(x) << 32) | (uint)(x)) >> ((0u - (uint)(s)) & 31u)))
+// ROTL variant "base": the kernel as shipped: rotate()
+#define ROTL(x, s)  rotate((uint2)(x), (uint2)(s))
+#define ROTL3(x)    rotate((uint2)(x), (uint2)(3u))
+#define ROTL1(x, s) rotate((uint)(x), (uint)(s))
 
 #define P 0xB7E15163u
 #define Q 0x9E3779B9u
@@ -35,21 +35,21 @@ using namespace metal;
   A = ROTL(A^B, B) + S[a]; \
   B = ROTL(B^A, A) + S[a+1]
 
-kernel void ocl_rc572_4pipe(constant uint *rc5_72unitwork [[buffer(0)]],
+kernel void ocl_rc572_2pipe(constant uint *rc5_72unitwork [[buffer(0)]],
                             device uint *outbuf [[buffer(1)]],
                             uint gid [[thread_position_in_grid]])
 {
-  uint4 L[3];
-  uint4 S[26];
-  uint4 A, B;
-  uint4 t;
+  uint2 L[3];
+  uint2 S[26];
+  uint2 A, B;
+  uint2 t;
 
   L[2].x = rc5_72unitwork[0];   //L0hi;
   L[1].x = rc5_72unitwork[1];   //L0mid;
-  L[0] = (uint4)rc5_72unitwork[8];   
-  S[1] = (uint4)rc5_72unitwork[9];
+  L[0] = (uint2)rc5_72unitwork[8];   
+  S[1] = (uint2)rc5_72unitwork[9];
 
-  L[2].x += gid * 4;
+  L[2].x += gid * 2;
   uint l1_t1 = L[1].x;
   uint l1_t2 = l1_t1 + (L[2].x >> 8);
   L[2].x &= 0x000000ff;
@@ -57,23 +57,21 @@ kernel void ocl_rc572_4pipe(constant uint *rc5_72unitwork [[buffer(0)]],
   {
     uint l0_t = SWAP(rc5_72unitwork[2]);
     l0_t += 1;
-    L[0] = (uint4)ROTL1(0xBF0A8B1D + SWAP(l0_t), 0x1d);
-    S[1] = (uint4)ROTL1(L[0].x + 0xBF0A8B1D + 0x5618cb1c, 3u);
+    L[0] = (uint2)ROTL1(0xBF0A8B1D + SWAP(l0_t), 0x1d);
+    S[1] = (uint2)ROTL1(L[0].x + 0xBF0A8B1D + 0x5618cb1c, 3u);
   }
   L[1].x = SWAP(l1_t2);
   
-  S[0] = (uint4)0xBF0A8B1D;
+  S[0] = (uint2)0xBF0A8B1D;
   t.x = S[1].x + L[0].x;
-  L[1] = (uint4)ROTL1(L[1].x + t.x, t.x);
+  L[1] = (uint2)ROTL1(L[1].x + t.x, t.x);
   L[2].y = L[2].x + 1;
-  L[2].z = L[2].x + 2;
-  L[2].w = L[2].x + 3;
 
   #if defined(ROUND1_OPT)
-    S[2] = (uint4)ROTL1(S[1].x + (P + 2 * Q) + L[1].x, 3u);
-    t = (uint4)(S[2].x + L[1].x);
+    S[2] = (uint2)ROTL1(S[1].x + (P + 2 * Q) + L[1].x, 3u);
+    t = (uint2)(S[2].x + L[1].x);
     L[2] = ROTL(L[2] + t, t);
-    S[3] = ROTL3((uint4)(S[2].x + (P + 3 * Q)) + L[2]);
+    S[3] = ROTL3((uint2)(S[2].x + (P + 3 * Q)) + L[2]);
     t = S[3] + L[2];
     L[0] = ROTL(L[0] + t, t);
   #else
@@ -175,7 +173,7 @@ kernel void ocl_rc572_4pipe(constant uint *rc5_72unitwork [[buffer(0)]],
 
   A = ROTL(A^B, B) + S[24]; 
 
-  if((A.x == rc5_72unitwork[6]) || (A.y == rc5_72unitwork[6]) || (A.z == rc5_72unitwork[6]) || (A.w == rc5_72unitwork[6]))
+  if((A.x == rc5_72unitwork[6]) || (A.y == rc5_72unitwork[6]))
   {
     uint idx, val, attrib;
 
@@ -188,7 +186,7 @@ kernel void ocl_rc572_4pipe(constant uint *rc5_72unitwork [[buffer(0)]],
     if(A.x == rc5_72unitwork[6])
     {
       idx = atomic_fetch_add_explicit((device atomic_uint *)outbuf, 1u, memory_order_relaxed) * 2 + 1;
-      val = gid * 4 + rc5_72unitwork[3]; //keyN+offset
+      val = gid * 2 + rc5_72unitwork[3]; //keyN+offset
       attrib = (B.x == rc5_72unitwork[7]) ? 0x80000000 : 0;
       outbuf[idx] = attrib;
       outbuf[idx+1] = val;
@@ -196,24 +194,8 @@ kernel void ocl_rc572_4pipe(constant uint *rc5_72unitwork [[buffer(0)]],
     if(A.y == rc5_72unitwork[6])
     {
       idx = atomic_fetch_add_explicit((device atomic_uint *)outbuf, 1u, memory_order_relaxed) * 2 + 1;
-      val = gid * 4 + rc5_72unitwork[3] + 1; //keyN+offset
+      val = gid * 2 + rc5_72unitwork[3] + 1; //keyN+offset
       attrib = (B.y == rc5_72unitwork[7]) ? 0x80000000 : 0;
-      outbuf[idx] = attrib;
-      outbuf[idx+1] = val;
-    }
-    if(A.z == rc5_72unitwork[6])
-    {
-      idx = atomic_fetch_add_explicit((device atomic_uint *)outbuf, 1u, memory_order_relaxed) * 2 + 1;
-      val = gid * 4 + rc5_72unitwork[3] + 2; //keyN+offset
-      attrib = (B.z == rc5_72unitwork[7]) ? 0x80000000 : 0;
-      outbuf[idx] = attrib;
-      outbuf[idx+1] = val;
-    }
-    if(A.w == rc5_72unitwork[6])
-    {
-      idx = atomic_fetch_add_explicit((device atomic_uint *)outbuf, 1u, memory_order_relaxed) * 2 + 1;
-      val = gid * 4 + rc5_72unitwork[3] + 3; //keyN+offset
-      attrib = (B.w == rc5_72unitwork[7]) ? 0x80000000 : 0;
       outbuf[idx] = attrib;
       outbuf[idx+1] = val;
     }

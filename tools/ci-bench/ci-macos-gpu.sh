@@ -6,9 +6,9 @@
 #      -stress and -bench with the kernels built as ROTL_EXTR (rotate as a
 #      64-bit funnel shift; DNETC_ROTL_EXTR=1 switch in ocl_common.cpp on
 #      this branch), and a timed run of the 1-pipe both ways
-#   3. for each of the three kernels, standard and ROTL_EXTR: the
-#      optimised AIR from the metal
-#      compiler, pipeline statistics from the runtime (mtlpipe.swift), and
+#   3. for each kernel variant in tools/ci-bench/variants/: the optimised
+#      AIR from the metal compiler, pipeline statistics from the runtime
+#      (mtlpipe.swift), and
 #      the machine code from the applegpu project's compiler_explorer.py,
 #      with an instruction histogram and register high-water mark
 # Results go to tools/ci-bench/ci-out/. No work is fetched or returned.
@@ -112,21 +112,21 @@ if [ ! -d "$APPLEGPU" ]; then
   run_step applegpu-clone git clone -q --depth 1 https://github.com/dougallj/applegpu "$APPLEGPU"
 fi
 
-for v in "" "-extr"; do
-for p in 1 2 4; do
-  METAL=tools/ci-bench/rc5-${p}pipe${v}.metal
+for METAL in tools/ci-bench/variants/rc5-*pipe-*.metal; do
+  name=$(basename "$METAL" .metal | sed 's/^rc5-//')     # e.g. 1pipe-astype
+  p=${name%%pipe-*}
   FN=ocl_rc572_${p}pipe
   note ""
-  note "### CL ${p}-pipe${v:+ ROTL_EXTR} ($METAL)"
-  run_step "metal-air-${p}pipe${v}" xcrun -sdk macosx metal -O3 -S -emit-llvm -o "$OUT/${p}pipe${v}-metal.ll" "$METAL"
+  note "### CL $name ($METAL)"
+  run_step "metal-air-$name" xcrun -sdk macosx metal -O3 -S -emit-llvm -o "$OUT/$name-metal.ll" "$METAL"
   if [ -x "$OUT/mtlpipe" ]; then
-    run_step "mtlpipe-${p}pipe${v}" "$OUT/mtlpipe" "$METAL" "$FN" "$OUT/${p}pipe${v}.archive"
-    grep -E 'device:|maxTotalThreads|threadExecutionWidth|supportsFamily' "$OUT/mtlpipe-${p}pipe${v}.txt" | sed 's/^ */    /' >> "$SUMMARY"
+    run_step "mtlpipe-$name" "$OUT/mtlpipe" "$METAL" "$FN" "$OUT/$name.archive"
+    grep -E 'device:|maxTotalThreads|threadExecutionWidth' "$OUT/mtlpipe-$name.txt" | sed 's/^ */    /' >> "$SUMMARY"
   fi
   if [ -d "$APPLEGPU" ]; then
-    ( cd "$APPLEGPU" && python3 compiler_explorer.py "$ROOT/$METAL" ) > "$OUT/${p}pipe${v}-agx.txt" 2>&1
+    ( cd "$APPLEGPU" && python3 compiler_explorer.py "$ROOT/$METAL" ) > "$OUT/$name-agx.txt" 2>&1
     note "- applegpu compiler_explorer: exit $?"
-    AGX=$OUT/${p}pipe${v}-agx.txt
+    AGX=$OUT/$name-agx.txt
     if grep -q '^compute shader:' "$AGX"; then
       total=$(awk '/^compute shader:/{m=1} m && /^ *[0-9a-f]+:/' "$AGX" | wc -l | tr -d ' ')
       hireg=$(awk '/^compute shader:/{m=1} m' "$AGX" | grep -oE '\br[0-9]+' | sed 's/r//' | sort -n | tail -1)
@@ -134,12 +134,10 @@ for p in 1 2 4; do
       note "- main shader: $total instructions, $(( total / p )) per key, highest register r$hireg, $memops memory ops"
       note "- instruction histogram:"
       awk '/^compute shader:/{m=1} m && /^ *[0-9a-f]+:/ {print $3}' "$AGX" | sort | uniq -c | sort -rn | head -12 | awk '{printf "    %6d %s\n", $1, $2}' >> "$SUMMARY"
-      # spacing between fixed rotates (extr): 11 = one lane's step, serial
-      note "- extr spacing (instructions between fixed rotates, top 5):"
+      note "- extr spacing (instructions between extr, top 5):"
       awk '/^compute shader:/{m=1} m && /^ *[0-9a-f]+:/ {n++; if ($3=="extr") print n}' "$AGX" | awk 'NR>1{print $1-p} {p=$1}' | sort -n | uniq -c | sort -rn | head -5 | awk '{printf "    gap %3d: %d times\n", $2, $1}' >> "$SUMMARY"
     fi
   fi
-done
 done
 
 note ""

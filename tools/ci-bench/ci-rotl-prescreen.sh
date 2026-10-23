@@ -25,17 +25,17 @@ note()
 }
 
 note ""
-note "## ROTL variants, optimised AIR (1-pipe)"
+note "## ROTL variants, optimised AIR"
 note ""
-note "| variant | air.rotate | lshr i64 | shl i64 | shl i32 | lshr i32 | or | and | sub |"
-note "|---|---|---|---|---|---|---|---|---|"
-for f in tools/ci-bench/variants/rc5-1pipe-*.metal; do
-  v=$(basename "$f" .metal | sed 's/rc5-1pipe-//')
+note "| variant | air.rotate | fshl | lshr i64 | mul i64 | bitcast | shl i32 | lshr i32 | and | sub |"
+note "|---|---|---|---|---|---|---|---|---|---|"
+for f in tools/ci-bench/variants/rc5-*pipe-*.metal; do
+  v=$(basename "$f" .metal | sed 's/^rc5-//')
   if xcrun -sdk macosx metal -O3 -S -emit-llvm -o "$OUT/variant-$v.ll" "$f" > "$OUT/variant-$v.txt" 2>&1; then
     L=$OUT/variant-$v.ll
-    note "| $v | $(grep -c 'air.rotate' "$L") | $(grep -c 'lshr i64' "$L") | $(grep -c 'shl i64' "$L") | $(grep -c 'shl i32' "$L") | $(grep -c 'lshr i32' "$L") | $(grep -c ' or i' "$L") | $(grep -c ' and i' "$L") | $(grep -c ' sub i' "$L") |"
+    note "| $v | $(grep -c 'air.rotate' "$L") | $(grep -c 'fshl' "$L") | $(grep -c 'lshr i64' "$L") | $(grep -c 'mul nuw i64' "$L") | $(grep -c 'bitcast' "$L") | $(grep -c 'shl i32' "$L") | $(grep -c 'lshr i32' "$L") | $(grep -c ' and i' "$L") | $(grep -c ' sub i' "$L") |"
   else
-    note "| $v | compile failed (variant-$v.txt) | | | | | | | |"
+    note "| $v | compile failed (variant-$v.txt) | | | | | | | | |"
   fi
 done
 exit 0

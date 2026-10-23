@@ -13,8 +13,8 @@ using namespace metal;
 
 #define SWAP(x) (((uint)(x) << 24) | (((uint)(x) & 0x0000FF00u) << 8) | (((uint)(x) >> 8) & 0x0000FF00u) | ((uint)(x) >> 24))
 
-// ROTL variant "astype": 64-bit funnel shift with the pair built by as_type (scalar only)
-#define ROTL(x, s)  ((uint)(as_type<ulong>(uint2((uint)(x), (uint)(x))) >> ((0u - (uint)(s)) & 31u)))
+// ROTL variant "astype": funnel shift of the value paired with itself, pair built by as_type (ROTL_EXTR in the .cl)
+#define ROTL(x, s)  uint(as_type<ulong>(uint2((uint)(x), (uint)(x))) >> ulong(((uint)(0u) - (uint)(s)) & (uint)(31u)))
 #define ROTL3(x)    ROTL(x, 3u)
 #define ROTL1(x, s) ((uint)(as_type<ulong>(uint2((uint)(x), (uint)(x))) >> ((0u - (uint)(s)) & 31u)))
 
