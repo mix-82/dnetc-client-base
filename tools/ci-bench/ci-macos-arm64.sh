@@ -65,7 +65,8 @@ note "## CPU client (configure macosx-arm64)"
 run_step build-cpu bash -c "SHELL=/bin/sh ./configure macosx-arm64 && make -j$NCPU"
 if [ -x dnetc ]; then
   cp dnetc "$OUT/dnetc-cpu"
-  for step in cpuinfo test stress bench; do
+  run_step cpu-cpuinfo ./dnetc -l "$OUT/dnetc-cpu.log" -cpuinfo
+  for step in test stress bench; do
     run_step "cpu-$step" ./dnetc -l "$OUT/dnetc-cpu.log" -$step rc5-72
   done
   grep -E 'Tests Passed|Stress-test|keys/sec|Default core|using core' "$OUT/dnetc-cpu.log" >> "$SUMMARY"
