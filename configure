@@ -3269,7 +3269,7 @@ case "$1" in
 
     *linux-amd64)               # generic. works everywhere
         infer_arch_and_version "Linux"
-        TARGET_NASM="yasm"
+        TARGET_NASM="nasm"
         TARGET_NASM_FMT="elf64"
         TARGET_AS="gcc -c"          # can make aout if TARGET_CCFLAGS+=-aout
         TARGET_CC="g++"
@@ -3292,7 +3292,7 @@ case "$1" in
         cross_prefix="x86_64-linux-"
         TARGET_IS_CROSSCOMPILE=1
 #       infer_arch_and_version "Linux"
-        TARGET_NASM="yasm"
+        TARGET_NASM="nasm"
         TARGET_NASM_FMT="elf64"
         TARGET_AS="${cross_prefix}gcc -c"
         TARGET_CC="${cross_prefix}gcc"
