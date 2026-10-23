@@ -148,7 +148,7 @@ jobs:
     - name: Test
       shell: bash
       env:
-        DNETC: ./dnetc.com
+        DNETC: ./dnetc.exe
         ARCH: ${{ matrix.arch }}
         BUILD: windows-${{ matrix.arch }}
       run: bash tools/ci-bench/ci-run.sh

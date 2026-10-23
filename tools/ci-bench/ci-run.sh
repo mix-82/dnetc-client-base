@@ -10,7 +10,8 @@
 # as testers send it).
 #
 # Environment:
-#   DNETC  client to run (default ./dnetc; dnetc.com on Windows)
+#   DNETC  client to run (default ./dnetc; dnetc.exe on Windows, since the
+#          dnetc.com console stub stops the client when it has no console)
 #   ARCH   amd64 or x86
 #   BUILD  short build name for the summary (e.g. "linux-amd64")
 # Used by .github/workflows/ci-platforms.yml on Linux, macOS and Windows
