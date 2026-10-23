@@ -11,6 +11,8 @@ name: Platform tests
 #   - Linux 32-bit x86 (configure linux-x86, gcc -m32)
 #   - Windows x86-64 and 32-bit x86 (makefile.vc, MSVC)
 #   - macOS on Intel (configure macosx-amd64)
+#   - macOS on Apple Silicon: CPU and OpenCL clients, plus the compiled
+#     form of the 4-pipe kernel (tools/ci-bench/ci-macos-arm64.sh)
 # 64-bit jobs also check the AVX-512 core selection (see ci-run.sh). No
 # distributed.net work units are fetched or returned (-runoffline -nodisk).
 
@@ -190,5 +192,23 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: macos-amd64
+        path: tools/ci-bench/ci-out/
+        if-no-files-found: warn
+
+  macos-arm64:
+    name: macos-arm64 (Apple Silicon, OpenCL)
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build and test
+      # CPU client, OpenCL client, and the compiled form of the 4-pipe kernel;
+      # every step runs even if an earlier one fails (see the script)
+      run: bash tools/ci-bench/ci-macos-arm64.sh
+    - name: Upload results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-arm64
         path: tools/ci-bench/ci-out/
         if-no-files-found: warn
