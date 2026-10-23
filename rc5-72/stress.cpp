@@ -292,8 +292,7 @@ static long __test_1(Client *client)
         resultcode = ProblemRetrieveState(thisprob, &contestwork, NULL, 1, 0);
 
         /* Check the number of pipelines here, once and for all. */
-        if (pipes != 1 && pipes != 2 && pipes != 3 && pipes != 4 &&
-            pipes != 8 && pipes != 12 && pipes != 16 && pipes != 24 && pipes != 32) {
+        if (pipes < 1 || pipes > 64 || (MINIMUM_ITERATIONS % pipes) != 0) {
           Log("\rRC5-72 : INTERNAL ERROR - Number of pipes = %d\n", pipes);
           success = -1L;
         }

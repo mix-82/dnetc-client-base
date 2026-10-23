@@ -59,6 +59,9 @@ extern "C" s32 CDECL rc5_72_unit_func_avx2( RC5_72UnitWork *, u32 *, void *);
 # if defined(USE_ISPC_CORE)
 extern "C" s32 CDECL rc5_72_unit_func_ispc_16( RC5_72UnitWork *, u32 *, void *);
 # endif
+# if defined(HAVE_RC5_72_AVX512_ASM)
+extern "C" s32 CDECL rc5_72_unit_func_avx512z( RC5_72UnitWork *, u32 *, void *);
+# endif
 #elif (CLIENT_CPU == CPU_ARM)
 extern "C" s32 rc5_72_unit_func_arm1( RC5_72UnitWork *, u32 *, void *);
 extern "C" s32 rc5_72_unit_func_arm2( RC5_72UnitWork *, u32 *, void *);
@@ -176,9 +179,11 @@ const char **corenames_for_contest_rc572()
       "GO 2-pipe c",
       "GO 2-pipe d",
       "YK AVX2",
-  # if defined(USE_ISPC_CORE)
-      "KS SPMD",
-  # endif
+      /* numbering is the same whether or not the ISPC and AVX-512 asm cores
+         are built; cores not built are substituted
+         (see apply_selcore_substitution_rules_rc572) */
+      "KS SPMD",              /* #5: ISPC, 16 keys/call */
+      "MIX ZMM",              /* #6: asm, 512-bit, 64 keys/call, AVX-512F */
   #elif (CLIENT_CPU == CPU_ARM)
       "StrongARM 1-pipe",
       "ARM 2/3/6/7 1-pipe",
@@ -337,10 +342,20 @@ int apply_selcore_substitution_rules_rc572(int cindex, int device)
   {
     unsigned long flags = GetProcessorFeatureFlags();
 
-    #if defined(USE_ISPC_CORE)
-    if (!(flags & CPU_F_AVX512) && cindex == 5) /* AVX512 ISPC core */
+    #if !defined(USE_ISPC_CORE)
+    if (cindex == 5)                              /* ISPC core not built */
+      cindex = 6;
+    #endif
+    #if !defined(HAVE_RC5_72_AVX512_ASM)
+    if (cindex == 6)                              /* AVX-512 asm not built */
+      cindex = 5;
+    #endif
+    #if !defined(USE_ISPC_CORE) && !defined(HAVE_RC5_72_AVX512_ASM)
+    if (cindex >= 5)                              /* no AVX-512 cores built */
       cindex = 4;
     #endif
+    if (!(flags & CPU_F_AVX512) && (cindex == 5 || cindex == 6))
+      cindex = 4;                                 /* no AVX-512F: use AVX2 */
 
     if (!(flags & CPU_F_AVX2) && cindex == 4)   /* AVX2 core */
       cindex = 3;
@@ -598,7 +613,11 @@ int selcoreGetPreselectedCoreForProject_rc572(int device)
   // ===============================================================
   #elif (CLIENT_CPU == CPU_AMD64)
   {
-    #if defined(USE_ISPC_CORE)
+    #if defined(HAVE_RC5_72_AVX512_ASM)
+    if (detected_flags & CPU_F_AVX512)
+      cindex = 6;                                 /* MIX ZMM */
+    else
+    #elif defined(USE_ISPC_CORE)
     if (detected_flags & CPU_F_AVX512)
       cindex = 5;
     else
@@ -906,6 +925,12 @@ int selcoreSelectCore_rc572(Client *client, unsigned int threadindex,
       case 5:
         unit_func.gen_72 = rc5_72_unit_func_ispc_16;
         pipeline_count = 16;
+        break;
+      #endif
+      #if defined(HAVE_RC5_72_AVX512_ASM)
+      case 6:
+        unit_func.gen_72 = rc5_72_unit_func_avx512z;
+        pipeline_count = 64;                            /* 4 pipes x 16 lanes */
         break;
       #endif
     // -----------
