@@ -8,6 +8,10 @@
 #   4. what Apple's OpenCL compiler makes of rc5-4pipe.cl: the compiled
 #      form from the driver (dumpcl) and from the offline compiler (openclc),
 #      turned into LLVM IR where possible, plus counts of rotate intrinsics
+#   5. the same kernel as Metal (tools/ci-bench/rc5-4pipe.metal): the
+#      optimised AIR from the metal compiler, the pipeline statistics and
+#      a binary archive from the runtime (mtlpipe.swift), and the machine
+#      code disassembled with the applegpu project's tools
 # Results go to tools/ci-bench/ci-out/. No work is fetched or returned.
 # Used by .github/workflows/ci-platforms.yml.
 
@@ -134,12 +138,48 @@ else
   note "- openclc: not present"
 fi
 
+# ---- 4. Metal: optimised AIR, pipeline statistics, machine code --------
+# The MSL translation of the kernel goes through the same backend as the
+# OpenCL layer. The metal compiler runs the full optimiser offline (no GPU
+# needed); the pipeline statistics and the binary archive need a device.
+note ""
+note "## Metal (tools/ci-bench/rc5-4pipe.metal)"
+METAL=tools/ci-bench/rc5-4pipe.metal
+run_step metal-air xcrun -sdk macosx metal -O3 -S -emit-llvm -o "$OUT/4pipe-metal.ll" "$METAL"
+run_step metal-air-r1opt xcrun -sdk macosx metal -O3 -DROUND1_OPT=1 -S -emit-llvm -o "$OUT/4pipe-metal-r1opt.ll" "$METAL"
+run_step build-mtlpipe swiftc -O -o "$OUT/mtlpipe" tools/ci-bench/mtlpipe.swift
+if [ -x "$OUT/mtlpipe" ]; then
+  run_step mtlpipe "$OUT/mtlpipe" "$METAL" ocl_rc572_4pipe "$OUT/4pipe.archive"
+  sed 's/^/    /' "$OUT/mtlpipe.txt" >> "$SUMMARY"
+  run_step mtlpipe-r1opt "$OUT/mtlpipe" "$METAL" ocl_rc572_4pipe "$OUT/4pipe-r1opt.archive" -DROUND1_OPT=1
+  sed 's/^/    /' "$OUT/mtlpipe-r1opt.txt" >> "$SUMMARY"
+fi
+
+# machine code: the applegpu project's reverse-engineered disassembler
+APPLEGPU=$ROOT/tools/ci-bench/applegpu
+if run_step applegpu-clone git clone -q --depth 1 https://github.com/dougallj/applegpu "$APPLEGPU"; then
+  ( cd "$APPLEGPU" && python3 compiler_explorer.py "$ROOT/$METAL" ) > "$OUT/4pipe-agx.txt" 2>&1
+  note "- applegpu compiler_explorer: exit $?"
+  if [ -s "$OUT/4pipe.archive" ] && [ -x "$APPLEGPU/compiler_explorer_tools/metal-archive-extractor" ]; then
+    "$APPLEGPU/compiler_explorer_tools/metal-archive-extractor" --extract-compute "$OUT/4pipe-agx.bin" "$OUT/4pipe.archive" > "$OUT/extract.txt" 2>&1
+    note "- archive extract: exit $?"
+    if [ -s "$OUT/4pipe-agx.bin" ]; then
+      ( cd "$APPLEGPU" && python3 disassemble.py "$OUT/4pipe-agx.bin" ) > "$OUT/4pipe-agx-archive.txt" 2>&1
+      note "- disassemble archive: exit $?"
+    fi
+  fi
+fi
+for f in "$OUT"/4pipe-agx.txt "$OUT"/4pipe-agx-archive.txt; do
+  [ -s "$f" ] || continue
+  note "- $(basename "$f"): $(wc -l < "$f") lines"
+done
+
 # counts: rotate intrinsics vs shift/or triples
-for f in "$OUT"/4pipe.ll "$OUT"/4pipe-openclc-*.ll "$OUT"/4pipe.txt; do
+for f in "$OUT"/4pipe.ll "$OUT"/4pipe-openclc-*.ll "$OUT"/4pipe-metal*.ll "$OUT"/4pipe.txt; do
   [ -f "$f" ] || continue
   note ""
   note "### $(basename "$f")"
-  for pat in 'fshl' 'rotate' 'rotl' ' shl ' ' lshr ' ' or ' 'alloca' '<4 x i32>'; do
+  for pat in 'fshl' 'rotate' 'rotl' ' shl ' ' lshr ' ' or ' 'alloca' ' load ' ' store ' '<4 x i32>'; do
     note "- \`$pat\`: $(grep -c -- "$pat" "$f")"
   done
 done
