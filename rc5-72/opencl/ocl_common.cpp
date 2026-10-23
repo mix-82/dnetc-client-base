@@ -464,6 +464,11 @@ bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *ke
     else // GENERIC
       snprintf(buildOptions, sizeof(buildOptions), "%s", clOption);  // Generic manufacturer build options
 
+    // EXPERIMENT (ci-platforms only): DNETC_ROTL_EXTR=1 in the environment
+    // builds the kernels with the 64-bit funnel-shift rotate, for A/B runs
+    if (getenv("DNETC_ROTL_EXTR") != NULL)
+      strncat(buildOptions, " -D ROTL_EXTR=1", sizeof(buildOptions) - strlen(buildOptions) - 1);
+
     status = clBuildProgram(cont->program, 1, &cont->deviceID, buildOptions, NULL, NULL);
     
     /* 

@@ -11,10 +11,11 @@
 #include <metal_stdlib>
 using namespace metal;
 
+#define SWAP(x) (((uint)(x) << 24) | (((uint)(x) & 0x0000FF00u) << 8) | (((uint)(x) >> 8) & 0x0000FF00u) | ((uint)(x) >> 24))
+
 #define ROTL(x, s)  rotate((uint2)(x), (uint2)(s))
 #define ROTL3(x)    rotate((uint2)(x), (uint2)(3u))
 #define ROTL1(x, s) rotate((uint)(x), (uint)(s))
-#define SWAP(x) (((uint)(x) << 24) | (((uint)(x) & 0x0000FF00u) << 8) | (((uint)(x) >> 8) & 0x0000FF00u) | ((uint)(x) >> 24))
 
 #define P 0xB7E15163u
 #define Q 0x9E3779B9u

@@ -7,9 +7,11 @@ import re
 import sys
 
 src_path, dst_path, pipes = sys.argv[1], sys.argv[2], int(sys.argv[3])
+extr = len(sys.argv) > 4 and sys.argv[4] == "extr"   # rotate as a 64-bit funnel shift
 src = open(src_path).read()
 
 vec = "uint" if pipes == 1 else "uint%d" % pipes
+lvec = "ulong" if pipes == 1 else "ulong%d" % pipes
 header = """/*
 * Copyright distributed.net 2012-2026 - All Rights Reserved
 * For use in distributed.net projects only.
@@ -23,12 +25,22 @@ header = """/*
 #include <metal_stdlib>
 using namespace metal;
 
-#define ROTL(x, s)  rotate((%s)(x), (%s)(s))
-#define ROTL3(x)    rotate((%s)(x), (%s)(3u))
-#define ROTL1(x, s) rotate((uint)(x), (uint)(s))
 #define SWAP(x) (((uint)(x) << 24) | (((uint)(x) & 0x0000FF00u) << 8) | (((uint)(x) >> 8) & 0x0000FF00u) | ((uint)(x) >> 24))
 
-""" % (pipes, vec, vec, vec, vec)
+""" % pipes
+if extr:
+    header += """// EXPERIMENT: rotate as a 64-bit funnel shift (same as ROTL_EXTR in the .cl)
+#define ROTL(x, s)  %s(((%s((%s)(x)) << 32) | %s((%s)(x))) >> %s(((%s)(0u) - (%s)(s)) & (%s)(31u)))
+#define ROTL3(x)    ROTL(x, 3u)
+#define ROTL1(x, s) ((uint)((((ulong)(uint)(x) << 32) | (uint)(x)) >> ((0u - (uint)(s)) & 31u)))
+
+""" % (vec, lvec, vec, lvec, vec, lvec, vec, vec, vec)
+else:
+    header += """#define ROTL(x, s)  rotate((%s)(x), (%s)(s))
+#define ROTL3(x)    rotate((%s)(x), (%s)(3u))
+#define ROTL1(x, s) rotate((uint)(x), (uint)(s))
+
+""" % (vec, vec, vec, vec)
 
 # keep from "#define P" onward (drops the vendor-specific macro block)
 body = src[src.index("#define P "):]

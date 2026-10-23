@@ -33,6 +33,11 @@
   #define SWAP(x)     bitselect(amd_bytealign((uint)(x), (uint)(x), 3u), amd_bytealign((uint)(x), (uint)(x), 1u), 0xFF00FF00u)
 #endif
 
+#if defined(ROTL_EXTR) && !defined(ROTL) // EXPERIMENT: rotate as a 64-bit funnel shift
+  #define ROTL(x, s)  ((uint)((((ulong)(uint)(x) << 32) | (uint)(x)) >> ((0u - (uint)(s)) & 31u)))
+  #define ROTL3(x)    ROTL(x, 3u)
+#endif
+
 #ifndef ROTL // STANDARD OPENCL
   #define ROTL(x, s) rotate((uint)(x), (uint)(s))
 #endif 
