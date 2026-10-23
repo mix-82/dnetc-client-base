@@ -5,7 +5,7 @@
 *
 * Metal Shading Language translation of rc5-72/opencl/rc5-4pipe.cl, used
 * only to inspect what Apple's GPU compiler makes of the kernel (see
-* tools/ci-bench/ci-macos-arm64.sh). Not part of the client. Keep the
+* tools/ci-bench/ci-macos-gpu.sh). Not part of the client. Keep the
 * arithmetic identical to the OpenCL source.
 */
 #include <metal_stdlib>
@@ -44,7 +44,7 @@ kernel void ocl_rc572_4pipe(constant uint *rc5_72unitwork [[buffer(0)]],
 
   L[2].x = rc5_72unitwork[0];   //L0hi;
   L[1].x = rc5_72unitwork[1];   //L0mid;
-  L[0] = (uint4)rc5_72unitwork[8];
+  L[0] = (uint4)rc5_72unitwork[8];   
   S[1] = (uint4)rc5_72unitwork[9];
 
   L[2].x += gid * 4;
@@ -59,7 +59,7 @@ kernel void ocl_rc572_4pipe(constant uint *rc5_72unitwork [[buffer(0)]],
     S[1] = (uint4)ROTL1(L[0].x + 0xBF0A8B1D + 0x5618cb1c, 3u);
   }
   L[1].x = SWAP(l1_t2);
-
+  
   S[0] = (uint4)0xBF0A8B1D;
   t.x = S[1].x + L[0].x;
   L[1] = (uint4)ROTL1(L[1].x + t.x, t.x);
@@ -154,7 +154,7 @@ kernel void ocl_rc572_4pipe(constant uint *rc5_72unitwork [[buffer(0)]],
   ROUND23(22, 21, 1, 2);
   ROUND23(23, 22, 2, 0);
 
-  S[24] = ROTL3(S[24] + S[23] + L[0]);
+  S[24] = ROTL3(S[24] + S[23] + L[0]); 
 
   A = rc5_72unitwork[4] + S[0];	//plain_lo
   B = rc5_72unitwork[5] + S[1]; //plain_hi
@@ -171,14 +171,13 @@ kernel void ocl_rc572_4pipe(constant uint *rc5_72unitwork [[buffer(0)]],
   ENCRYPT(20);
   ENCRYPT(22);
 
-  A = ROTL(A^B, B) + S[24];
+  A = ROTL(A^B, B) + S[24]; 
 
   if((A.x == rc5_72unitwork[6]) || (A.y == rc5_72unitwork[6]) || (A.z == rc5_72unitwork[6]) || (A.w == rc5_72unitwork[6]))
   {
     uint idx, val, attrib;
-    device atomic_uint *count = (device atomic_uint *)outbuf;
 
-    t = S[24] + L[0];
+    t = S[24] + L[0]; 
     L[1] = ROTL(L[1] + t, t);
 
     S[25] = ROTL3(S[25] + S[24] + L[1]);
@@ -186,7 +185,7 @@ kernel void ocl_rc572_4pipe(constant uint *rc5_72unitwork [[buffer(0)]],
 
     if(A.x == rc5_72unitwork[6])
     {
-      idx = atomic_fetch_add_explicit(count, 1u, memory_order_relaxed) * 2 + 1;
+      idx = atomic_fetch_add_explicit((device atomic_uint *)outbuf, 1u, memory_order_relaxed) * 2 + 1;
       val = gid * 4 + rc5_72unitwork[3]; //keyN+offset
       attrib = (B.x == rc5_72unitwork[7]) ? 0x80000000 : 0;
       outbuf[idx] = attrib;
@@ -194,7 +193,7 @@ kernel void ocl_rc572_4pipe(constant uint *rc5_72unitwork [[buffer(0)]],
     }
     if(A.y == rc5_72unitwork[6])
     {
-      idx = atomic_fetch_add_explicit(count, 1u, memory_order_relaxed) * 2 + 1;
+      idx = atomic_fetch_add_explicit((device atomic_uint *)outbuf, 1u, memory_order_relaxed) * 2 + 1;
       val = gid * 4 + rc5_72unitwork[3] + 1; //keyN+offset
       attrib = (B.y == rc5_72unitwork[7]) ? 0x80000000 : 0;
       outbuf[idx] = attrib;
@@ -202,7 +201,7 @@ kernel void ocl_rc572_4pipe(constant uint *rc5_72unitwork [[buffer(0)]],
     }
     if(A.z == rc5_72unitwork[6])
     {
-      idx = atomic_fetch_add_explicit(count, 1u, memory_order_relaxed) * 2 + 1;
+      idx = atomic_fetch_add_explicit((device atomic_uint *)outbuf, 1u, memory_order_relaxed) * 2 + 1;
       val = gid * 4 + rc5_72unitwork[3] + 2; //keyN+offset
       attrib = (B.z == rc5_72unitwork[7]) ? 0x80000000 : 0;
       outbuf[idx] = attrib;
@@ -210,7 +209,7 @@ kernel void ocl_rc572_4pipe(constant uint *rc5_72unitwork [[buffer(0)]],
     }
     if(A.w == rc5_72unitwork[6])
     {
-      idx = atomic_fetch_add_explicit(count, 1u, memory_order_relaxed) * 2 + 1;
+      idx = atomic_fetch_add_explicit((device atomic_uint *)outbuf, 1u, memory_order_relaxed) * 2 + 1;
       val = gid * 4 + rc5_72unitwork[3] + 3; //keyN+offset
       attrib = (B.w == rc5_72unitwork[7]) ? 0x80000000 : 0;
       outbuf[idx] = attrib;
