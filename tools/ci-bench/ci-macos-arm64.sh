@@ -184,6 +184,9 @@ for f in "$OUT"/4pipe.ll "$OUT"/4pipe-openclc-*.ll "$OUT"/4pipe-metal*.ll "$OUT"
   done
 done
 
+# ---- 5. ROTL spelling pre-screen (no GPU needed) ---------------------
+bash tools/ci-bench/ci-rotl-prescreen.sh "$OUT" "$SUMMARY"
+
 note ""
 note "Done."
 exit 0

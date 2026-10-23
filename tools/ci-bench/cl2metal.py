@@ -2,16 +2,55 @@
 # Convert one of the dnetc rc5-72 OpenCL kernels (rc5-{1,2,4}pipe.cl) to
 # Metal Shading Language for compiler inspection. Keeps the kernel body
 # verbatim; replaces only the vendor macro block, the kernel signature,
-# get_global_id() and atomic_add().
+# get_global_id() and atomic_add(). The fourth argument picks the ROTL
+# spelling (default base).
 import re
 import sys
 
 src_path, dst_path, pipes = sys.argv[1], sys.argv[2], int(sys.argv[3])
-extr = len(sys.argv) > 4 and sys.argv[4] == "extr"   # rotate as a 64-bit funnel shift
+variant = sys.argv[4] if len(sys.argv) > 4 else "base"   # ROTL spelling, see VARIANTS
 src = open(src_path).read()
 
 vec = "uint" if pipes == 1 else "uint%d" % pipes
 lvec = "ulong" if pipes == 1 else "ulong%d" % pipes
+
+# ROTL spellings under test. Each entry: (comment, ROTL, ROTL3, ROTL1) with
+# (V) = the lane type, V( its constructor, @L( the 64-bit lane constructor. "extr" is kept as an alias of
+# extr64 (the ROTL_EXTR form in the .cl files).
+VARIANTS = {
+  "base": ("the kernel as shipped: rotate()",
+    "rotate((V)(x), (V)(s))",
+    "rotate((V)(x), (V)(3u))",
+    "rotate((uint)(x), (uint)(s))"),
+  "extr64": ("rotate as a 64-bit funnel shift, amount (-s) & 31 (ROTL_EXTR in the .cl)",
+    "V(((@L((V)(x)) << 32) | @L((V)(x))) >> @L(((V)(0u) - (V)(s)) & (V)(31u)))",
+    "ROTL(x, 3u)",
+    "((uint)((((ulong)(uint)(x) << 32) | (uint)(x)) >> ((0u - (uint)(s)) & 31u)))"),
+  "extr64sub": ("64-bit funnel shift, amount 32 - (s & 31)",
+    "V(((@L((V)(x)) << 32) | @L((V)(x))) >> @L((V)(32u) - ((V)(s) & (V)(31u))))",
+    "ROTL(x, 3u)",
+    "((uint)((((ulong)(uint)(x) << 32) | (uint)(x)) >> (32u - ((uint)(s) & 31u))))"),
+  "astype": ("64-bit funnel shift with the pair built by as_type (scalar only)",
+    "((uint)(as_type<ulong>(uint2((uint)(x), (uint)(x))) >> ((0u - (uint)(s)) & 31u)))",
+    "ROTL(x, 3u)",
+    "((uint)(as_type<ulong>(uint2((uint)(x), (uint)(x))) >> ((0u - (uint)(s)) & 31u)))"),
+  "masked": ("rotate() with the amount masked to 5 bits first",
+    "rotate((V)(x), (V)(s) & (V)(31u))",
+    "rotate((V)(x), (V)(3u))",
+    "rotate((uint)(x), (uint)(s) & 31u)"),
+  "shifts": ("textbook shifts and or, both amounts masked (control: should fold to rotate)",
+    "(((V)(x) << ((V)(s) & (V)(31u))) | ((V)(x) >> (((V)(0u) - (V)(s)) & (V)(31u))))",
+    "(((V)(x) << 3) | ((V)(x) >> 29))",
+    "(((uint)(x) << ((uint)(s) & 31u)) | ((uint)(x) >> ((0u - (uint)(s)) & 31u)))"),
+}
+VARIANTS["extr"] = VARIANTS["extr64"]
+if variant not in VARIANTS:
+    sys.exit("unknown variant %s; one of %s" % (variant, ", ".join(sorted(VARIANTS))))
+if variant == "astype" and pipes != 1:
+    sys.exit("variant astype is scalar only (1-pipe)")
+comment, rotl, rotl3, rotl1 = VARIANTS[variant]
+fix = lambda m: m.replace("(V)", "(%s)" % vec).replace("V(", "%s(" % vec).replace("@L(", "%s(" % lvec)
+
 header = """/*
 * Copyright distributed.net 2012-2026 - All Rights Reserved
 * For use in distributed.net projects only.
@@ -27,20 +66,12 @@ using namespace metal;
 
 #define SWAP(x) (((uint)(x) << 24) | (((uint)(x) & 0x0000FF00u) << 8) | (((uint)(x) >> 8) & 0x0000FF00u) | ((uint)(x) >> 24))
 
-""" % pipes
-if extr:
-    header += """// EXPERIMENT: rotate as a 64-bit funnel shift (same as ROTL_EXTR in the .cl)
-#define ROTL(x, s)  %s(((%s((%s)(x)) << 32) | %s((%s)(x))) >> %s(((%s)(0u) - (%s)(s)) & (%s)(31u)))
-#define ROTL3(x)    ROTL(x, 3u)
-#define ROTL1(x, s) ((uint)((((ulong)(uint)(x) << 32) | (uint)(x)) >> ((0u - (uint)(s)) & 31u)))
+// ROTL variant "%s": %s
+#define ROTL(x, s)  %s
+#define ROTL3(x)    %s
+#define ROTL1(x, s) %s
 
-""" % (vec, lvec, vec, lvec, vec, lvec, vec, vec, vec)
-else:
-    header += """#define ROTL(x, s)  rotate((%s)(x), (%s)(s))
-#define ROTL3(x)    rotate((%s)(x), (%s)(3u))
-#define ROTL1(x, s) rotate((uint)(x), (uint)(s))
-
-""" % (vec, vec, vec, vec)
+""" % (pipes, variant, comment, fix(rotl), fix(rotl3), fix(rotl1))
 
 # keep from "#define P" onward (drops the vendor-specific macro block)
 body = src[src.index("#define P "):]
