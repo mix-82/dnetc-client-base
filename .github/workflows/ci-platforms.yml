@@ -1,0 +1,194 @@
+name: Platform tests
+
+# Runs on a push to the ci-platforms branch, and by hand after that first run
+# ("Re-run all jobs" on the run page, or
+#   gh workflow run ci-platforms.yml --ref ci-platforms).
+# A workflow_dispatch trigger alone would need this file on the default branch.
+#
+# Builds the client on GitHub-hosted runners and runs the tester sequence
+# (-cpuinfo, -test, -stress, -bench) with tools/ci-bench/ci-run.sh:
+#   - Linux x86-64 (configure linux-amd64), 4 slots from the mixed CPU pool
+#   - Linux 32-bit x86 (configure linux-x86, gcc -m32)
+#   - Windows x86-64 and 32-bit x86 (makefile.vc, MSVC)
+#   - macOS on Intel (configure macosx-amd64)
+# 64-bit jobs also check the AVX-512 core selection (see ci-run.sh). No
+# distributed.net work units are fetched or returned (-runoffline -nodisk).
+
+on:
+  push:
+    branches: [ "ci-platforms" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-platforms-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ISPC_VERSION: "1.32.0"
+
+jobs:
+  linux-amd64:
+    name: linux-amd64 slot ${{ matrix.slot }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        slot: [1, 2, 3, 4]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install NASM and ISPC
+      run: |
+        sudo apt-get update -q
+        sudo apt-get install -y -q nasm
+        cd /tmp
+        curl -sSfL -o ispc.tar.gz "https://github.com/ispc/ispc/releases/download/v${ISPC_VERSION}/ispc-v${ISPC_VERSION}-linux.tar.gz"
+        echo "faf266bda2b702d68976ffd26bbd36c1ddba43424cc3c44f25b092cd1aa1f64a  ispc.tar.gz" | sha256sum -c -
+        tar xzf ispc.tar.gz
+        echo "/tmp/ispc-v${ISPC_VERSION}-linux/bin" >> "$GITHUB_PATH"
+    - name: Build
+      run: |
+        mkdir -p tools/ci-bench/ci-out
+        { SHELL=/bin/sh ./configure linux-amd64 && make -j"$(nproc)"; } 2>&1 | tee tools/ci-bench/ci-out/build.log
+        test -x dnetc
+    - name: Test
+      env:
+        DNETC: ./dnetc
+        ARCH: amd64
+        BUILD: linux-amd64
+      run: bash tools/ci-bench/ci-run.sh
+    - name: Upload results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-amd64-slot${{ matrix.slot }}
+        path: tools/ci-bench/ci-out/
+        if-no-files-found: warn
+
+  linux-x86:
+    name: linux-x86 (32-bit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install NASM and 32-bit gcc
+      run: |
+        sudo apt-get update -q
+        sudo apt-get install -y -q nasm gcc-multilib g++-multilib
+    - name: Build
+      # setarch makes configure see an i686 host; the link needs -m32 too
+      run: |
+        mkdir -p tools/ci-bench/ci-out
+        { SHELL=/bin/sh setarch i686 ./configure linux-x86 && make -j"$(nproc)" LDFLAGS=-m32; } 2>&1 | tee tools/ci-bench/ci-out/build.log
+        test -x dnetc
+        file dnetc
+    - name: Test
+      env:
+        DNETC: ./dnetc
+        ARCH: x86
+        BUILD: linux-x86
+      run: bash tools/ci-bench/ci-run.sh
+    - name: Upload results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-x86
+        path: tools/ci-bench/ci-out/
+        if-no-files-found: warn
+
+  windows:
+    name: windows-${{ matrix.arch }}
+    runs-on: windows-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            vcvars: x64
+            makearch: AMD64
+          - arch: x86
+            vcvars: x86
+            makearch: x86
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install NASM
+      shell: pwsh
+      run: |
+        choco install nasm -y --no-progress
+        "C:\Program Files\NASM" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+    - name: Install ISPC
+      if: matrix.arch == 'amd64'
+      shell: pwsh
+      run: |
+        $zip = "$env:RUNNER_TEMP\ispc.zip"
+        Invoke-WebRequest -Uri "https://github.com/ispc/ispc/releases/download/v$env:ISPC_VERSION/ispc-v$env:ISPC_VERSION-windows.zip" -OutFile $zip
+        $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+        if ($hash -ne "148d5cd96abe7501c730d5fbd00f1f0c893b96bfeada38d1811c9b6251e86a5c") { throw "ispc.zip sha256 mismatch: $hash" }
+        Expand-Archive $zip -DestinationPath $env:RUNNER_TEMP
+        "$env:RUNNER_TEMP\ispc-v$env:ISPC_VERSION-windows\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+    - name: Build
+      shell: cmd
+      run: |
+        for /f "usebackq delims=" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath`) do set VSDIR=%%i
+        call "%VSDIR%\VC\Auxiliary\Build\vcvarsall.bat" ${{ matrix.vcvars }} || exit /b 1
+        if not exist output mkdir output
+        if not exist tools\ci-bench\ci-out mkdir tools\ci-bench\ci-out
+        nasm -v
+        cl 2>&1 | findstr /i version
+        nmake -nologo -f makefile.vc PROCESSOR_ARCHITECTURE=${{ matrix.makearch }} > tools\ci-bench\ci-out\build.log 2>&1
+        set RC=%ERRORLEVEL%
+        type tools\ci-bench\ci-out\build.log
+        if not "%RC%"=="0" exit /b %RC%
+        if not exist dnetc.exe exit /b 1
+        if not exist dnetc.com exit /b 1
+    - name: Test
+      shell: bash
+      env:
+        DNETC: ./dnetc.com
+        ARCH: ${{ matrix.arch }}
+        BUILD: windows-${{ matrix.arch }}
+      run: bash tools/ci-bench/ci-run.sh
+    - name: Upload results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-${{ matrix.arch }}
+        path: tools/ci-bench/ci-out/
+        if-no-files-found: warn
+
+  macos-intel:
+    name: macos-amd64 (Intel)
+    runs-on: macos-15-intel
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install NASM and ISPC
+      run: |
+        brew install nasm
+        cd /tmp
+        curl -sSfL -o ispc.tar.gz "https://github.com/ispc/ispc/releases/download/v${ISPC_VERSION}/ispc-v${ISPC_VERSION}-macOS.x86_64.tar.gz"
+        echo "dc66396d45c73e2c6596d84dc82765e18631f9ebd34533adae400a0a137f9906  ispc.tar.gz" | shasum -a 256 -c -
+        tar xzf ispc.tar.gz
+        echo "/tmp/ispc-v${ISPC_VERSION}-macOS.x86_64/bin" >> "$GITHUB_PATH"
+    - name: Build
+      run: |
+        mkdir -p tools/ci-bench/ci-out
+        { SHELL=/bin/sh ./configure macosx-amd64 && make -j"$(sysctl -n hw.ncpu)"; } 2>&1 | tee tools/ci-bench/ci-out/build.log
+        test -x dnetc
+    - name: Test
+      env:
+        DNETC: ./dnetc
+        ARCH: amd64
+        BUILD: macos-amd64
+      run: bash tools/ci-bench/ci-run.sh
+    - name: Upload results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-amd64
+        path: tools/ci-bench/ci-out/
+        if-no-files-found: warn
