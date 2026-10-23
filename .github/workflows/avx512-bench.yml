@@ -1,0 +1,77 @@
+name: AVX-512 benchmark
+
+# Runs on a push to the ci-mix-zmm branch, and by hand after that first run
+# ("Re-run all jobs" on the run page, or
+#   gh workflow run avx512-bench.yml --ref ci-mix-zmm).
+# A workflow_dispatch trigger alone would need this file on the default branch.
+#
+# Starts 6 identical jobs on GitHub-hosted ubuntu-latest runners, which come
+# from a mixed pool of CPUs (for example AMD EPYC 9V74 / Zen 4, EPYC 9V45 /
+# Zen 5, EPYC 7763 / Zen 3). Every job builds the client and runs the tester
+# sequence (-cpuinfo, -test, -stress, -bench). Jobs on CPUs with AVX-512F
+# also make 4-minute offline runs on cores 4, 5 and 6; jobs without it check
+# that cores 5 and 6 fall back to #4. No distributed.net work units are
+# fetched or returned (-runoffline -nodisk).
+
+on:
+  push:
+    branches: [ "ci-mix-zmm" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: avx512-bench-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bench:
+    name: slot ${{ matrix.slot }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        slot: [1, 2, 3, 4, 5, 6]
+
+    steps:
+    - name: Identify CPU
+      id: cpu
+      env:
+        SLOT: ${{ matrix.slot }}
+      run: |
+        lscpu
+        model=$(grep -m1 '^model name' /proc/cpuinfo | cut -d: -f2- | sed 's/^ *//')
+        fam=$(grep -m1 '^cpu family' /proc/cpuinfo | awk -F: '{print $2+0}')
+        mod=$(grep -m1 -E '^model[[:space:]]*:' /proc/cpuinfo | awk -F: '{print $2+0}')
+        step=$(grep -m1 '^stepping' /proc/cpuinfo | awk -F: '{print $2+0}')
+        if grep -q -w avx512f /proc/cpuinfo; then avx=yes; else avx=no; fi
+        tag=$(printf '%s' "$model" | tr -cs 'A-Za-z0-9' '-' | sed 's/^-*//; s/-*$//' | cut -c1-40)
+        echo "avx512=$avx" >> "$GITHUB_OUTPUT"
+        echo "tag=$tag" >> "$GITHUB_OUTPUT"
+        echo "### Slot $SLOT: $model (family $fam, model $mod, stepping $step, $(nproc) vCPUs, AVX-512F: $avx)" >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Check out
+      uses: actions/checkout@v4
+
+    - name: Install NASM and ISPC 1.32.0
+      run: |
+        sudo apt-get update -q
+        sudo apt-get install -y -q nasm
+        cd /tmp
+        curl -sSfL -o ispc.tar.gz https://github.com/ispc/ispc/releases/download/v1.32.0/ispc-v1.32.0-linux.tar.gz
+        echo "faf266bda2b702d68976ffd26bbd36c1ddba43424cc3c44f25b092cd1aa1f64a  ispc.tar.gz" | sha256sum -c -
+        tar xzf ispc.tar.gz
+        echo "/tmp/ispc-v1.32.0-linux/bin" >> "$GITHUB_PATH"
+
+    - name: Build and test
+      run: sh tools/ci-bench/ci-run.sh
+
+    - name: Upload results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: r72-slot${{ matrix.slot }}-${{ steps.cpu.outputs.tag }}
+        path: tools/ci-bench/ci-out/
+        if-no-files-found: warn
