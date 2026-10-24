@@ -174,6 +174,11 @@ for p in 1 2 4; do
   fi
   for blob in $BLOBS; do
     [ -s "$blob" ] || continue
+    # dumpcl copies the driver's code object next to the blob while it exists
+    if [ -s "$blob.cvms" ]; then
+      note "- code object from the driver: $(file -b "$blob.cvms" | cut -c1-100) ($(stat -f %z "$blob.cvms") bytes)"
+      blob=$blob.cvms
+    fi
     base=$(basename "$blob" | sed 's/\.[a-z]*$//')
     note "- $(file -b "$blob" | cut -c1-80) ($(basename "$blob"), $(stat -f %z "$blob") bytes)"
     python3 -I tools/ci-bench/find_elf.py "$blob" "$OUT/$base" > "$OUT/find_elf-$base.txt" 2>&1

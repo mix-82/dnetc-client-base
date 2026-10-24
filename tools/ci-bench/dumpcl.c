@@ -7,7 +7,12 @@
  *   gpu  (default) only CL_DEVICE_TYPE_GPU devices
  *   all  any device type, for machines without a usable GPU
  *
- * Used by .github/workflows/ci-platforms.yml on macOS (Apple Silicon).
+ * On Intel Macs the driver returns a property list naming the code object
+ * in its compiler service cache (/private/var/db/CVMS/), which goes away
+ * when the program is released; that file is copied to out.bin.cvms while
+ * it still exists.
+ *
+ * Used by .github/workflows/ci-platforms.yml on macOS.
  */
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
@@ -62,6 +67,9 @@ int main(int argc, char **argv)
   unsigned char *bin;
   unsigned char *bins[1];
   FILE *out;
+  cl_uint nkern;
+  const char *cache;
+  size_t i;
 
   if (argc < 3)
   {
@@ -116,6 +124,10 @@ int main(int argc, char **argv)
     return 4;
   }
 
+  /* make sure the device code exists before asking for the binary */
+  if (clCreateKernelsInProgram(prog, 0, NULL, &nkern) == CL_SUCCESS)
+    printf("kernels in program: %u\n", (unsigned)nkern);
+
   clGetProgramInfo(prog, CL_PROGRAM_BINARY_SIZES, sizeof binlen, &binlen, NULL);
   bin = malloc(binlen);
   bins[0] = bin;
@@ -130,5 +142,46 @@ int main(int argc, char **argv)
   fwrite(bin, 1, binlen, out);
   fclose(out);
   printf("wrote %lu bytes to %s\n", (unsigned long)binlen, argv[2]);
+
+  /* a path into the compiler service cache: copy that file now */
+  cache = NULL;
+  for (i = 0; i + 16 < binlen; i++)
+  {
+    if (memcmp(bin + i, "/private/var/db/", 16) == 0)
+    {
+      cache = (const char *)bin + i;
+      break;
+    }
+  }
+  if (cache != NULL)
+  {
+    char cvmsname[1024];
+    FILE *in;
+    size_t n;
+    unsigned long total = 0;
+    char buf[65536];
+
+    snprintf(cvmsname, sizeof cvmsname, "%s.cvms", argv[2]);
+    in = fopen(cache, "rb");
+    if (!in)
+    {
+      perror(cache);
+      return 0;
+    }
+    out = fopen(cvmsname, "wb");
+    if (!out)
+    {
+      perror(cvmsname);
+      return 0;
+    }
+    while ((n = fread(buf, 1, sizeof buf, in)) > 0)
+    {
+      fwrite(buf, 1, n, out);
+      total += n;
+    }
+    fclose(in);
+    fclose(out);
+    printf("copied code object %s (%lu bytes) to %s\n", cache, total, cvmsname);
+  }
   return 0;
 }
