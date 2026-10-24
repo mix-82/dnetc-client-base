@@ -48,19 +48,11 @@ run_step()
   return $rc
 }
 
-# isa_counts <file with disassembly or assembly> <pipes>: the rotate-related
-# instruction counts, VALU/SALU totals, and the top of the histogram
+# isa_counts <assembly or disassembly> <pipes>: instruction counts for the
+# kernel (tools/ci-bench/isa_counts.py)
 isa_counts()
 {
-  local f=$1
-  local p=$2
-  local valu salu
-  valu=$(grep -cE '^\s*(0x[0-9a-f]+:\s*|[0-9a-f]+:\s*)?v_' "$f")
-  salu=$(grep -cE '^\s*(0x[0-9a-f]+:\s*|[0-9a-f]+:\s*)?s_' "$f")
-  note "- VALU $valu ($(( valu / p )) per key), SALU $salu"
-  note "- v_alignbit_b32 $(grep -c 'v_alignbit_b32' "$f"), v_lshrrev_b64 $(grep -c 'v_lshrrev_b64' "$f"), v_lshlrev_b64 $(grep -c 'v_lshlrev_b64' "$f"), v_lshl_or $(grep -c 'v_lshl_or' "$f"), v_bfe $(grep -c 'v_bfe' "$f"), v_perm $(grep -c 'v_perm' "$f")"
-  note "- instruction histogram:"
-  grep -oE '\b[vs]_[a-z0-9_]+' "$f" | sort | uniq -c | sort -rn | head -10 | awk '{printf "    %6d %s\n", $1, $2}' >> "$SUMMARY"
+  python3 -I tools/ci-bench/isa_counts.py "$1" "$2" "ocl_rc572_${2}pipe" >> "$SUMMARY"
 }
 
 : > "$SUMMARY"
@@ -185,7 +177,16 @@ for p in 1 2 4; do
     base=$(basename "$blob" | sed 's/\.[a-z]*$//')
     note "- $(file -b "$blob" | cut -c1-80) ($(basename "$blob"), $(stat -f %z "$blob") bytes)"
     python3 -I tools/ci-bench/find_elf.py "$blob" "$OUT/$base" > "$OUT/find_elf-$base.txt" 2>&1
+    # the driver's code object may sit in a cache the user cannot read
+    cvms=$(grep -oE 'cannot read /[^:]+' "$OUT/find_elf-$base.txt" | cut -c13-)
+    if [ -n "$cvms" ] && sudo -n cp "$cvms" "$OUT/$base-cvms.bin" 2>> "$OUT/find_elf-$base.txt"; then
+      sudo -n chown "$(id -u)" "$OUT/$base-cvms.bin"
+      python3 -I tools/ci-bench/find_elf.py "$OUT/$base-cvms.bin" "$OUT/$base" >> "$OUT/find_elf-$base.txt" 2>&1
+    fi
     sed 's/^/    /' "$OUT/find_elf-$base.txt" >> "$SUMMARY"
+    if [ -s "$OUT/$base-cvms.bin" ]; then
+      note "- code object: $(file -b "$OUT/$base-cvms.bin" | cut -c1-100)"
+    fi
     # bitcode: readable IR, same front end as on Apple Silicon
     if xcrun llvm-dis "$blob" -o "$OUT/$base.ll" 2> /dev/null; then
       note "- llvm-dis: ok, $base.ll ($(grep -c 'rotate' "$OUT/$base.ll") rotate calls)"
@@ -197,7 +198,7 @@ for p in 1 2 4; do
         mach=$(grep -oE 'gfx[0-9a-f]+' "$OUT/find_elf-$base.txt" | head -1)
         "$LLVM_BIN/llvm-readelf" --file-headers --notes "$elf" > "$OUT/$(basename "$elf" .elf)-readelf.txt" 2>&1
         if "$LLVM_BIN/llvm-objdump" -d ${mach:+--mcpu=$mach} "$elf" > "$OUT/$(basename "$elf" .elf).s" 2>&1; then
-          note "- $(basename "$elf"): disassembled (${mach:-no gfx in header}), VGPRs: $(grep -oE '\.vgpr_count:\s*[0-9]+' "$OUT/$(basename "$elf" .elf)-readelf.txt" | head -1)"
+          note "- $(basename "$elf"): disassembled (${mach:-no gfx in header}), metadata: $(grep -oE '\.[sv]gpr_count:\s*[0-9]+' "$OUT/$(basename "$elf" .elf)-readelf.txt" | tr -s ' ' | tr '\n' ' ')"
           isa_counts "$OUT/$(basename "$elf" .elf).s" $p
         else
           note "- $(basename "$elf"): llvm-objdump failed"
@@ -236,7 +237,7 @@ if [ -n "$LLVM_BIN" ]; then
           DEFS=("-DROTL_EXTR=1")
         fi
         if run_step "llvm-$name" "$LLVM_BIN/clang" -target amdgcn-amd-amdhsa -mcpu=$gfx -nogpulib -x cl -cl-std=CL1.2 -O3 -Xclang -finclude-default-header "${DEFS[@]}" -S -o "$OUT/$name.s" "$KERNEL"; then
-          note "- $name: $(grep -E 'NumVgprs|Occupancy' "$OUT/$name.s" | tr -s ' ' | tr -d ';' | tr '\n' ' ')"
+          note "- $name:"
           isa_counts "$OUT/$name.s" $p
         fi
       done

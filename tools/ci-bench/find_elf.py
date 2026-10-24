@@ -13,6 +13,25 @@ import sys
 blob = open(sys.argv[1], "rb").read()
 prefix = sys.argv[2]
 
+# On Intel Macs the OpenCL driver returns a property list whose clBinaryData
+# is the path of the code object in the compiler service's cache
+# (/private/var/db/CVMS/). Follow it and scan that file instead.
+if blob.startswith(b"bplist00"):
+    import plistlib
+    plist = plistlib.loads(blob)
+    print("blob: %s is a property list: %s" % (sys.argv[1],
+          {k: (v if k != "clBinaryData" else v[:60]) for k, v in plist.items()}))
+    data = plist.get("clBinaryData", b"")
+    if isinstance(data, bytes) and data.startswith(b"/"):
+        path = data.rstrip(b"\x00").decode()
+        try:
+            blob = open(path, "rb").read()
+            open(prefix + "-cvms.bin", "wb").write(blob)
+            print("  followed to %s (%d bytes), copy in %s-cvms.bin" % (path, len(blob), prefix))
+        except OSError as e:
+            print("  cannot read %s: %s" % (path, e))
+            sys.exit(0)
+
 MACHINES = {224: "AMDGPU", 62: "x86_64", 183: "AArch64", 3: "x86"}
 AMDGPU_MACH = {   # EF_AMDGPU_MACH values (e_flags & 0xff), llvm/BinaryFormat/ELF.h
     0x20: "gfx600", 0x21: "gfx601", 0x22: "gfx700", 0x23: "gfx701",
