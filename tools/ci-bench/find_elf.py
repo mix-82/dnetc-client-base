@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # Scan a binary blob (CL_PROGRAM_BINARIES output, a Metal binary archive,
 # anything) for embedded ELF objects and write each one out as a file, with
-# its machine type. Meant for the AMD GPU code the macOS driver keeps inside
-# its own containers (see tools/ci-bench/ci-macos-amd.sh): an AMDGPU ELF
-# (e_machine 224) can then go to llvm-objdump. Also reports LLVM bitcode
-# wrappers and Mach-O headers, so a blob that holds no ISA is still described.
+# its machine type. Meant for the GPU code the macOS driver keeps inside its
+# own containers (see tools/ci-bench/ci-macos-amd.sh): an AMDGPU ELF
+# (e_machine 224) can then go to llvm-objdump, an NVIDIA cubin (190) to
+# nvdisasm. Also reports PTX text, LLVM bitcode wrappers and Mach-O headers,
+# so a blob that holds no ISA is still described.
 #
 # usage: find_elf.py blob out-prefix
 import struct
@@ -32,7 +33,7 @@ if blob.startswith(b"bplist00"):
             print("  cannot read %s: %s" % (path, e))
             sys.exit(0)
 
-MACHINES = {224: "AMDGPU", 62: "x86_64", 183: "AArch64", 3: "x86"}
+MACHINES = {224: "AMDGPU", 190: "NVIDIA CUDA (cubin)", 62: "x86_64", 183: "AArch64", 3: "x86"}
 AMDGPU_MACH = {   # EF_AMDGPU_MACH values (e_flags & 0xff), llvm/BinaryFormat/ELF.h
     0x20: "gfx600", 0x21: "gfx601", 0x22: "gfx700", 0x23: "gfx701",
     0x24: "gfx702", 0x25: "gfx703", 0x26: "gfx704", 0x28: "gfx801",
@@ -77,6 +78,9 @@ while pos >= 0:
     else:
         pos = blob.find(b"\x7fELF", pos + 1)
 
+ptx = blob.find(b".version ")
+if ptx >= 0 and blob.find(b".target ", ptx) >= 0:
+    print("  PTX text at offset %d: %s" % (ptx, blob[ptx:ptx + 60].split(b"\n")[0].decode(errors="replace")))
 bc = blob.count(b"BC\xc0\xde")
 if bc:
     print("  raw bitcode magic occurrences: %d" % bc)

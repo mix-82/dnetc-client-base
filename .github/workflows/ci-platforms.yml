@@ -252,7 +252,10 @@ jobs:
     - name: Build, test, and inspect the compiled kernels
       # OpenCL client, the driver's compiled program and a Metal binary
       # archive scanned for GPU code objects, and an offline GCN baseline
-      # from Homebrew LLVM; every step runs even if an earlier one fails
+      # from Homebrew LLVM; every step runs even if an earlier one fails.
+      # The runner has no AMD device, so the LLVM part is asked for explicitly
+      env:
+        WANT_LLVM: 1
       run: bash tools/ci-bench/ci-macos-amd.sh
     - name: Upload results
       if: always()

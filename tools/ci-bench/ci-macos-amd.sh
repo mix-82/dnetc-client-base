@@ -1,7 +1,10 @@
 #!/bin/bash
-# Intel Mac check for the OpenCL client, aimed at Macs with AMD (Radeon) or
-# Intel GPUs. Run from the source root. Every step is attempted even if an
-# earlier one fails, so one run answers all of:
+# Intel Mac check for the OpenCL client: Macs with AMD (Radeon) graphics
+# first of all, but any GPU the macOS OpenCL driver exposes (Intel, or the
+# NVIDIA Kepler parts that run up to Catalina) is captured the same way; the
+# AMD and Intel/NVIDIA code objects are told apart afterwards. Run from the
+# source root. Every step is attempted even if an earlier one fails, so one
+# run answers all of:
 #   1. does the amd64 OpenCL client build (configure macosx-amd64-opencl)
 #   2. what device the machine exposes (-gpuinfo), and -test/-bench on it,
 #      with the standard kernels and with the kernels built as ROTL_EXTR
@@ -11,8 +14,9 @@
 #      the compiler service's code object, which dumpcl saves from its own
 #      memory) and what a Metal binary archive holds (mtlpipe): any GPU code
 #      object inside is pulled out (find_elf.py) and, for AMD, disassembled
-#      with llvm-objdump from Homebrew LLVM; a Mach-O object (CPU device)
-#      goes through otool
+#      with llvm-objdump from Homebrew LLVM (installed only when the device
+#      is AMD, or WANT_LLVM=1); a Mach-O object (CPU device) goes through
+#      otool; Intel and NVIDIA objects are kept as bytes for offline tools
 #   4. a baseline from upstream LLVM: the 1-, 2- and 4-pipe kernels compiled
 #      offline for gfx803/gfx900/gfx1010 (Polaris, Vega, Navi 10, the GPUs
 #      Apple shipped) with rotate as shifts, and with the ROTL_EXTR form, so
@@ -20,7 +24,7 @@
 #      set beside whatever the macOS driver produces
 # Results go to tools/ci-bench/ci-out/. No work is fetched or returned.
 # Used by .github/workflows/ci-platforms.yml (macos-amd job) and by hand on
-# a Radeon Mac. Needs Xcode (swiftc, metal) for step 3's Metal part.
+# an Intel Mac. Needs the Command Line Tools (clang, swiftc, otool).
 
 set -u
 
@@ -30,6 +34,7 @@ NCPU=$(sysctl -n hw.ncpu)
 SUMMARY=$OUT/summary-amd.md
 RUN_MINUTES=${RUN_MINUTES:-2}
 GFX_LIST=${GFX_LIST:-"gfx803 gfx900 gfx1010"}
+WANT_LLVM=${WANT_LLVM:-0}
 
 mkdir -p "$OUT"
 cd "$ROOT" || exit 1
@@ -132,20 +137,29 @@ fi
 note ""
 
 # ---- Homebrew LLVM: AMDGPU disassembler and offline compiler ----------
+# 2 GB from Homebrew, so only when the device is AMD (or asked for): the
+# vendor comes from the client's -gpuinfo output
 note "## LLVM with the AMDGPU target"
 LLVM_BIN=
-if [ -x "$(brew --prefix llvm 2>/dev/null)/bin/llvm-objdump" ]; then
-  LLVM_BIN=$(brew --prefix llvm)/bin
-else
-  run_step brew-llvm brew install llvm
+if [ $HAVE_DEVICE = 1 ] && grep -qiE 'AMD|Radeon|FirePro|Vega' "$OUT/gpu-gpuinfo.txt" "$LOG"; then
+  WANT_LLVM=1
+fi
+if [ "$WANT_LLVM" = 1 ]; then
   if [ -x "$(brew --prefix llvm 2>/dev/null)/bin/llvm-objdump" ]; then
     LLVM_BIN=$(brew --prefix llvm)/bin
+  elif command -v brew > /dev/null 2>&1; then
+    run_step brew-llvm brew install llvm
+    if [ -x "$(brew --prefix llvm 2>/dev/null)/bin/llvm-objdump" ]; then
+      LLVM_BIN=$(brew --prefix llvm)/bin
+    fi
+  else
+    note "- Homebrew not installed; AMD code can still be disassembled from the saved objects later"
   fi
 fi
 if [ -n "$LLVM_BIN" ]; then
   note "- $("$LLVM_BIN/clang" --version | head -1), targets: $("$LLVM_BIN/llc" --version | grep -c amdgcn) amdgcn"
 else
-  note "- Homebrew LLVM not available; no disassembly or offline baseline"
+  note "- not used (device is not AMD, or Homebrew LLVM unavailable); saved code objects are analysed offline"
 fi
 note ""
 
@@ -201,7 +215,10 @@ for p in 1 2 4; do
     if xcrun llvm-dis "$blob" -o "$OUT/$base.ll" 2> /dev/null; then
       note "- llvm-dis: ok, $base.ll ($(grep -c 'rotate' "$OUT/$base.ll") rotate calls)"
     fi
-    strings -n 8 "$blob" | grep -iE 'gfx|amdgcn|amdgpu|radeon|intel|gen[0-9]|air64|apple' | sort -u | head -20 > "$OUT/strings-$base.txt"
+    strings -n 8 "$blob" | grep -iE 'gfx|amdgcn|amdgpu|radeon|intel|gen[0-9]|air64|apple|nvidia|nvptx|\.version|\.target|cubin|sm_[0-9]' | sort -u | head -30 > "$OUT/strings-$base.txt"
+    if [ -s "$OUT/strings-$base.txt" ]; then
+      note "- strings of note: $(head -5 "$OUT/strings-$base.txt" | tr '\n' ';' | cut -c1-160)"
+    fi
     # a Mach-O object is host code (the CPU device): disassemble it too, so the
     # route from driver to instruction counts is proven on any Intel Mac
     if file -b "$blob" | grep -q 'Mach-O'; then
