@@ -1,9 +1,11 @@
 name: Platform tests
 
-# Runs on a push to the ci-platforms branch, and by hand after that first run
-# ("Re-run all jobs" on the run page, or
-#   gh workflow run ci-platforms.yml --ref ci-platforms).
-# A workflow_dispatch trigger alone would need this file on the default branch.
+# Runs only when started by hand, so pushes to the branch cost no runner
+# minutes (the macOS jobs are billed at 10x):
+#   gh workflow run ci-platforms.yml --ref ci-platforms
+# or "Re-run all jobs" on an earlier run's page. The Actions page shows a
+# "Run workflow" button only for workflow files on the default branch, so
+# this one has to be started from the command line.
 #
 # Builds the client on GitHub-hosted runners and runs the tester sequence
 # (-cpuinfo, -test, -stress, -bench) with tools/ci-bench/ci-run.sh:
@@ -17,8 +19,6 @@ name: Platform tests
 # distributed.net work units are fetched or returned (-runoffline -nodisk).
 
 on:
-  push:
-    branches: [ "ci-platforms" ]
   workflow_dispatch:
 
 permissions:
