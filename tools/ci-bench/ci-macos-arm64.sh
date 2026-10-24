@@ -54,6 +54,8 @@ note ""
   uname -a
   echo
   sysctl -n machdep.cpu.brand_string
+  sysctl -n hw.model
+  system_profiler SPHardwareDataType 2>/dev/null | grep -E "Model Name|Model Identifier|Chip|Memory"
   echo "hw.ncpu=$NCPU"
   echo
   system_profiler SPDisplaysDataType
