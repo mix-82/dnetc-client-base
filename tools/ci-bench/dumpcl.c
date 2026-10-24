@@ -8,9 +8,10 @@
  *   all  any device type, for machines without a usable GPU
  *
  * On Intel Macs the driver returns a property list naming the code object
- * in its compiler service cache (/private/var/db/CVMS/), which goes away
- * when the program is released; that file is copied to out.bin.cvms while
- * it still exists.
+ * in its compiler service cache (/private/var/db/CVMS/). That file is
+ * unlinked as soon as it is handed over and lives on only as a mapping in
+ * this process, so the mapped regions carrying its name are written to
+ * out.bin.cvms (the file itself, if it still exists, is copied instead).
  *
  * Used by .github/workflows/ci-platforms.yml on macOS.
  */
@@ -22,6 +23,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#ifdef __APPLE__
+#include <mach/mach.h>
+#include <mach/mach_vm.h>
+#include <libproc.h>
+#include <unistd.h>
+#endif
 
 static char *slurp(const char *path, size_t *len)
 {
@@ -166,6 +174,56 @@ int main(int argc, char **argv)
     if (!in)
     {
       perror(cache);
+#ifdef __APPLE__
+      /* already unlinked: find the mapping by its file name and dump it */
+      {
+        mach_vm_address_t addr = 0;
+        mach_vm_size_t size = 0;
+        vm_region_basic_info_data_64_t info;
+        mach_msg_type_number_t count;
+        mach_port_t obj;
+        char path[1024];
+        const char *base = strrchr(cache, '/');
+        unsigned regions = 0;
+
+        if (base != NULL)
+          base++;
+        else
+          base = cache;
+        out = fopen(cvmsname, "wb");
+        if (!out)
+        {
+          perror(cvmsname);
+          return 0;
+        }
+        for (;;)
+        {
+          count = VM_REGION_BASIC_INFO_COUNT_64;
+          if (mach_vm_region(mach_task_self(), &addr, &size, VM_REGION_BASIC_INFO_64,
+                             (vm_region_info_t)&info, &count, &obj) != KERN_SUCCESS)
+            break;
+          if ((info.protection & VM_PROT_READ) != 0
+              && proc_regionfilename(getpid(), addr, path, sizeof path) > 0
+              && strstr(path, base) != NULL)
+          {
+            fwrite((const void *)(uintptr_t)addr, 1, (size_t)size, out);
+            total += (unsigned long)size;
+            regions++;
+            printf("mapped region %#llx + %llu, %s\n", (unsigned long long)addr,
+                   (unsigned long long)size, path);
+          }
+          addr += size;
+        }
+        fclose(out);
+        if (regions == 0)
+        {
+          printf("no mapping of %s found in this process\n", base);
+          remove(cvmsname);
+          return 0;
+        }
+        printf("wrote %u mapped regions (%lu bytes) of %s to %s\n", regions, total, base, cvmsname);
+      }
+#endif
       return 0;
     }
     out = fopen(cvmsname, "wb");

@@ -74,6 +74,8 @@ note ""
   clang --version
   echo
   ls -l /System/Library/Frameworks/OpenCL.framework/Libraries/ 2>&1
+  echo
+  ls -la /private/var/db/CVMS/ 2>&1 | head -20
 } > "$OUT/system-amd.txt" 2>&1
 grep -E 'ProductVersion|Chipset Model|Vendor|VRAM|Metal' "$OUT/system-amd.txt" | sed 's/^ */    /' >> "$SUMMARY"
 note ""
