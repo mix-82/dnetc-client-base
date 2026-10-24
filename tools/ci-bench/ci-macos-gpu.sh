@@ -11,6 +11,8 @@
 #      (mtlpipe.swift), and
 #      the machine code from the applegpu project's compiler_explorer.py,
 #      with an instruction histogram and register high-water mark
+#   4. the ROTL spellings through the optimiser and the predefined macros of
+#      Apple's OpenCL and Metal front ends (ci-rotl-prescreen.sh)
 # Results go to tools/ci-bench/ci-out/. No work is fetched or returned.
 # Needs full Xcode (the metal compiler is not in the Command Line Tools).
 
@@ -139,6 +141,9 @@ for METAL in tools/ci-bench/variants/rc5-*pipe-*.metal; do
     fi
   fi
 done
+
+# ---- ROTL spellings through the optimiser, and the front ends' macros ---
+bash tools/ci-bench/ci-rotl-prescreen.sh "$OUT" "$SUMMARY"
 
 note ""
 note "Done."
