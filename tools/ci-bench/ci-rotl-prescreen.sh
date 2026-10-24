@@ -38,4 +38,34 @@ for f in tools/ci-bench/variants/rc5-*pipe-*.metal; do
     note "| $v | compile failed (variant-$v.txt) | | | | | | | | |"
   fi
 done
+
+# ---- predefined macros of Apple's OpenCL and Metal front ends ----------
+# What a kernel can test with #if defined(...) to recognise the compiler.
+OPENCLC=/System/Library/Frameworks/OpenCL.framework/Libraries/openclc
+: > "$OUT/empty.cl"
+note ""
+note "## Predefined macros"
+if [ -x "$OPENCLC" ]; then
+  for arch in gpu_64 gpu_32; do
+    if "$OPENCLC" -x cl -cl-std=CL1.1 -arch "$arch" -dM -E "$OUT/empty.cl" > "$OUT/openclc-macros-$arch.txt" 2> "$OUT/openclc-macros-$arch.err"; then
+      note "- openclc -arch $arch: $(wc -l < "$OUT/openclc-macros-$arch.txt" | tr -d ' ') macros (openclc-macros-$arch.txt)"
+    else
+      note "- openclc -arch $arch: failed (openclc-macros-$arch.err)"
+    fi
+  done
+  if [ -s "$OUT/openclc-macros-gpu_64.txt" ]; then
+    note "- openclc gpu_64, vendor- or target-looking names:"
+    grep -iE 'apple|mach|air|gpu|metal|opencl_c|cl_khr|cl_APPLE|__clang|__llvm|ENDIAN|IMAGE_SUPPORT|FAST_RELAXED' "$OUT/openclc-macros-gpu_64.txt" | sed 's/^/    /' >> "$SUMMARY"
+  fi
+else
+  note "- openclc: not present"
+fi
+: > "$OUT/empty.metal"
+if xcrun -sdk macosx metal -dM -E "$OUT/empty.metal" > "$OUT/metal-macros.txt" 2> "$OUT/metal-macros.err"; then
+  note "- metal: $(wc -l < "$OUT/metal-macros.txt" | tr -d ' ') macros (metal-macros.txt)"
+  note "- metal, vendor- or target-looking names:"
+  grep -iE 'apple|mach|air|gpu|metal|__clang|__llvm|ENDIAN' "$OUT/metal-macros.txt" | sed 's/^/    /' >> "$SUMMARY"
+else
+  note "- metal -dM: failed (metal-macros.err)"
+fi
 exit 0
