@@ -7,9 +7,12 @@
 #      with the standard kernels and with the kernels built as ROTL_EXTR
 #      (DNETC_ROTL_EXTR=1 switch in ocl_common.cpp on this branch)
 #   3. what Apple's OpenCL driver hands back as the compiled program
-#      (dumpcl, CL_PROGRAM_BINARIES) and what a Metal binary archive holds
-#      (mtlpipe): any GPU code object inside is pulled out (find_elf.py) and,
-#      for AMD, disassembled with llvm-objdump from Homebrew LLVM
+#      (dumpcl, CL_PROGRAM_BINARIES; on Intel Macs a property list naming
+#      the compiler service's code object, which dumpcl saves from its own
+#      memory) and what a Metal binary archive holds (mtlpipe): any GPU code
+#      object inside is pulled out (find_elf.py) and, for AMD, disassembled
+#      with llvm-objdump from Homebrew LLVM; a Mach-O object (CPU device)
+#      goes through otool
 #   4. a baseline from upstream LLVM: the 1-, 2- and 4-pipe kernels compiled
 #      offline for gfx803/gfx900/gfx1010 (Polaris, Vega, Navi 10, the GPUs
 #      Apple shipped) with rotate as shifts, and with the ROTL_EXTR form, so
@@ -199,6 +202,13 @@ for p in 1 2 4; do
       note "- llvm-dis: ok, $base.ll ($(grep -c 'rotate' "$OUT/$base.ll") rotate calls)"
     fi
     strings -n 8 "$blob" | grep -iE 'gfx|amdgcn|amdgpu|radeon|intel|gen[0-9]|air64|apple' | sort -u | head -20 > "$OUT/strings-$base.txt"
+    # a Mach-O object is host code (the CPU device): disassemble it too, so the
+    # route from driver to instruction counts is proven on any Intel Mac
+    if file -b "$blob" | grep -q 'Mach-O'; then
+      if xcrun otool -tV "$blob" > "$OUT/$base-x86.s" 2>&1; then
+        note "- $base-x86.s: $(grep -cE '^[0-9a-f]+\s' "$OUT/$base-x86.s") instructions, rotates: $(grep -oE '\s(v?p?ro[lr][a-z]*|sh[lr]d[a-z]*)\s' "$OUT/$base-x86.s" | sort | uniq -c | tr -s ' ' | tr '\n' ',')"
+      fi
+    fi
     for elf in "$OUT/$base"-*.elf; do
       [ -s "$elf" ] || continue
       if [ -n "$LLVM_BIN" ]; then
