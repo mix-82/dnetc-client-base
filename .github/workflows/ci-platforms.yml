@@ -3,6 +3,8 @@ name: Platform tests
 # Runs only when started by hand, so pushes to the branch cost no runner
 # minutes (the macOS jobs are billed at 10x):
 #   gh workflow run ci-platforms.yml --ref ci-platforms
+# or, for one job only (its key below, e.g. macos-amd):
+#   gh workflow run ci-platforms.yml --ref ci-platforms -f only=macos-amd
 # or "Re-run all jobs" on an earlier run's page. The Actions page shows a
 # "Run workflow" button only for workflow files on the default branch, so
 # this one has to be started from the command line.
@@ -20,6 +22,11 @@ name: Platform tests
 
 on:
   workflow_dispatch:
+    inputs:
+      only:
+        description: run only this job (its key), empty for all
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -33,6 +40,7 @@ env:
 
 jobs:
   linux-amd64:
+    if: ${{ inputs.only == '' || inputs.only == 'linux-amd64' }}
     name: linux-amd64 slot ${{ matrix.slot }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -71,6 +79,7 @@ jobs:
         if-no-files-found: warn
 
   linux-x86:
+    if: ${{ inputs.only == '' || inputs.only == 'linux-x86' }}
     name: linux-x86 (32-bit)
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -102,6 +111,7 @@ jobs:
         if-no-files-found: warn
 
   windows:
+    if: ${{ inputs.only == '' || inputs.only == 'windows' }}
     name: windows-${{ matrix.arch }}
     runs-on: windows-latest
     timeout-minutes: 60
@@ -163,6 +173,7 @@ jobs:
         if-no-files-found: warn
 
   macos-intel:
+    if: ${{ inputs.only == '' || inputs.only == 'macos-intel' }}
     name: macos-amd64 (Intel)
     runs-on: macos-15-intel
     timeout-minutes: 60
@@ -196,6 +207,7 @@ jobs:
         if-no-files-found: warn
 
   macos-arm64:
+    if: ${{ inputs.only == '' || inputs.only == 'macos-arm64' }}
     name: macos-arm64 (Apple Silicon, OpenCL)
     runs-on: macos-15
     timeout-minutes: 60
@@ -214,6 +226,7 @@ jobs:
         if-no-files-found: warn
 
   macos-rotl-prescreen:
+    if: ${{ inputs.only == '' || inputs.only == 'macos-rotl-prescreen' }}
     name: macos-arm64 ROTL pre-screen (AIR only)
     runs-on: macos-15
     timeout-minutes: 15
@@ -226,5 +239,25 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: macos-rotl-prescreen
+        path: tools/ci-bench/ci-out/
+        if-no-files-found: warn
+
+  macos-amd:
+    if: ${{ inputs.only == '' || inputs.only == 'macos-amd' }}
+    name: macos-amd64 (Intel Mac, OpenCL for AMD/Intel GPUs)
+    runs-on: macos-15-intel
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build, test, and inspect the compiled kernels
+      # OpenCL client, the driver's compiled program and a Metal binary
+      # archive scanned for GPU code objects, and an offline GCN baseline
+      # from Homebrew LLVM; every step runs even if an earlier one fails
+      run: bash tools/ci-bench/ci-macos-amd.sh
+    - name: Upload results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-amd
         path: tools/ci-bench/ci-out/
         if-no-files-found: warn
