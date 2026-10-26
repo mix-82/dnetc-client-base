@@ -292,6 +292,8 @@ if [ -x "$OUT/dumpcl" ]; then
       sed 's/^/    /' "$OUT/find_elf-rotate-asm.txt" >> "$SUMMARY"
       break
     done
+  elif grep -q 'no OpenCL GPU device' "$OUT/dumpcl-asm-amd.txt"; then
+    note "- no AMD device here; the back-end half of the probe needs a Radeon Mac"
   else
     note "- AMD back end rejected it; build log:"
     grep -iE 'error|asm|assembl' "$OUT/dumpcl-asm-amd.txt" | head -8 | sed 's/^/    /' >> "$SUMMARY"
@@ -302,12 +304,13 @@ fi
 note ""
 note "## metal-tt offline GPU binaries"
 if xcrun -sdk macosx -f metal-tt > "$OUT/metal-tt-path.txt" 2>&1; then
-  run_step metal-tt-help xcrun -sdk macosx metal-tt --help
+  run_step metal-tt-help xcrun -sdk macosx metal-tt -help
+  run_step metal-tt-noargs xcrun -sdk macosx metal-tt
   METAL2=tools/ci-bench/variants/rc5-2pipe-base.metal
   if run_step metallib-2pipe xcrun -sdk macosx metal -O3 -o "$OUT/2pipe.metallib" "$METAL2"; then
     cat > "$OUT/2pipe.mtlp-json" <<JSON
-{ "libraries": { "paths": [ { "path": "$OUT/2pipe.metallib" } ] },
-  "pipelines": { "compute_pipelines": [ { "compute_function": "ocl_rc572_2pipe" } ] } }
+{ "libraries": { "paths": [ { "path": "$OUT/2pipe.metallib", "label": "rc5" } ] },
+  "pipelines": { "compute_pipelines": [ { "compute_function": "ocl_rc572_2pipe", "label": "2pipe" } ] } }
 JSON
     if run_step metal-tt-2pipe xcrun -sdk macosx metal-tt "$OUT/2pipe.metallib" "$OUT/2pipe.mtlp-json" -o "$OUT/2pipe-gpu.metallib"; then
       note "- $(file -b "$OUT/2pipe-gpu.metallib" | cut -c1-160)"

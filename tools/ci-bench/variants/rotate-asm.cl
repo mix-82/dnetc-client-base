@@ -3,9 +3,11 @@
 // (alignbit masks its amount to 5 bits, so no separate "and 31" is needed);
 // rotate_ref is the plain rotate() for comparison. Both must give the same
 // results; the dumpcl + disassembly shows which instructions each became.
+// Apple's front end only knows generic constraints ("=v"/"v" are rejected as
+// invalid), so "r" is used and the back end has to map it to a VGPR.
 #define ROTL_ASM(x, s) ({ \
     uint _x = (uint)(x), _s = 32u - (uint)(s), _res; \
-    __asm__("v_alignbit_b32 %0, %1, %1, %2" : "=v"(_res) : "v"(_x), "v"(_s)); \
+    __asm__("v_alignbit_b32 %0, %1, %1, %2" : "=r"(_res) : "r"(_x), "r"(_s)); \
     _res; \
 })
 
