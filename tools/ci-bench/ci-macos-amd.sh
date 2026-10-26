@@ -168,6 +168,20 @@ note ""
 # On Apple Silicon this is bitcode (the driver compiles at kernel creation);
 # what the AMD and Intel plug-ins return is what this step finds out.
 note "## Compiled kernels from the driver"
+# the gfx target for the disassembler, from the Radeon's marketing name
+# (override with GFX=gfxNNNN in the environment)
+if [ -z "${GFX:-}" ]; then
+  RNAME=$(grep -m1 -oE 'Radeon[^;,]*|FirePro[^;,]*|Vega[^;,]*' "$OUT/system-amd.txt")
+  case "$RNAME" in
+    *6[6-9]00*|*W6[89]00*)           GFX=gfx1030 ;;
+    *5700*|*5600*|*W5700*)           GFX=gfx1010 ;;
+    *5500*|*5300*|*W5500*)           GFX=gfx1012 ;;
+    *Vega*|*VII*)                    GFX=gfx900 ;;
+    *5[5-8]0*|*4[6-8]0*|*WX*|*Pro\ 5[5-9]*) GFX=gfx803 ;;
+    *)                               GFX=gfx803 ;;
+  esac
+fi
+note "- disassembler target for the Radeon: $GFX ($RNAME)"
 run_step build-dumpcl clang -Wno-deprecated-declarations -framework OpenCL -o "$OUT/dumpcl" tools/ci-bench/dumpcl.c
 run_step build-mtlpipe swiftc -O -o "$OUT/mtlpipe" tools/ci-bench/mtlpipe.swift
 for p in 1 2 4; do
@@ -176,7 +190,10 @@ for p in 1 2 4; do
   note "### ${p}-pipe"
   BLOBS=
   if [ -x "$OUT/dumpcl" ]; then
-    if run_step "dumpcl-${p}pipe-gpu" "$OUT/dumpcl" "$KERNEL" "$OUT/${p}pipe-gpu.bin" gpu; then
+    # an AMD GPU first (a Mac may list its Intel iGPU before the Radeon)
+    if run_step "dumpcl-${p}pipe-amd" "$OUT/dumpcl" "$KERNEL" "$OUT/${p}pipe-amd.bin" AMD; then
+      BLOBS="$OUT/${p}pipe-amd.bin"
+    elif run_step "dumpcl-${p}pipe-gpu" "$OUT/dumpcl" "$KERNEL" "$OUT/${p}pipe-gpu.bin" gpu; then
       BLOBS="$OUT/${p}pipe-gpu.bin"
     elif run_step "dumpcl-${p}pipe-all" "$OUT/dumpcl" "$KERNEL" "$OUT/${p}pipe-all.bin" all; then
       BLOBS="$OUT/${p}pipe-all.bin"
@@ -208,6 +225,13 @@ for p in 1 2 4; do
       python3 -I tools/ci-bench/find_elf.py "$OUT/$base-cvms.bin" "$OUT/$base" >> "$OUT/find_elf-$base.txt" 2>&1
     fi
     sed 's/^/    /' "$OUT/find_elf-$base.txt" >> "$SUMMARY"
+    # a Metal binary archive is a fat file of per-GPU Mach-O slices
+    if python3 -I tools/ci-bench/metal_slices.py "$blob" "$OUT/$base" "$GFX" "${LLVM_BIN:+$LLVM_BIN/llvm-mc}" > "$OUT/slices-$base.txt" 2>&1; then
+      sed 's/^/    /' "$OUT/slices-$base.txt" >> "$SUMMARY"
+      if [ -s "$OUT/$base-amdgpu-$GFX.s" ]; then
+        isa_counts "$OUT/$base-amdgpu-$GFX.s" $p
+      fi
+    fi
     if [ -s "$OUT/$base-cvms.bin" ]; then
       note "- code object: $(file -b "$OUT/$base-cvms.bin" | cut -c1-100)"
     fi
@@ -242,6 +266,60 @@ for p in 1 2 4; do
   done
 done
 note ""
+
+# ---- 3b. inline-asm probe: front end (openclc) and AMD back end (dumpcl) ---
+note ""
+note "## Inline GCN assembly probe (variants/rotate-asm.cl)"
+OPENCLC=/System/Library/Frameworks/OpenCL.framework/Libraries/openclc
+ASMCL=tools/ci-bench/variants/rotate-asm.cl
+if [ -x "$OPENCLC" ]; then
+  for arch in gpu_64 x86_64; do
+    if run_step "openclc-asm-$arch" "$OPENCLC" -x cl -cl-std=CL1.1 -emit-llvm -S -arch "$arch" -o "$OUT/rotate-asm-$arch.ll" "$ASMCL"; then
+      note "- front end accepted the asm: $(grep -c 'call .*asm' "$OUT/rotate-asm-$arch.ll") inline-asm calls in the IR"
+      break
+    fi
+  done
+fi
+if [ -x "$OUT/dumpcl" ]; then
+  # the real test: Apple's AMD plug-in building the asm kernel
+  if run_step dumpcl-asm-amd "$OUT/dumpcl" "$ASMCL" "$OUT/rotate-asm-amd.bin" AMD; then
+    note "- AMD back end built the inline-asm kernel"
+    for blob in "$OUT/rotate-asm-amd.bin.cvms" "$OUT/rotate-asm-amd.bin"; do
+      [ -s "$blob" ] || continue
+      note "- $(file -b "$blob" | cut -c1-100) ($(basename "$blob"))"
+      python3 -I tools/ci-bench/find_elf.py "$blob" "$OUT/rotate-asm" > "$OUT/find_elf-rotate-asm.txt" 2>&1
+      python3 -I tools/ci-bench/metal_slices.py "$blob" "$OUT/rotate-asm" "$GFX" "${LLVM_BIN:+$LLVM_BIN/llvm-mc}" >> "$OUT/find_elf-rotate-asm.txt" 2>&1
+      sed 's/^/    /' "$OUT/find_elf-rotate-asm.txt" >> "$SUMMARY"
+      break
+    done
+  else
+    note "- AMD back end rejected it; build log:"
+    grep -iE 'error|asm|assembl' "$OUT/dumpcl-asm-amd.txt" | head -8 | sed 's/^/    /' >> "$SUMMARY"
+  fi
+fi
+
+# ---- 3c. offline GPU-binary build (metal-tt): works without the GPU? ------
+note ""
+note "## metal-tt offline GPU binaries"
+if xcrun -sdk macosx -f metal-tt > "$OUT/metal-tt-path.txt" 2>&1; then
+  run_step metal-tt-help xcrun -sdk macosx metal-tt --help
+  METAL2=tools/ci-bench/variants/rc5-2pipe-base.metal
+  if run_step metallib-2pipe xcrun -sdk macosx metal -O3 -o "$OUT/2pipe.metallib" "$METAL2"; then
+    cat > "$OUT/2pipe.mtlp-json" <<JSON
+{ "libraries": { "paths": [ { "path": "$OUT/2pipe.metallib" } ] },
+  "pipelines": { "compute_pipelines": [ { "compute_function": "ocl_rc572_2pipe" } ] } }
+JSON
+    if run_step metal-tt-2pipe xcrun -sdk macosx metal-tt "$OUT/2pipe.metallib" "$OUT/2pipe.mtlp-json" -o "$OUT/2pipe-gpu.metallib"; then
+      note "- $(file -b "$OUT/2pipe-gpu.metallib" | cut -c1-160)"
+      python3 -I tools/ci-bench/metal_slices.py "$OUT/2pipe-gpu.metallib" "$OUT/2pipe-tt" "$GFX" "${LLVM_BIN:+$LLVM_BIN/llvm-mc}" > "$OUT/slices-2pipe-tt.txt" 2>&1
+      sed 's/^/    /' "$OUT/slices-2pipe-tt.txt" >> "$SUMMARY"
+    else
+      grep -iE 'error|target|device' "$OUT/metal-tt-2pipe.txt" | head -5 | sed 's/^/    /' >> "$SUMMARY"
+    fi
+  fi
+else
+  note "- metal-tt not found"
+fi
 
 # ---- 4. offline baseline from upstream LLVM --------------------------
 # The kernels as the generic path builds them on macOS (no vendor macros,

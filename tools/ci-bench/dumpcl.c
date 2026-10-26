@@ -3,9 +3,11 @@
  * compiled form (clGetProgramInfo CL_PROGRAM_BINARIES) to a file, so the
  * intermediate representation can be inspected for rotate intrinsics.
  *
- * usage: dumpcl kernel.cl out.bin [gpu|all]
- *   gpu  (default) only CL_DEVICE_TYPE_GPU devices
- *   all  any device type, for machines without a usable GPU
+ * usage: dumpcl kernel.cl out.bin [gpu|all|VENDOR]
+ *   gpu     (default) the first CL_DEVICE_TYPE_GPU device
+ *   all     any device type, for machines without a usable GPU
+ *   VENDOR  the first GPU whose CL_DEVICE_VENDOR contains this text
+ *           (e.g. AMD on a Mac with both an Intel and an AMD GPU)
  *
  * On Intel Macs the driver returns a property list naming the code object
  * in its compiler service cache (/private/var/db/CVMS/). That file is
@@ -84,8 +86,11 @@ int main(int argc, char **argv)
     fprintf(stderr, "usage: %s kernel.cl out.bin [gpu|all]\n", argv[0]);
     return 1;
   }
+  const char *wantVendor = NULL;
   if (argc > 3 && strcmp(argv[3], "all") == 0)
     want = CL_DEVICE_TYPE_ALL;
+  else if (argc > 3 && strcmp(argv[3], "gpu") != 0)
+    wantVendor = argv[3];
 
   src = slurp(argv[1], &len);
 
@@ -94,7 +99,33 @@ int main(int argc, char **argv)
     fprintf(stderr, "no OpenCL platform\n");
     return 2;
   }
-  if (clGetDeviceIDs(plat, want, 1, &dev, NULL) != CL_SUCCESS)
+  if (wantVendor != NULL)
+  {
+    cl_device_id devs[16];
+    cl_uint ndev = 0;
+    cl_uint i;
+    if (clGetDeviceIDs(plat, want, 16, devs, &ndev) != CL_SUCCESS || ndev == 0)
+    {
+      fprintf(stderr, "no OpenCL GPU device\n");
+      return 2;
+    }
+    dev = NULL;
+    for (i = 0; i < ndev; i++)
+    {
+      clGetDeviceInfo(devs[i], CL_DEVICE_VENDOR, sizeof vendor, vendor, NULL);
+      if (strstr(vendor, wantVendor) != NULL)
+      {
+        dev = devs[i];
+        break;
+      }
+    }
+    if (dev == NULL)
+    {
+      fprintf(stderr, "no OpenCL GPU device with vendor %s\n", wantVendor);
+      return 2;
+    }
+  }
+  else if (clGetDeviceIDs(plat, want, 1, &dev, NULL) != CL_SUCCESS)
   {
     fprintf(stderr, "no OpenCL device of the requested type\n");
     return 2;
