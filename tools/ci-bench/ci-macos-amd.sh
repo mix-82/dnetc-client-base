@@ -310,15 +310,28 @@ if xcrun -sdk macosx -f metal-tt > "$OUT/metal-tt-path.txt" 2>&1; then
   if run_step metallib-2pipe xcrun -sdk macosx metal -O3 -o "$OUT/2pipe.metallib" "$METAL2"; then
     cat > "$OUT/2pipe.mtlp-json" <<JSON
 { "libraries": { "paths": [ { "path": "$OUT/2pipe.metallib", "label": "rc5" } ] },
-  "pipelines": { "compute_pipelines": [ { "compute_function": "ocl_rc572_2pipe", "label": "2pipe" } ] } }
+  "pipelines": { "compute_pipelines": [ { "compute_function": "ocl_rc572_2pipe" } ] } }
 JSON
-    if run_step metal-tt-2pipe xcrun -sdk macosx metal-tt "$OUT/2pipe.metallib" "$OUT/2pipe.mtlp-json" -o "$OUT/2pipe-gpu.metallib"; then
-      note "- $(file -b "$OUT/2pipe-gpu.metallib" | cut -c1-160)"
-      python3 -I tools/ci-bench/metal_slices.py "$OUT/2pipe-gpu.metallib" "$OUT/2pipe-tt" "$GFX" "${LLVM_BIN:+$LLVM_BIN/llvm-mc}" > "$OUT/slices-2pipe-tt.txt" 2>&1
-      sed 's/^/    /' "$OUT/slices-2pipe-tt.txt" >> "$SUMMARY"
-    else
-      grep -iE 'error|target|device' "$OUT/metal-tt-2pipe.txt" | head -5 | sed 's/^/    /' >> "$SUMMARY"
-    fi
+    # the native translators metal-tt can spawn, and what it does by default
+    ls "$(dirname "$(cat "$OUT/metal-tt-path.txt")")" | grep -iE 'nt$|gpu|amd|intel' | tr '\n' ' ' | sed 's/^/- toolchain programs: /' >> "$SUMMARY"
+    echo >> "$SUMMARY"
+    for arch in default amdgpu_gfx1012 amdgpu gfx1012 applegpu intelgpu; do
+      if [ $arch = default ]; then
+        ARCHOPT=
+      else
+        ARCHOPT="-arch $arch"
+      fi
+      if run_step "metal-tt-2pipe-$arch" xcrun -sdk macosx metal-tt -verbose $ARCHOPT "$OUT/2pipe.metallib" "$OUT/2pipe.mtlp-json" -o "$OUT/2pipe-gpu-$arch.metallib"; then
+        note "- $arch: $(file -b "$OUT/2pipe-gpu-$arch.metallib" | cut -c1-200)"
+        python3 -I tools/ci-bench/metal_slices.py "$OUT/2pipe-gpu-$arch.metallib" "$OUT/2pipe-tt-$arch" "$GFX" "${LLVM_BIN:+$LLVM_BIN/llvm-mc}" > "$OUT/slices-2pipe-tt-$arch.txt" 2>&1
+        sed 's/^/    /' "$OUT/slices-2pipe-tt-$arch.txt" >> "$SUMMARY"
+        if [ -s "$OUT/2pipe-tt-$arch-amdgpu-$GFX.s" ]; then
+          isa_counts "$OUT/2pipe-tt-$arch-amdgpu-$GFX.s" 2
+        fi
+      else
+        note "- $arch: $(grep -iE 'error|unknown|unsupported|arch' "$OUT/metal-tt-2pipe-$arch.txt" | head -2 | tr '\n' ' ' | cut -c1-200)"
+      fi
+    done
   fi
 else
   note "- metal-tt not found"
