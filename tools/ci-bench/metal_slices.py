@@ -72,6 +72,7 @@ if blob[:4] != b"\xcb\xfe\xba\xbe":
     sys.exit(0)
 n = struct.unpack(">I", blob[4:8])[0]
 print("fat archive with %d slices" % n)
+seen_bodies = {}
 for i in range(n):
     ct, cst, off, size, align = struct.unpack(">IIIII", blob[8 + 20 * i:28 + 20 * i])
     name = CPUTYPES.get(ct, "cputype_%x" % ct)
@@ -103,8 +104,12 @@ for i in range(n):
                 main = code[text[0] + syms["_agc.main"]:text[0] + text[1]]
                 mb = "%s-%s-main.bin" % (prefix, label)
                 open(mb, "wb").write(main)
-                print("    main body %d bytes, sha %s -> %s" % (len(main), hashlib.sha1(main).hexdigest()[:12], mb))
-                if applegpu_dir:
+                sha = hashlib.sha1(main).hexdigest()[:12]
+                print("    main body %d bytes, sha %s -> %s" % (len(main), sha, mb))
+                if sha in seen_bodies:
+                    print("    same body as %s" % seen_bodies[sha])
+                elif applegpu_dir:
+                    seen_bodies[sha] = label
                     r = subprocess.run([sys.executable, applegpu_dir + "/disassemble.py", mb], capture_output=True, text=True)
                     lines = [l for l in r.stdout.splitlines() if l[:1] == " " or l[:1].isdigit()]
                     failed = r.stdout.count("disassembly failed")
@@ -126,7 +131,7 @@ for i in range(n):
             # s_load / s_mov / s_version), which rules out the header's zeros
             # decoding as v_cndmask and padding decoding as s_nop
             start = 0
-            for cand in range(0, min(0x800, end - 256), 4):
+            for cand in [0x1d4, 0x1d0] + list(range(0, min(0x800, end - 256), 4)):
                 chunk = " ".join("0x%02x" % b for b in code[cand:cand + 256])
                 r = subprocess.run([llvm_mc, "-disassemble", "-triple=amdgcn-amd-amdhsa", "-mcpu=" + target],
                                    input=chunk, capture_output=True, text=True)
