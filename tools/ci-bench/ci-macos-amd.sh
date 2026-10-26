@@ -300,42 +300,9 @@ if [ -x "$OUT/dumpcl" ]; then
   fi
 fi
 
-# ---- 3c. offline GPU-binary build (metal-tt): works without the GPU? ------
-note ""
-note "## metal-tt offline GPU binaries"
-if xcrun -sdk macosx -f metal-tt > "$OUT/metal-tt-path.txt" 2>&1; then
-  run_step metal-tt-help xcrun -sdk macosx metal-tt -help
-  run_step metal-tt-noargs xcrun -sdk macosx metal-tt
-  METAL2=tools/ci-bench/variants/rc5-2pipe-base.metal
-  if run_step metallib-2pipe xcrun -sdk macosx metal -O3 -o "$OUT/2pipe.metallib" "$METAL2"; then
-    cat > "$OUT/2pipe.mtlp-json" <<JSON
-{ "libraries": { "paths": [ { "path": "$OUT/2pipe.metallib", "label": "rc5" } ] },
-  "pipelines": { "compute_pipelines": [ { "compute_function": "ocl_rc572_2pipe" } ] } }
-JSON
-    # the native translators metal-tt can spawn, and what it does by default
-    ls "$(dirname "$(cat "$OUT/metal-tt-path.txt")")" | grep -iE 'nt$|gpu|amd|intel' | tr '\n' ' ' | sed 's/^/- toolchain programs: /' >> "$SUMMARY"
-    echo >> "$SUMMARY"
-    for arch in default amdgpu_gfx1012 amdgpu gfx1012 applegpu intelgpu; do
-      if [ $arch = default ]; then
-        ARCHOPT=
-      else
-        ARCHOPT="-arch $arch"
-      fi
-      if run_step "metal-tt-2pipe-$arch" xcrun -sdk macosx metal-tt -verbose $ARCHOPT "$OUT/2pipe.metallib" "$OUT/2pipe.mtlp-json" -o "$OUT/2pipe-gpu-$arch.metallib"; then
-        note "- $arch: $(file -b "$OUT/2pipe-gpu-$arch.metallib" | cut -c1-200)"
-        python3 -I tools/ci-bench/metal_slices.py "$OUT/2pipe-gpu-$arch.metallib" "$OUT/2pipe-tt-$arch" "$GFX" "${LLVM_BIN:+$LLVM_BIN/llvm-mc}" > "$OUT/slices-2pipe-tt-$arch.txt" 2>&1
-        sed 's/^/    /' "$OUT/slices-2pipe-tt-$arch.txt" >> "$SUMMARY"
-        if [ -s "$OUT/2pipe-tt-$arch-amdgpu-$GFX.s" ]; then
-          isa_counts "$OUT/2pipe-tt-$arch-amdgpu-$GFX.s" 2
-        fi
-      else
-        note "- $arch: $(grep -iE 'error|unknown|unsupported|arch' "$OUT/metal-tt-2pipe-$arch.txt" | head -2 | tr '\n' ' ' | cut -c1-200)"
-      fi
-    done
-  fi
-else
-  note "- metal-tt not found"
-fi
+# ---- 3c. offline GPU binaries for every target (metal-tt) -------------
+bash tools/ci-bench/ci-metal-tt.sh "$OUT"
+cat "$OUT/summary-tt.md" >> "$SUMMARY"
 
 # ---- 4. offline baseline from upstream LLVM --------------------------
 # The kernels as the generic path builds them on macOS (no vendor macros,

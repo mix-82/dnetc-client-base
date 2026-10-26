@@ -264,3 +264,22 @@ jobs:
         name: macos-amd
         path: tools/ci-bench/ci-out/
         if-no-files-found: warn
+
+  macos-metal-tt:
+    if: ${{ inputs.only == '' || inputs.only == 'macos-metal-tt' }}
+    name: macos-arm64 metal-tt (offline GPU code, Xcode 26 targets)
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build the kernels for every GPU target the toolchain knows
+      # no GPU needed: metal-tt's native translators run on the host; the
+      # Xcode 26 toolchain adds the M5 generation to what Xcode 16 offers
+      run: bash tools/ci-bench/ci-metal-tt.sh tools/ci-bench/ci-out
+    - name: Upload results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-metal-tt
+        path: tools/ci-bench/ci-out/
+        if-no-files-found: warn
