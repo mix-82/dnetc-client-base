@@ -43,6 +43,34 @@ VARIANTS = {
     "(((V)(x) << 3) | ((V)(x) >> 29))",
     "(((uint)(x) << ((uint)(s) & 31u)) | ((uint)(x) >> ((0u - (uint)(s)) & 31u)))"),
 }
+# More spellings of the same rotate, looking for one that a back end lowers
+# without the extra masking (AMD: v_and 31 before v_alignbit_b32).
+VARIANTS.update({
+  "shl_or": ("(x << s) | (x >> (32 - s)); shift counts are taken mod 32 by the language, so no masks",
+    "(((V)(x) << (V)(s)) | ((V)(x) >> ((V)(32u) - (V)(s))))",
+    "(((V)(x) << (V)(3u)) | ((V)(x) >> (V)(29u)))",
+    "(((uint)(x) << (uint)(s)) | ((uint)(x) >> (32u - (uint)(s))))"),
+  "shl_or_neg": ("(x << s) | (x >> -s); the negated count relies on mod-32 shifts",
+    "(((V)(x) << (V)(s)) | ((V)(x) >> ((V)(0u) - (V)(s))))",
+    "(((V)(x) << (V)(3u)) | ((V)(x) >> (V)(29u)))",
+    "(((uint)(x) << (uint)(s)) | ((uint)(x) >> (0u - (uint)(s))))"),
+  "shl_or_31": ("(x << s) | ((x >> 1) >> (31 - s)); well defined for s == 0 without masks",
+    "(((V)(x) << (V)(s)) | (((V)(x) >> (V)(1u)) >> ((V)(31u) - (V)(s))))",
+    "(((V)(x) << (V)(3u)) | ((V)(x) >> (V)(29u)))",
+    "(((uint)(x) << (uint)(s)) | (((uint)(x) >> 1u) >> (31u - (uint)(s))))"),
+  "masked_shifts32": ("shifts with both counts masked, right count as (32 - s) & 31",
+    "(((V)(x) << ((V)(s) & (V)(31u))) | ((V)(x) >> (((V)(32u) - (V)(s)) & (V)(31u))))",
+    "(((V)(x) << (V)(3u)) | ((V)(x) >> (V)(29u)))",
+    "(((uint)(x) << ((uint)(s) & 31u)) | ((uint)(x) >> ((32u - (uint)(s)) & 31u)))"),
+  "select0": ("s == 0 ? x : (x << s) | (x >> (32 - s)); explicit zero case, no masks",
+    "select((((V)(x) << (V)(s)) | ((V)(x) >> ((V)(32u) - (V)(s)))), (V)(x), (V)(s) == (V)(0u))",
+    "(((V)(x) << (V)(3u)) | ((V)(x) >> (V)(29u)))",
+    "(((uint)(s) == 0u) ? (uint)(x) : (((uint)(x) << (uint)(s)) | ((uint)(x) >> (32u - (uint)(s)))))"),
+  "rotate_masked_s": ("rotate() of a count already reduced mod 32 in a narrow type",
+    "rotate((V)(x), (V)((V)(s) & (V)(31u)))",
+    "rotate((V)(x), (V)(3u))",
+    "rotate((uint)(x), (uint)((uchar)((uint)(s) & 31u)))"),
+})
 VARIANTS["extr"] = VARIANTS["astype"]
 if variant not in VARIANTS:
     sys.exit("unknown variant %s; one of %s" % (variant, ", ".join(sorted(VARIANTS))))

@@ -20,7 +20,8 @@ ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 OUT=${1:-$ROOT/tools/ci-bench/ci-out}
 SUMMARY=$OUT/summary-tt.md
 APPLEGPU=$ROOT/tools/ci-bench/applegpu
-VARIANTS=${VARIANTS:-"1pipe-base 1pipe-astype 2pipe-base 2pipe-astype 4pipe-base 4pipe-astype"}
+# every rc5-*.metal in variants/ unless VARIANTS names a subset
+VARIANTS=${VARIANTS:-$(ls "$ROOT"/tools/ci-bench/variants/rc5-*.metal | sed 's|.*/rc5-||; s|\.metal$||' | tr '\n' ' ')}
 
 mkdir -p "$OUT"
 cd "$ROOT" || exit 1
