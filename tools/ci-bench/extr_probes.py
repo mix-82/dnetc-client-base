@@ -60,7 +60,7 @@ P = [
   ("bswap_uchar4", "as_type<uint>(as_type<uchar4>(x).wzyx)", "o[i] = as_type<uint>(as_type<uchar4>(x).wzyx);"),
   ("half_swap", "as_type<uint>(as_type<ushort2>(x).yx)", "o[i] = as_type<uint>(as_type<ushort2>(x).yx);"),
   ("half_mix", "low half of z, high half of x", "o[i] = as_type<uint>(ushort2(as_type<ushort2>(z).x, as_type<ushort2>(x).y));"),
-  ("byte_mix", "uchar4(x.y, z.x, x.w, z.z)", "uchar4 a = as_type<uchar4>(x), b = as_type<uchar4>(z); o[i] = as_type<uint>(uchar4(a.y, b.x, a.w, b.z));"),
+  ("byte_mix", "uchar4(x.y, z.x, x.w, z.z)", "uchar4 p = as_type<uchar4>(x), q = as_type<uchar4>(z); o[i] = as_type<uint>(uchar4(p.y, q.x, p.w, q.z));"),
   ("reverse_bits", "reverse_bits(x)", "o[i] = reverse_bits(x);"),
   # narrow and vector rotates
   ("rot16_var", "rotate(ushort, ushort) on both halves", "ushort2 h = as_type<ushort2>(x), k = as_type<ushort2>(y); o[i] = as_type<uint>(rotate(h, k));"),

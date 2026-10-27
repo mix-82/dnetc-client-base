@@ -67,11 +67,11 @@ while IFS=$'\t' read -r name desc; do
     echo "$name	compile-error" >> "$PROBES/results.tsv"
     continue
   fi
-  cat > "$base.json" <<JSON
+  cat > "$base.mtlp-json" <<JSON
 { "libraries": { "paths": [ { "path": "$base.metallib", "label": "probe" } ] },
   "pipelines": { "compute_pipelines": [ { "compute_function": "probe" } ] } }
 JSON
-  if ! xcrun -sdk macosx metal-tt $ARCHOPTS "$base.metallib" "$base.json" -o "$base-gpu.metallib" < /dev/null > "$base.tt.txt" 2>&1; then
+  if ! xcrun -sdk macosx metal-tt $ARCHOPTS "$base.metallib" "$base.mtlp-json" -o "$base-gpu.metallib" < /dev/null > "$base.tt.txt" 2>&1; then
     echo "$name	metal-tt-error" >> "$PROBES/results.tsv"
     continue
   fi
