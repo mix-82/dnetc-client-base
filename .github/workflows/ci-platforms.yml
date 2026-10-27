@@ -287,7 +287,7 @@ jobs:
   macos-extr-probe:
     if: ${{ inputs.only == '' || inputs.only == 'macos-extr-probe' }}
     name: macos-arm64 funnel-shift probe (offline, M1, gfx1012, KBL and ICL targets)
-    runs-on: macos-26
+    runs-on: macos-15
     timeout-minutes: 40
     steps:
     - uses: actions/checkout@v4
