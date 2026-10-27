@@ -2,8 +2,9 @@
 # Which source operations does Apple's GPU compiler lower to the funnel
 # shift, and with an immediate or a register amount? Builds every probe
 # from extr_probes.py through metal and metal-tt (offline, no GPU needed)
-# for the M1 target (decoded with the applegpu tools) and the Radeon gfx1012
-# target (decoded with llvm-mc when Homebrew LLVM is present), and tables
+# for the M1 target (decoded with the applegpu tools), the Radeon gfx1012
+# target (decoded with llvm-mc when Homebrew LLVM is present) and the Intel
+# KBL and ICL targets (slices kept for IGA, which runs elsewhere), and tables
 # per probe: total instructions, extr with an immediate / a register
 # amount, v_alignbit_b32 immediate / register, v_and 31, and the M1
 # instruction histogram. Writes <out>/summary-probe.md.
@@ -17,7 +18,7 @@ OUT=${1:-$ROOT/tools/ci-bench/ci-out}
 PROBES=$OUT/probes
 SUMMARY=$OUT/summary-probe.md
 APPLEGPU=$ROOT/tools/ci-bench/applegpu
-ARCHS=${ARCHS:-"applegpu_g13g amdgpu_gfx1012"}
+ARCHS=${ARCHS:-"applegpu_g13g amdgpu_gfx1012 intelgpu_kbl_gt2r0 intelgpu_icl_1x8x8r7"}
 
 mkdir -p "$OUT" "$PROBES"
 cd "$ROOT" || exit 1

@@ -81,6 +81,8 @@ for i in range(n):
         target = AMD_SUBTYPES.get(cst, gfx)
     elif name == "applegpu":
         target = APPLE_SUBTYPES.get(cst, "sub%x" % cst)
+    elif name == "intelgpu":
+        target = "sub%x" % cst
     label = name + ("-" + target if target else "")
     sl = blob[off:off + size]
     print("  slice %s subtype %#x: %d bytes" % (label, cst, size))
