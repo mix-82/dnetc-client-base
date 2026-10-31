@@ -489,7 +489,7 @@ bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *ke
   if (status == CL_SUCCESS)
   {
     const char *clOption = "-cl-std=CL1.1";  // support older macOS
-    char buildOptions[80];
+    char buildOptions[128];
     int nv_sm = 0;
     int amd_gfx = 0;
 
@@ -501,22 +501,40 @@ bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *ke
 
       char nvOption2[32] = "";
       int nv_maxreg2, nv_maxreg4;
+      bool have_hint = GetNVRegisterHint(nv_sm, nv_maxreg2, nv_maxreg4); // maximize ILP and occupancy
 
-      if (GetNVRegisterHint(nv_sm, nv_maxreg2, nv_maxreg4)) // maximize ILP and occupancy
-      {
-        if (strstr(kernelName, "2pipe"))
-          snprintf(nvOption2, sizeof(nvOption2), "-cl-nv-maxrregcount=%d", nv_maxreg2);
-        else if (strstr(kernelName, "4pipe"))
-          snprintf(nvOption2, sizeof(nvOption2), "-cl-nv-maxrregcount=%d", nv_maxreg4);
-      }
-   
 #ifdef OCL_DUMP_PTX
-      const char *nvOption3 = "-cl-nv-verbose"; // register/spill statistics in the build log
-#else
-      const char *nvOption3 = "";
+      /* Debug build only: experiment knobs, no rebuild needed.
+         DNETC_OCL_MAXRREG2=<n> / DNETC_OCL_MAXRREG4=<n>  override the register cap (0 = no cap)
+         DNETC_OCL_ROUND1_OPT=0|1                         force the ROUND1 optimization off/on */
+      const char *env2 = getenv("DNETC_OCL_MAXRREG2");
+      const char *env4 = getenv("DNETC_OCL_MAXRREG4");
+      if (env2) { nv_maxreg2 = atoi(env2); have_hint = true; }
+      if (env4) { nv_maxreg4 = atoi(env4); have_hint = true; }
+      if (env2 && !env4) nv_maxreg4 = 0;
+      if (env4 && !env2) nv_maxreg2 = 0;
 #endif
 
-      snprintf(buildOptions, sizeof(buildOptions), "%s %s %s %s", clOption, nvOption1, nvOption2, nvOption3); // NVIDIA build options
+      if (have_hint)
+      {
+        if (strstr(kernelName, "2pipe") && nv_maxreg2 > 0)
+          snprintf(nvOption2, sizeof(nvOption2), "-cl-nv-maxrregcount=%d", nv_maxreg2);
+        else if (strstr(kernelName, "4pipe") && nv_maxreg4 > 0)
+          snprintf(nvOption2, sizeof(nvOption2), "-cl-nv-maxrregcount=%d", nv_maxreg4);
+      }
+
+#ifdef OCL_DUMP_PTX
+      const char *nvOption3 = "-cl-nv-verbose"; // register/spill statistics in the build log
+      const char *nvOption4 = "";
+      const char *envR1 = getenv("DNETC_OCL_ROUND1_OPT");
+      if (envR1)
+        nvOption4 = (atoi(envR1) != 0) ? "-D ROUND1_OPT=1" : "-D ROUND1_OPT_OFF=1";
+#else
+      const char *nvOption3 = "";
+      const char *nvOption4 = "";
+#endif
+
+      snprintf(buildOptions, sizeof(buildOptions), "%s %s %s %s %s", clOption, nvOption1, nvOption2, nvOption3, nvOption4); // NVIDIA build options
     }
     else if (GetAMDComputeCapability(cont->deviceID, amd_gfx)) // AMD
     {
