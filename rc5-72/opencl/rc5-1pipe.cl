@@ -72,6 +72,17 @@
   L[d] = ROTL(L[d] + t, t)
 #endif
 
+#if defined(SPLIT3) && defined(__NVPTX__) // EXPERIMENT (CC 12.0): S[b]+const as a separate IADD (fast pipe) instead of IADD3 (slow pipe)
+#define ROUND1S(a, b, c, d) \
+  x = S[b] + (P + a * Q); \
+  __asm__ ("min.u32 %0, %0, %1;" : "+r"(xmin) : "r"(x)); \
+  S[a] = ROTL3(x + L[c]); \
+  t = S[a] + L[c]; \
+  L[d] = ROTL(L[d] + t, t)
+#else
+#define ROUND1S(a, b, c, d) ROUND1(a, b, c, d)
+#endif
+
 #define ENCRYPT(a) \
   A = ROTL(A^B, B) + S[a]; \
   B = ROTL(B^A, A) + S[a+1]
@@ -82,6 +93,10 @@ __kernel void ocl_rc572_1pipe( __constant const uint *rc5_72unitwork, volatile _
   uint S[26];
   uint A, B;
   uint t;
+#if defined(SPLIT3)
+  uint x;
+  uint xmin = 0xFFFFFFFFu;
+#endif
 
   L[2] = rc5_72unitwork[0];   //L0hi;
   L[1] = rc5_72unitwork[1];   //L0mid;
@@ -107,21 +122,81 @@ __kernel void ocl_rc572_1pipe( __constant const uint *rc5_72unitwork, volatile _
 
   ROUND1( 2,  1, 1, 2);
   ROUND1( 3,  2, 2, 0);
+#if defined(SPLIT3) && (SPLIT3 >= 1)
+  ROUND1S( 4,  3, 0, 1);
+#else
   ROUND1( 4,  3, 0, 1);
+#endif
+#if defined(SPLIT3) && (SPLIT3 >= 2)
+  ROUND1S( 5,  4, 1, 2);
+#else
   ROUND1( 5,  4, 1, 2);
+#endif
+#if defined(SPLIT3) && (SPLIT3 >= 3)
+  ROUND1S( 6,  5, 2, 0);
+#else
   ROUND1( 6,  5, 2, 0);
+#endif
+#if defined(SPLIT3) && (SPLIT3 >= 4)
+  ROUND1S( 7,  6, 0, 1);
+#else
   ROUND1( 7,  6, 0, 1);
+#endif
+#if defined(SPLIT3) && (SPLIT3 >= 5)
+  ROUND1S( 8,  7, 1, 2);
+#else
   ROUND1( 8,  7, 1, 2);
+#endif
+#if defined(SPLIT3) && (SPLIT3 >= 6)
+  ROUND1S( 9,  8, 2, 0);
+#else
   ROUND1( 9,  8, 2, 0);
+#endif
+#if defined(SPLIT3) && (SPLIT3 >= 7)
+  ROUND1S(10,  9, 0, 1);
+#else
   ROUND1(10,  9, 0, 1);
+#endif
+#if defined(SPLIT3) && (SPLIT3 >= 8)
+  ROUND1S(11, 10, 1, 2);
+#else
   ROUND1(11, 10, 1, 2);
+#endif
+#if defined(SPLIT3) && (SPLIT3 >= 9)
+  ROUND1S(12, 11, 2, 0);
+#else
   ROUND1(12, 11, 2, 0);
+#endif
+#if defined(SPLIT3) && (SPLIT3 >= 10)
+  ROUND1S(13, 12, 0, 1);
+#else
   ROUND1(13, 12, 0, 1);
+#endif
+#if defined(SPLIT3) && (SPLIT3 >= 11)
+  ROUND1S(14, 13, 1, 2);
+#else
   ROUND1(14, 13, 1, 2);
+#endif
+#if defined(SPLIT3) && (SPLIT3 >= 12)
+  ROUND1S(15, 14, 2, 0);
+#else
   ROUND1(15, 14, 2, 0);
+#endif
+#if defined(SPLIT3) && (SPLIT3 >= 13)
+  ROUND1S(16, 15, 0, 1);
+#else
   ROUND1(16, 15, 0, 1);
+#endif
+#if defined(SPLIT3) && (SPLIT3 >= 14)
+  ROUND1S(17, 16, 1, 2);
+#else
   ROUND1(17, 16, 1, 2);
+#endif
+#if defined(SPLIT3) && (SPLIT3 >= 15)
+  ROUND1S(18, 17, 2, 0);
+#else
   ROUND1(18, 17, 2, 0);
+#endif
   ROUND1(19, 18, 0, 1);
   ROUND1(20, 19, 1, 2);
   ROUND1(21, 20, 2, 0);
@@ -201,7 +276,11 @@ __kernel void ocl_rc572_1pipe( __constant const uint *rc5_72unitwork, volatile _
 
   A = ROTL(A^B, B) + S[24]; 
 
+#if defined(SPLIT3)
+  if(A == ((xmin == 0x5A5A1234u) ? rc5_72unitwork[10] : rc5_72unitwork[6])) // slot 10 == slot 6; keeps xmin live
+#else
   if(A == rc5_72unitwork[6])
+#endif
   {
     t = S[24] + L[0]; 
     L[1] = ROTL(L[1] + t, t);

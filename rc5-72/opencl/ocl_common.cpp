@@ -532,13 +532,19 @@ bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *ke
       /* DNETC_OCL_REASSOC=1: 3-input add for L[d]+S[a]+L[c], independent of t (shorter chain) */
       const char *envRA = getenv("DNETC_OCL_REASSOC");
       const char *nvOption5 = (envRA && atoi(envRA) != 0) ? "-D REASSOC=1" : "";
+      /* DNETC_OCL_SPLIT=<n>: 1-pipe only, split n (1..15) round-1 IADD3s into IADD pairs */
+      char nvOption6[16] = "";
+      const char *envSP = getenv("DNETC_OCL_SPLIT");
+      if (envSP && atoi(envSP) > 0 && strstr(kernelName, "1pipe"))
+        snprintf(nvOption6, sizeof(nvOption6), "-D SPLIT3=%d", atoi(envSP) > 15 ? 15 : atoi(envSP));
 #else
       const char *nvOption3 = "";
       const char *nvOption4 = "";
       const char *nvOption5 = "";
+      const char *nvOption6 = "";
 #endif
 
-      snprintf(buildOptions, sizeof(buildOptions), "%s %s %s %s %s %s", clOption, nvOption1, nvOption2, nvOption3, nvOption4, nvOption5); // NVIDIA build options
+      snprintf(buildOptions, sizeof(buildOptions), "%s %s %s %s %s %s %s", clOption, nvOption1, nvOption2, nvOption3, nvOption4, nvOption5, nvOption6); // NVIDIA build options
     }
     else if (GetAMDComputeCapability(cont->deviceID, amd_gfx)) // AMD
     {

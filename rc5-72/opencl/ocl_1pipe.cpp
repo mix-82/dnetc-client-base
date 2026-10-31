@@ -126,6 +126,7 @@ static bool FillConstantBuffer(const cl_mem buffer, RC5_72UnitWork *rc5_72unitwo
   cl_uint l0 = ROTL(0xBF0A8B1D+rc5_72unitwork->L0.lo, 0x1d); //L0=ROTL(L0+S0,S0)=ROTL(L0+S0,0x1d)
   constPtr[8] = l0;
   constPtr[9] = ROTL3(l0+0xBF0A8B1D+0x5618cb1c);             //S1=ROTL3(Sc1+S0+L0)
+  constPtr[10] = rc5_72unitwork->cypher.lo;                  //copy of [6]; used by the SPLIT3 experiment (1-pipe)
 
   status = clEnqueueUnmapMemObject(cont->cmdQueue, buffer, constPtr, 0, NULL, NULL);
   if (ocl_diagnose(status, "unmapping constants buffer", cont) != CL_SUCCESS)
