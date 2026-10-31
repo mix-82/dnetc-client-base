@@ -529,12 +529,16 @@ bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *ke
       const char *envR1 = getenv("DNETC_OCL_ROUND1_OPT");
       if (envR1)
         nvOption4 = (atoi(envR1) != 0) ? "-D ROUND1_OPT=1" : "-D ROUND1_OPT_OFF=1";
+      /* DNETC_OCL_REASSOC=1: 3-input add for L[d]+S[a]+L[c], independent of t (shorter chain) */
+      const char *envRA = getenv("DNETC_OCL_REASSOC");
+      const char *nvOption5 = (envRA && atoi(envRA) != 0) ? "-D REASSOC=1" : "";
 #else
       const char *nvOption3 = "";
       const char *nvOption4 = "";
+      const char *nvOption5 = "";
 #endif
 
-      snprintf(buildOptions, sizeof(buildOptions), "%s %s %s %s %s", clOption, nvOption1, nvOption2, nvOption3, nvOption4); // NVIDIA build options
+      snprintf(buildOptions, sizeof(buildOptions), "%s %s %s %s %s %s", clOption, nvOption1, nvOption2, nvOption3, nvOption4, nvOption5); // NVIDIA build options
     }
     else if (GetAMDComputeCapability(cont->deviceID, amd_gfx)) // AMD
     {

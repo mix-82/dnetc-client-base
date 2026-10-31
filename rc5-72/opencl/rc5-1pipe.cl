@@ -17,6 +17,11 @@
         __asm__ ("shf.l.wrap.b32 %0, %1, %1, 3;" : "=r"(_res) : "r"(_x)); \
         _res; \
     })
+    #define ADDX(x, y) ({ \
+        uint _x = (uint)(x), _y = (uint)(y), _res; \
+        __asm__ ("add.u32 %0, %1, %2;" : "=r"(_res) : "r"(_x), "r"(_y)); \
+        _res; \
+    })
   #endif
   #if (NV_SM >= 20) // permute supported
     #define SWAP(x) ({ \
@@ -45,6 +50,17 @@
 #define P 0xB7E15163u
 #define Q 0x9E3779B9u
 
+#if defined(REASSOC) && defined(ADDX) // EXPERIMENT: L[d]+S[a]+L[c] as one 3-input add, independent of t
+#define ROUND1(a, b, c, d) \
+  S[a] = ROTL3(S[b] + (P + a * Q) + L[c]); \
+  t = ADDX(S[a], L[c]); \
+  L[d] = ROTL(L[d] + S[a] + L[c], t)
+
+#define ROUND23(a, b, c, d) \
+  S[a] = ROTL3(S[a] + S[b] + L[c]); \
+  t = ADDX(S[a], L[c]); \
+  L[d] = ROTL(L[d] + S[a] + L[c], t)
+#else
 #define ROUND1(a, b, c, d) \
   S[a] = ROTL3(S[b] + (P + a * Q) + L[c]); \
   t = S[a] + L[c]; \
@@ -54,6 +70,7 @@
   S[a] = ROTL3(S[a] + S[b] + L[c]); \
   t = S[a] + L[c]; \
   L[d] = ROTL(L[d] + t, t)
+#endif
 
 #define ENCRYPT(a) \
   A = ROTL(A^B, B) + S[a]; \
