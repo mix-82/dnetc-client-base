@@ -432,7 +432,7 @@ static void DumpNVProgram(ocl_context_t *cont, const char *kernelName, int nv_sm
     if (f != NULL)
     {
       size_t len = bin_size;
-      if (len > 0 && bin[len - 1] == '\0')  // PTX text is NUL-terminated
+      while (len > 0 && bin[len - 1] == '\0')  // the reported size includes NUL padding; ptxas rejects it
         len--;
       fwrite(bin, 1, len, f);
       fclose(f);
