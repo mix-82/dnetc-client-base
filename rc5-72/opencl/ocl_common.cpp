@@ -400,6 +400,77 @@ bool GetAMDRegisterHint(int gfx_hex, int &regs_2pipe, int &regs_4pipe) // VGPRs
   return false;
 }
 
+#ifdef OCL_DUMP_PTX
+/* Debug aid, not for production builds (enable with -DOCL_DUMP_PTX).
+   NVIDIA's OpenCL implementation returns PTX text as the program "binary".
+   Writes <kernelName>_sm<NN>.ptx to the current directory and logs the build
+   options together with the driver's -cl-nv-verbose statistics (registers,
+   spills), which are the authoritative numbers to compare against ptxas -v. */
+static void DumpNVProgram(ocl_context_t *cont, const char *kernelName, int nv_sm,
+                          const char *buildOptions, bool fallback)
+{
+  size_t bin_size = 0;
+  cl_int status = clGetProgramInfo(cont->program, CL_PROGRAM_BINARY_SIZES, sizeof(bin_size), &bin_size, NULL);
+  if (status != CL_SUCCESS || bin_size == 0)
+  {
+    Log("PTX dump: no program binary available for %s\n", kernelName);
+    return;
+  }
+
+  unsigned char *bin = (unsigned char*)malloc(bin_size);
+  if (bin == NULL)
+    return;
+
+  unsigned char *bins[1] = { bin };
+  status = clGetProgramInfo(cont->program, CL_PROGRAM_BINARIES, sizeof(bins), bins, NULL);
+  if (status == CL_SUCCESS)
+  {
+    char fname[128];
+    snprintf(fname, sizeof(fname), "%s_sm%d.ptx", kernelName, nv_sm);
+
+    FILE *f = fopen(fname, "wb");
+    if (f != NULL)
+    {
+      size_t len = bin_size;
+      if (len > 0 && bin[len - 1] == '\0')  // PTX text is NUL-terminated
+        len--;
+      fwrite(bin, 1, len, f);
+      fclose(f);
+      Log("PTX dump: wrote %s (%lu bytes)\n", fname, (unsigned long)len);
+      Log("PTX dump: build options \"%s\"%s\n", buildOptions,
+          fallback ? " were rejected; built with driver defaults" : "");
+    }
+    else
+      Log("PTX dump: cannot create %s\n", fname);
+  }
+  else
+    ocl_diagnose(status, "reading program binary", cont);
+  free(bin);
+
+  // -cl-nv-verbose statistics are delivered through the build log
+  size_t log_size = 0;
+  status = clGetProgramBuildInfo(cont->program, cont->deviceID, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
+  if (status == CL_SUCCESS && log_size > 1)
+  {
+    char *buf = (char*)malloc(log_size + 1);
+    if (buf != NULL)
+    {
+      status = clGetProgramBuildInfo(cont->program, cont->deviceID, CL_PROGRAM_BUILD_LOG, log_size, buf, NULL);
+      if (status == CL_SUCCESS)
+      {
+        buf[log_size] = '\0';
+        size_t len = strlen(buf);
+        LogRaw("PTX dump: build log for %s:\n", kernelName);
+        LogRawString(buf);
+        if (len == 0 || buf[len - 1] != '\n')
+          LogRaw("\n");
+      }
+      free(buf);
+    }
+  }
+}
+#endif /* OCL_DUMP_PTX */
+
 bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *kernelName)
 {
   char *decoded_src = (char*)malloc(strlen(programText)+1);
@@ -439,7 +510,13 @@ bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *ke
           snprintf(nvOption2, sizeof(nvOption2), "-cl-nv-maxrregcount=%d", nv_maxreg4);
       }
    
-      snprintf(buildOptions, sizeof(buildOptions), "%s %s %s", clOption, nvOption1, nvOption2); // NVIDIA build options
+#ifdef OCL_DUMP_PTX
+      const char *nvOption3 = "-cl-nv-verbose"; // register/spill statistics in the build log
+#else
+      const char *nvOption3 = "";
+#endif
+
+      snprintf(buildOptions, sizeof(buildOptions), "%s %s %s %s", clOption, nvOption1, nvOption2, nvOption3); // NVIDIA build options
     }
     else if (GetAMDComputeCapability(cont->deviceID, amd_gfx)) // AMD
     {
@@ -472,10 +549,17 @@ bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *ke
       LogTo(LOGTO_FILE, "clBuildProgram() failed for kernel: %s %s\n", kernelName, buildOptions);
     */
 
+#ifdef OCL_DUMP_PTX
+    bool fallback_build = false;
+#endif
+
     if (status != CL_SUCCESS)  // fallback
     {
+#ifdef OCL_DUMP_PTX
+      fallback_build = true;
+#endif
       status = clBuildProgram(cont->program, 1, &cont->deviceID, NULL, NULL, NULL); // fallback build options
-      
+
       /*
       if (status == CL_SUCCESS)
         LogTo(LOGTO_FILE, "clBuildProgram() successful for kernel: %s with fallback build options\n", kernelName);
@@ -483,6 +567,11 @@ bool BuildCLProgram(ocl_context_t *cont, const char* programText, const char *ke
         LogTo(LOGTO_FILE, "clBuildProgram() failed for kernel: %s with fallback build options\n", kernelName);
       */
     }
+
+#ifdef OCL_DUMP_PTX
+    if (status == CL_SUCCESS && nv_sm > 0)  // NVIDIA only: other vendors return ELF code objects, not text
+      DumpNVProgram(cont, kernelName, nv_sm, buildOptions, fallback_build);
+#endif
   }
 
   if (ocl_diagnose(status, "building cl program", cont) != CL_SUCCESS)
