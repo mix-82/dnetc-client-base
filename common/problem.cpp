@@ -436,6 +436,17 @@ static int __gen_benchmark_work(unsigned int contestid, ContestWork * work)
       work->bigcrypto.keysdone.hi = ( 0 );
       work->bigcrypto.iterations.lo = ( 0 );
       work->bigcrypto.iterations.hi = ( 1 );
+      #if defined(OCL_DUMP_PTX)
+      /* Debug builds only: DNETC_BENCH_BLOCKS=n benchmarks n * 2^32 keys
+         instead of one block. A fast GPU finishes a single block in well
+         under 100 ms, too short for the launch-size ramp to settle; the
+         benchmark still stops after its time limit (16 s / 8 s). */
+      {
+        const char *env = getenv("DNETC_BENCH_BLOCKS");
+        if (env && atoi(env) > 1)
+          work->bigcrypto.iterations.hi = (u32)( (atoi(env) > 255) ? 255 : atoi(env) );
+      }
+      #endif
       work->bigcrypto.randomsubspace = 0xffff; /* invalid, benchmarks don't propagate random subspaces */
       return contestid;
     }
