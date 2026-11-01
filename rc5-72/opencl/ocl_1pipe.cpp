@@ -15,6 +15,19 @@
 #include "rc5-4pipe.cpp"
 
 #define CONST_SIZE (sizeof(cl_uint)*16)
+
+#ifdef OCL_DUMP_PTX
+/* Debug builds only: DNETC_OCL_LWS=<n> (32..1024, power of two) sets an
+   explicit work-group size instead of letting the driver choose (NULL). */
+static size_t GetDebugLocalSize(void)
+{
+  const char *env = getenv("DNETC_OCL_LWS");
+  int n = env ? atoi(env) : 0;
+  if (n >= 32 && n <= 1024 && (n & (n - 1)) == 0)
+    return (size_t)n;
+  return 0;
+}
+#endif
 #define OUT_SIZE (sizeof(cl_uint)*128)
 
 static bool init_rc5_72_ocl_npipe(ocl_context_t *cont, unsigned core_ID, const char *core_program, const char *program_entry)
@@ -67,6 +80,15 @@ static bool init_rc5_72_ocl_npipe(ocl_context_t *cont, unsigned core_ID, const c
   cont->runSizeMultiplier = ((cont->runSizeMultiplier + 256 - 1) / 256) * 256;
   if (cont->runSizeMultiplier < 256)
     cont->runSizeMultiplier = 256;
+#ifdef OCL_DUMP_PTX
+  {
+    size_t lws = GetDebugLocalSize();
+    if (lws > 256)
+      cont->runSizeMultiplier = (u32)(((cont->runSizeMultiplier + lws - 1) / lws) * lws);
+    if (lws)
+      Log("OCL debug: work-group size %u, run size multiplier %u\n", (unsigned)lws, (unsigned)cont->runSizeMultiplier);
+  }
+#endif
 
   //Log("Multiplier = %u\n", cont->runSizeMultiplier);
   unsigned t = cont->runSize/cont->runSizeMultiplier;
@@ -367,7 +389,14 @@ static s32 rc5_72_unit_func_ocl_npipe(RC5_72UnitWork *rc5_72unitwork, u32 *itera
     globalWorkSize[0] = rest0;
 
     cl_event ndrEvt;
-    status = clEnqueueNDRangeKernel(cont->cmdQueue, cont->kernel, 1, NULL, globalWorkSize, NULL, 0, NULL, &ndrEvt);
+    size_t *localWorkSize = NULL;
+#ifdef OCL_DUMP_PTX
+    size_t lws[1];
+    lws[0] = GetDebugLocalSize();
+    if (lws[0] && (rest0 % lws[0]) == 0)  // partial last launch: driver default, never pad the key range
+      localWorkSize = lws;
+#endif
+    status = clEnqueueNDRangeKernel(cont->cmdQueue, cont->kernel, 1, NULL, globalWorkSize, localWorkSize, 0, NULL, &ndrEvt);
     if (ocl_diagnose(status, "launching kernel", cont) != CL_SUCCESS)
     {
       RaiseExitRequestTrigger();
