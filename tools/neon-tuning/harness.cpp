@@ -19,7 +19,24 @@ extern "C" s32 v_8_010(RC5_72UnitWork *, u32 *, void *);
 extern "C" s32 v_16_101(RC5_72UnitWork *, u32 *, void *);
 extern "C" s32 v_4_010(RC5_72UnitWork *, u32 *, void *);
 extern "C" s32 v_4_000(RC5_72UnitWork *, u32 *, void *);
+extern "C" s32 w_8_1100(RC5_72UnitWork *, u32 *, void *);
+extern "C" s32 w_8_1110(RC5_72UnitWork *, u32 *, void *);
+extern "C" s32 w_8_1101(RC5_72UnitWork *, u32 *, void *);
+extern "C" s32 w_8_1111(RC5_72UnitWork *, u32 *, void *);
+extern "C" s32 w_8_0100(RC5_72UnitWork *, u32 *, void *);
+extern "C" s32 w_8_0110(RC5_72UnitWork *, u32 *, void *);
+extern "C" s32 w_8_0101(RC5_72UnitWork *, u32 *, void *);
+extern "C" s32 w_8_0111(RC5_72UnitWork *, u32 *, void *);
 extern "C" s32 rc5_72_unit_func_neon_8x4(RC5_72UnitWork *, u32 *, void *);
+extern "C" s32 t_8_x3(RC5_72UnitWork *, u32 *, void *);
+extern "C" s32 t_8_x3_pre(RC5_72UnitWork *, u32 *, void *);
+extern "C" s32 t_8_x3_rom(RC5_72UnitWork *, u32 *, void *);
+extern "C" s32 t_8_x3_vchk(RC5_72UnitWork *, u32 *, void *);
+extern "C" s32 t_8_x3_all(RC5_72UnitWork *, u32 *, void *);
+extern "C" s32 t_8_x3_all_bar(RC5_72UnitWork *, u32 *, void *);
+extern "C" s32 t_8_full_bar_all(RC5_72UnitWork *, u32 *, void *);
+extern "C" s32 t_4_x3_all(RC5_72UnitWork *, u32 *, void *);
+extern "C" s32 t_16_x3_all(RC5_72UnitWork *, u32 *, void *);
 
 struct entry
 {
@@ -27,18 +44,28 @@ struct entry
   const char *desc;
   corefn fn;
   u32 np;
+  int carry;      // 1 if the core carries the key into L0.mid and L0.lo
 };
 
 static const entry table[] =
 {
-  {"zebe_8x4", "NEON 8x4 as shipped", rc5_72_unit_func_neon_8x4, 32},
-  {"v_8_101", "8x4 x3 + usra", v_8_101, 32},
-  {"v_8_111", "8x4 x3 + barrier + usra", v_8_111, 32},
-  {"v_8_100", "8x4 x3", v_8_100, 32},
-  {"v_8_010", "8x4 full + barrier", v_8_010, 32},
-  {"v_16_101", "16x4 x3 + usra", v_16_101, 64},
-  {"v_4_010", "4x4 full + barrier", v_4_010, 16},
-  {"v_4_000", "4x4 full (arm64-neon-cores)", v_4_000, 16},
+  {"zebe_8x4", "NEON 8x4 as shipped", rc5_72_unit_func_neon_8x4, 32, 1},
+  {"v_8_101", "8x4 x3 + usra", v_8_101, 32, 0},
+  {"v_8_111", "8x4 x3 + barrier + usra", v_8_111, 32, 0},
+  {"v_8_100", "8x4 x3", v_8_100, 32, 0},
+  {"v_8_010", "8x4 full + barrier", v_8_010, 32, 0},
+  {"v_16_101", "16x4 x3 + usra", v_16_101, 64, 0},
+  {"v_4_010", "4x4 full + barrier", v_4_010, 16, 0},
+  {"v_4_000", "4x4 full (arm64-neon-cores)", v_4_000, 16, 0},
+  {"t_8_x3", "8x4 x3 + usra (new layout)", t_8_x3, 32, 1},
+  {"t_8_x3_pre", "  + precompute steps 0-1", t_8_x3_pre, 32, 1},
+  {"t_8_x3_rom", "  + ROM table for first S pass", t_8_x3_rom, 32, 1},
+  {"t_8_x3_vchk", "  + vector result check", t_8_x3_vchk, 32, 1},
+  {"t_8_x3_all", "8x4 x3 + all three", t_8_x3_all, 32, 1},
+  {"t_8_x3_all_bar", "8x4 x3 + all three + barrier", t_8_x3_all_bar, 32, 1},
+  {"t_8_full_bar_all", "8x4 full + barrier + all three", t_8_full_bar_all, 32, 1},
+  {"t_4_x3_all", "4x4 x3 + all three", t_4_x3_all, 16, 1},
+  {"t_16_x3_all", "16x4 x3 + all three", t_16_x3_all, 64, 1},
 };
 
 // reference RC5-32/12 with a 3-word key (lo, mid, hi), as the cores use it
@@ -131,12 +158,45 @@ static int check(int n)
       printf("FAIL %s rc=%d it=%u want %u\n", table[e].name, (int)rc, (unsigned)it, (unsigned)want);
       bad++;
     }
+    if (table[e].carry)
+    {
+      // start in the last block before the hi byte wraps; the planted key
+      // is in the next block, after the carry into L0.mid
+      setup(&w);
+      w.L0.hi = 256 - table[e].np;
+      encrypt(w.L0.lo, w.L0.mid + 0x01000000u, 5, w.plain.lo, w.plain.hi, &clo, &chi);
+      w.cypher.lo = clo;
+      w.cypher.hi = chi;
+      it = 2 * table[e].np;
+      rc = table[e].fn(&w, &it, 0);
+      if (rc != RESULT_FOUND || it != table[e].np + 5)
+      {
+        printf("FAIL %s (carry) rc=%d it=%u want %u\n", table[e].name, (int)rc, (unsigned)it, (unsigned)(table[e].np + 5));
+        bad++;
+      }
+    }
     nomatch(&w);
     it = 2 * table[e].np;
     rc = table[e].fn(&w, &it, 0);
     if (rc != RESULT_NOTHING || w.L0.hi != 2 * table[e].np)
     {
       printf("FAIL %s (no match) rc=%d hi=%u\n", table[e].name, (int)rc, (unsigned)w.L0.hi);
+      bad++;
+    }
+    // partial match: cypher.lo right, cypher.hi wrong -> counter-measure
+    // check records it, the search goes on and nothing is found
+    u32 part = table[e].np + 2 * table[e].np / 3;
+    setup(&w);
+    encrypt(w.L0.lo, w.L0.mid, part, w.plain.lo, w.plain.hi, &clo, &chi);
+    w.cypher.lo = clo;
+    w.cypher.hi = chi ^ 1u;
+    it = 2 * table[e].np;
+    rc = table[e].fn(&w, &it, 0);
+    if (rc != RESULT_NOTHING || w.check.count != 1 || w.check.hi != part ||
+        w.check.mid != 0x11223344u || w.check.lo != 0x55667788u)
+    {
+      printf("FAIL %s (partial match) rc=%d count=%u hi=%u want %u\n", table[e].name, (int)rc,
+             (unsigned)w.check.count, (unsigned)w.check.hi, (unsigned)part);
       bad++;
     }
   }
@@ -168,7 +228,7 @@ static void bench(int n, double secs)
       rate[e][r] = keys / (t1 - t0) / 1e6;
     }
   }
-  printf("%-10s %-30s %10s %10s %10s %10s\n", "core", "description", "round 1", "round 2", "round 3", "median");
+  printf("%-17s %-32s %10s %10s %10s %10s\n", "core", "description", "round 1", "round 2", "round 3", "median");
   for (int e = 0; e < n; e++)
   {
     double a = rate[e][0];
@@ -183,7 +243,7 @@ static void bench(int n, double secs)
     {
       med = c;
     }
-    printf("%-10s %-30s %10.2f %10.2f %10.2f %10.2f\n", table[e].name, table[e].desc, a, b, c, med);
+    printf("%-17s %-32s %10.2f %10.2f %10.2f %10.2f\n", table[e].name, table[e].desc, a, b, c, med);
   }
   printf("(Mkeys/s, single thread)\n");
 }
