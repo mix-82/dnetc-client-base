@@ -1,6 +1,7 @@
 name: arm64 NEON cores
 
-# Runs only when started by hand:
+# Runs on pushes to the arm64-neon-cores branch (which also registers the
+# workflow with GitHub), or when started by hand:
 #   gh workflow run arm64-cores.yml --ref arm64-neon-cores
 # or, for one job only (its key below, e.g. linux-arm64):
 #   gh workflow run arm64-cores.yml --ref arm64-neon-cores -f only=linux-arm64
@@ -14,6 +15,8 @@ name: arm64 NEON cores
 # distributed.net work units are fetched or returned.
 
 on:
+  push:
+    branches: [arm64-neon-cores]
   workflow_dispatch:
     inputs:
       only:
