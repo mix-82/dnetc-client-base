@@ -10,4 +10,4 @@ mkdir -p $out
 echo "=== $label: $*"
 "$@" -fno-exceptions -fno-rtti -Icommon -o $out/harness-$label \
   tools/neon-tuning/harness.cpp tools/neon-tuning/variants.cpp tools/neon-tuning/tricks.cpp rc5-72/arm64/r72-neon-8x4.cpp || exit 1
-$out/harness-$label bench 2
+$out/harness-$label bench ${BENCH_ARGS:-2}

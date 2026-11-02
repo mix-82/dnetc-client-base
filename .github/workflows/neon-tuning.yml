@@ -4,6 +4,8 @@ name: NEON core tuning
 #   gh workflow run neon-tuning.yml --ref apple-neon-tuning
 # or, for one job only (its key below, e.g. macos):
 #   gh workflow run neon-tuning.yml --ref apple-neon-tuning -f only=macos
+# and to choose the benchmark (seconds, rounds, cores):
+#   ... -f bench="5 5 zebe_8x4 t_8_x3_all"
 #
 # Benchmarks NEON 8x4 against the top candidates of the llvm-mca pre-screen
 # (tools/neon-tuning) on real hardware, at several compilers and optimisation
@@ -18,6 +20,10 @@ on:
     inputs:
       only:
         description: run only this job (its key), empty for all
+        required: false
+        default: ''
+      bench:
+        description: harness bench arguments (seconds rounds core...), empty for 2 s x 3 rounds of all cores
         required: false
         default: ''
 
@@ -37,6 +43,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Benchmark
+      env:
+        BENCH_ARGS: ${{ inputs.bench }}
       run: |
         mkdir -p tools/neon-tuning/out
         { sysctl -n machdep.cpu.brand_string; c++ --version | head -1
@@ -66,6 +74,8 @@ jobs:
         sudo apt-get update -q
         sudo apt-get install -y -q clang
     - name: Benchmark
+      env:
+        BENCH_ARGS: ${{ inputs.bench }}
       run: |
         mkdir -p tools/neon-tuning/out
         { grep -m1 -iE 'model name|CPU part' /proc/cpuinfo; g++ --version | head -1; clang++ --version | head -1

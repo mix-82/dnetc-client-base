@@ -2,8 +2,9 @@
 //   harness check              every candidate (and NEON 8x4) must find a
 //                              planted key and report no false match
 //   harness run <name>         two passes of one candidate, no match (tracing)
-//   harness bench [seconds]    keyrate of every candidate, round-robin,
-//                              three rounds (default 2 seconds per run)
+//   harness bench [seconds [rounds [core ...]]]
+//                              keyrate of the chosen cores (default all),
+//                              round-robin (default 3 rounds of 2 seconds)
 #include "ccoreio.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -204,10 +205,28 @@ static int check(int n)
   return bad;
 }
 
-static void bench(int n, double secs)
+#define MAXROUNDS 9
+
+static int cmpd(const void *x, const void *y)
 {
-  const int rounds = 3;
-  double rate[sizeof(table) / sizeof(table[0])][3];
+  double a = *(const double *)x;
+  double b = *(const double *)y;
+  if (a < b)
+  {
+    return -1;
+  }
+  if (a > b)
+  {
+    return 1;
+  }
+  return 0;
+}
+
+// sel[e] != 0 selects table entry e; rounds are round-robin over the
+// selected cores so slow drift of a shared runner hits all of them alike
+static void bench(int n, const int *sel, double secs, int rounds)
+{
+  double rate[sizeof(table) / sizeof(table[0])][MAXROUNDS];
   for (int r = 0; r < rounds; r++)
   {
     for (int e = 0; e < n; e++)
@@ -216,6 +235,10 @@ static void bench(int n, double secs)
       double keys = 0.0;
       double t0;
       double t1;
+      if (!sel[e])
+      {
+        continue;
+      }
       nomatch(&w);
       t0 = now();
       do
@@ -228,22 +251,27 @@ static void bench(int n, double secs)
       rate[e][r] = keys / (t1 - t0) / 1e6;
     }
   }
-  printf("%-17s %-32s %10s %10s %10s %10s\n", "core", "description", "round 1", "round 2", "round 3", "median");
+  printf("%-17s %-32s", "core", "description");
+  for (int r = 0; r < rounds; r++)
+  {
+    printf("   round %d", r + 1);
+  }
+  printf("     median        min        max\n");
   for (int e = 0; e < n; e++)
   {
-    double a = rate[e][0];
-    double b = rate[e][1];
-    double c = rate[e][2];
-    double med = a;
-    if ((a <= b && b <= c) || (c <= b && b <= a))
+    double sorted[MAXROUNDS];
+    if (!sel[e])
     {
-      med = b;
+      continue;
     }
-    else if ((b <= c && c <= a) || (a <= c && c <= b))
+    printf("%-17s %-32s", table[e].name, table[e].desc);
+    for (int r = 0; r < rounds; r++)
     {
-      med = c;
+      printf(" %9.2f", rate[e][r]);
+      sorted[r] = rate[e][r];
     }
-    printf("%-17s %-32s %10.2f %10.2f %10.2f %10.2f\n", table[e].name, table[e].desc, a, b, c, med);
+    qsort(sorted, (size_t)rounds, sizeof(double), cmpd);
+    printf(" %10.2f %10.2f %10.2f\n", sorted[rounds / 2], sorted[0], sorted[rounds - 1]);
   }
   printf("(Mkeys/s, single thread)\n");
 }
@@ -257,16 +285,49 @@ int main(int argc, char **argv)
   }
   if (argc >= 2 && strcmp(argv[1], "bench") == 0)
   {
+    // bench [seconds [rounds [core ...]]]: default 2 seconds, 3 rounds, all cores
     double secs = 2.0;
+    int rounds = 3;
+    int sel[sizeof(table) / sizeof(table[0])];
+    for (int e = 0; e < n; e++)
+    {
+      sel[e] = 1;
+    }
     if (argc >= 3)
     {
       secs = atof(argv[2]);
+    }
+    if (argc >= 4)
+    {
+      rounds = atoi(argv[3]);
+    }
+    if (rounds < 1)
+    {
+      rounds = 1;
+    }
+    if (rounds > MAXROUNDS)
+    {
+      rounds = MAXROUNDS;
+    }
+    if (argc >= 5)
+    {
+      for (int e = 0; e < n; e++)
+      {
+        sel[e] = 0;
+        for (int a = 4; a < argc; a++)
+        {
+          if (strcmp(table[e].name, argv[a]) == 0)
+          {
+            sel[e] = 1;
+          }
+        }
+      }
     }
     if (check(n) != 0)
     {
       return 1;
     }
-    bench(n, secs);
+    bench(n, sel, secs, rounds);
     return 0;
   }
   if (argc >= 3 && strcmp(argv[1], "run") == 0)
