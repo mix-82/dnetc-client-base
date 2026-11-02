@@ -1180,6 +1180,10 @@ generate_gcc_opts() {
         fi
         ;;
 
+    *internal-arm64)
+        opts310="$OPTS_GCC310 -O2 -march=armv8-a"
+        ;;
+
     *internal-sparc)  # (sparc/v7 [SS1/2/IPX]) (v8 [supersparc] is below)
         opts272="$OPTS_GCC272 -O6 -mcypress -DASM_SPARC -funroll-loops"
         opts295="$OPTS_GCC295 -O2 -mcpu=cypress -mtune=supersparc -DASM_SPARC -funroll-loops"
@@ -1688,11 +1692,9 @@ case "$1" in
         ;;
 
     *linux-arm64)               # [mikereed ertyu]
-	echo "Warning: gcc-arm64 optimizations need to be determined and set"
-	exit
-
         TARGET_CC="g++"
         TARGET_AS="gcc -c"
+        generate_gcc_opts "arm64"
         TARGET_CCFLAGS="$OPTS_GCC -Wall -DHAVE_POSIX_THREADS"
         TARGET_LIBS="-lpthread -lrt"
         TARGET_TARBALL="linux-arm64"
