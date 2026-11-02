@@ -1,0 +1,85 @@
+name: NEON core tuning
+
+# Runs on pushes to the apple-neon-tuning branch, or when started by hand:
+#   gh workflow run neon-tuning.yml --ref apple-neon-tuning
+# or, for one job only (its key below, e.g. macos):
+#   gh workflow run neon-tuning.yml --ref apple-neon-tuning -f only=macos
+#
+# Benchmarks NEON 8x4 against the top candidates of the llvm-mca pre-screen
+# (tools/neon-tuning) on real hardware, at several compilers and optimisation
+# levels. Each build first checks that every candidate finds a planted key.
+# Standalone harness only: the client is not built and no distributed.net
+# work units are fetched or returned.
+
+on:
+  push:
+    branches: [apple-neon-tuning]
+  workflow_dispatch:
+    inputs:
+      only:
+        description: run only this job (its key), empty for all
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: neon-tuning-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macos:
+    if: ${{ inputs.only == '' || inputs.only == 'macos' }}
+    name: macos-14 (Apple M1, Apple clang)
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v4
+    - name: Benchmark
+      run: |
+        mkdir -p tools/neon-tuning/out
+        { sysctl -n machdep.cpu.brand_string; c++ --version | head -1
+          P="-arch arm64 -mmacosx-version-min=11.0 -DHAVE_POSIX_THREADS"
+          # -Os is what configure gives macosx-arm64 today
+          sh tools/neon-tuning/bench.sh clang-Os c++ -Os $P
+          sh tools/neon-tuning/bench.sh clang-O2 c++ -O2 $P
+          sh tools/neon-tuning/bench.sh clang-O3 c++ -O3 $P
+        } 2>&1 | tee tools/neon-tuning/out/results-macos.txt
+    - name: Upload results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: neon-tuning-macos
+        path: tools/neon-tuning/out/results-*.txt
+        if-no-files-found: warn
+
+  linux:
+    if: ${{ inputs.only == '' || inputs.only == 'linux' }}
+    name: ubuntu-24.04-arm (Neoverse N2, gcc and clang)
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install clang
+      run: |
+        sudo apt-get update -q
+        sudo apt-get install -y -q clang
+    - name: Benchmark
+      run: |
+        mkdir -p tools/neon-tuning/out
+        { grep -m1 -iE 'model name|CPU part' /proc/cpuinfo; g++ --version | head -1; clang++ --version | head -1
+          P="-march=armv8-a -DHAVE_POSIX_THREADS"
+          # gcc-O2 uses the flags configure gives linux-arm64 on arm64-neon-cores
+          sh tools/neon-tuning/bench.sh gcc-O2 g++ -O2 -fcaller-saves -fomit-frame-pointer -fno-inline-functions -fstrict-aliasing $P
+          sh tools/neon-tuning/bench.sh gcc-O3 g++ -O3 $P
+          sh tools/neon-tuning/bench.sh clang-Os clang++ -Os $P
+          sh tools/neon-tuning/bench.sh clang-O3 clang++ -O3 $P
+        } 2>&1 | tee tools/neon-tuning/out/results-linux.txt
+    - name: Upload results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: neon-tuning-linux
+        path: tools/neon-tuning/out/results-*.txt
+        if-no-files-found: warn
