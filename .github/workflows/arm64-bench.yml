@@ -9,7 +9,7 @@ name: arm64 core benchmark
 
 on:
   push:
-    branches: [neon-mix16]
+    branches: [neon-mix16, neon-mix32-skew-exp]
   workflow_dispatch:
     inputs:
       rounds:
@@ -43,7 +43,7 @@ jobs:
     - name: Test and benchmark
       env:
         BUILD: linux-arm64 (gcc, slot ${{ matrix.slot }})
-        ROUNDS: ${{ inputs.rounds || '3' }}
+        ROUNDS: ${{ inputs.rounds || '5' }}
       run: bash tools/ci-bench/ci-arm64-bench.sh
     - name: Upload results
       if: always()
@@ -71,7 +71,7 @@ jobs:
     - name: Test and benchmark
       env:
         BUILD: macosx-arm64 (clang, ${{ matrix.os }})
-        ROUNDS: ${{ inputs.rounds || '3' }}
+        ROUNDS: ${{ inputs.rounds || '5' }}
       run: bash tools/ci-bench/ci-arm64-bench.sh
     - name: Upload results
       if: always()
