@@ -1,0 +1,248 @@
+#!/usr/bin/env python3
+"""Generate vmix.S: AArch64 microbenchmark kernels for the MIX NEON cores'
+instruction mix. Each kernel is `void vmix_<name>(uint64_t iters, void *scratch)`
+running its body `iters` times. vmix.c times them and converts to cycles with
+a calibrated clock. Data values are irrelevant (timing is data-independent).
+
+Kernels:
+  add, shl, sri, ushl, stp     one instruction type, independent (pipe throughput)
+  mix_ind_cluster / mix_ind_inter
+                               the key-schedule step's 4-shift : 7-other mix with no
+                               data dependences, shifts clustered vs. spread
+  step32_lockstep              the real MIX NEON32 key-schedule step (3 sub-steps,
+                               8 pipes, loads and stores), as the core issues it
+  step32_skew                  same, pipe group 2 half a step behind group 1,
+                               phases merged (the rejected skew experiment)
+  step32_fine                  same, the two groups' instructions alternated
+  step32_nostore               lockstep without the stores (store cost)
+  step16_lockstep              the MIX NEON16 step (4 pipes)
+"""
+import sys
+
+out = []
+def e(s=""): out.append(s)
+def ins(s): out.append("        " + s)
+
+# --- NEON32 register map (as in gen_neon32.py) --------------------------
+NP = 8
+A  = [f"v{8 + p}" for p in range(NP)]
+BL = [f"v{16 + p}" for p in range(NP)]
+T  = [f"v{i}" for i in range(0, 4)]
+U  = [f"v{i}" for i in range(4, 8)]
+Y  = [f"v{i}" for i in range(24, 28)]
+T2 = [f"v{i}" for i in range(24, 28)]
+C31, CM32 = "v30", "v31"
+G1, G2 = list(range(0, 4)), list(range(4, 8))
+STRIDE = 128
+def q(r): return "q" + r[1:]
+
+def cap(fn, *a):
+    """capture the instructions fn emits as a list"""
+    global out
+    saved, out = out, []
+    fn(*a)
+    got, out = out, saved
+    return got
+
+def grp(fmt, g, **regs):
+    for i, p in enumerate(g):
+        ins(fmt.format(**{k: (v[p] if len(v) == NP else v[i]) for k, v in regs.items()}))
+
+def ld4(dst, base, off):
+    ins(f"ldp     {q(dst[0])}, {q(dst[1])}, [{base}, #{off}]")
+    ins(f"ldp     {q(dst[2])}, {q(dst[3])}, [{base}, #{off + 32}]")
+
+def st4(src, base, off):
+    ins(f"stp     {q(src[0])}, {q(src[1])}, [{base}, #{off}]")
+    ins(f"stp     {q(src[2])}, {q(src[3])}, [{base}, #{off + 32}]")
+
+def gl(regs, g): return [regs[p] for p in g] if len(regs) == NP else regs
+
+def rotl3(dst, src, g):
+    grp("shl     {d}.4s, {s}.4s, #3", g, d=dst, s=src)
+    grp("sri     {d}.4s, {s}.4s, #29", g, d=dst, s=src)
+
+def vrotl(dst, x, s, t1, t2, g):
+    grp("and     {u}.16b, {s}.16b, " + C31 + ".16b", g, u=t1, s=s)
+    grp("orr     {t}.16b, {s}.16b, " + CM32 + ".16b", g, t=t2, s=s)
+    grp("ushl    {u}.4s, {x}.4s, {u}.4s", g, u=t1, x=x)
+    grp("ushl    {t}.4s, {x}.4s, {t}.4s", g, t=t2, x=x)
+    grp("orr     {d}.16b, {u}.16b, {t}.16b", g, d=dst, u=t1, t=t2)
+
+STORES = True
+def ks_step(off, x, y):
+    """MIX NEON32 step, lockstep (gen_neon32.py ks_step with sri)."""
+    for g in (G1, G2):
+        p0 = g[0]
+        ld4(T, "x10", off + 16 * p0)
+        grp("add     {t}.4s, {t}.4s, {a}.4s", g, t=T, a=A)
+        grp("add     {t}.4s, {t}.4s, {b}.4s", g, t=T, b=BL)
+        rotl3(A, T, g)
+        if STORES: st4(gl(A, g), "x11", off + 16 * p0)
+        grp("add     {t}.4s, {b}.4s, {a}.4s", g, t=T, b=BL, a=A)
+        ld4(Y, "x12", 128 * y + 16 * p0)
+        if STORES: st4(gl(BL, g), "x12", 128 * x + 16 * p0)
+        grp("add     {y}.4s, {y}.4s, {t}.4s", g, y=Y, t=T)
+        vrotl(BL, Y, T, U, T, g)
+
+def e_phase(g, Tg, off, x):
+    p0 = g[0]
+    ld4(Tg, "x10", off + 16 * p0)
+    grp("add     {t}.4s, {t}.4s, {a}.4s", g, t=Tg, a=A)
+    grp("add     {t}.4s, {t}.4s, {b}.4s", g, t=Tg, b=BL)
+    rotl3(A, Tg, g)
+    st4(gl(A, g), "x11", off + 16 * p0)
+    grp("add     {t}.4s, {b}.4s, {a}.4s", g, t=Tg, b=BL, a=A)
+    st4(gl(BL, g), "x12", 128 * x + 16 * p0)
+
+def l_phase(g, Tg, y):
+    ld4(gl(BL, g), "x12", 128 * y + 16 * g[0])
+    grp("add     {b}.4s, {b}.4s, {t}.4s", g, b=BL, t=Tg)
+    vrotl(BL, BL, Tg, U, Tg, g)
+
+STEPS = {"A": (-STRIDE, 1, 2), "B": (0, 2, 0), "C": (STRIDE, 0, 1)}
+def E(g, s): off, x, y = STEPS[s]; return cap(e_phase, g, T if g is G1 else T2, off, x)
+def L(g, s): off, x, y = STEPS[s]; return cap(l_phase, g, T if g is G1 else T2, y)
+
+def concat(a, b): out.extend(a); out.extend(b)
+def alternate(a, b):
+    for i in range(max(len(a), len(b))):
+        if i < len(a): out.append(a[i])
+        if i < len(b): out.append(b[i])
+
+def skewed_round(merge):
+    """one 3-sub-step round with group 2 half a step behind; `merge` combines
+    the two groups' phase streams (concat = skew experiment, alternate = fine)."""
+    merge(E(G1, "A"), L(G2, "C"))
+    merge(L(G1, "A"), E(G2, "A"))
+    merge(E(G1, "B"), L(G2, "A"))
+    merge(L(G1, "B"), E(G2, "B"))
+    merge(E(G1, "C"), L(G2, "B"))
+    merge(L(G1, "C"), E(G2, "C"))
+
+# --- NEON16 step (gen_neon16.py layout) ------------------------------------
+def step16():
+    A16 = [f"v{i}" for i in range(8, 12)]
+    B16 = [[f"v{12 + 3 * p + j}" for j in range(3)] for p in range(4)]
+    g = list(range(4))
+    def grp4(fmt, **regs):
+        for i in range(4):
+            ins(fmt.format(**{k: v[i] for k, v in regs.items()}))
+    for off, bx, by in ((-64, 1, 2), (0, 2, 0), (64, 0, 1)):
+        Bx = [B16[p][bx] for p in range(4)]; By = [B16[p][by] for p in range(4)]
+        ins(f"ldp     q0, q1, [x10, #{off + 256}]")
+        ins(f"ldp     q2, q3, [x10, #{off + 288}]")
+        grp4("add     {t}.4s, {t}.4s, {a}.4s", t=T, a=A16)
+        grp4("add     {t}.4s, {t}.4s, {b}.4s", t=T, b=Bx)
+        grp4("shl     {a}.4s, {t}.4s, #3", a=A16, t=T)
+        grp4("sri     {a}.4s, {t}.4s, #29", a=A16, t=T)
+        ins(f"stp     q8, q9, [x11, #{off + 256}]")
+        ins(f"stp     q10, q11, [x11, #{off + 288}]")
+        grp4("add     {t}.4s, {b}.4s, {a}.4s", t=T, b=Bx, a=A16)
+        grp4("add     {y}.4s, {y}.4s, {t}.4s", y=By, t=T)
+        grp4("and     {u}.16b, {s}.16b, v30.16b", u=U, s=T)
+        grp4("orr     {t}.16b, {s}.16b, v31.16b", t=T, s=T)
+        grp4("ushl    {u}.4s, {x}.4s, {u}.4s", u=U, x=By)
+        grp4("ushl    {t}.4s, {x}.4s, {t}.4s", t=T, x=By)
+        grp4("orr     {x}.16b, {u}.16b, {t}.16b", x=By, u=U, t=T)
+
+# --- simple kernels ----------------------------------------------------------
+def simple(op, n=32):
+    """n independent instructions rotating over v8-v23 (16 registers)."""
+    for i in range(n):
+        d = f"v{8 + i % 16}"; s = f"v{8 + (i + 5) % 16}"
+        if op == "add":  ins(f"add     {d}.4s, {s}.4s, {d}.4s")
+        if op == "shl":  ins(f"shl     {d}.4s, {s}.4s, #3")
+        if op == "sri":  ins(f"sri     {d}.4s, {s}.4s, #29")
+        if op == "ushl": ins(f"ushl    {d}.4s, {s}.4s, v30.4s")
+        if op == "stp":  ins(f"stp     {q(d)}, {q(s)}, [x10, #{(i % 8) * 32}]")
+
+def mix_ind(cluster):
+    """44 instructions = 4 x (4 shifts + 7 others), independent."""
+    regs = [f"v{8 + i}" for i in range(16)]
+    k = [0]
+    def r():
+        k[0] += 1; return regs[k[0] % 16]
+    shifts = [lambda: ins(f"shl     {r()}.4s, {r()}.4s, #3"),
+              lambda: ins(f"sri     {r()}.4s, {r()}.4s, #29"),
+              lambda: ins(f"ushl    {r()}.4s, {r()}.4s, v30.4s"),
+              lambda: ins(f"ushl    {r()}.4s, {r()}.4s, v30.4s")]
+    others = [lambda: ins(f"add     {r()}.4s, {r()}.4s, {r()}.4s")] * 4 + \
+             [lambda: ins(f"and     {r()}.16b, {r()}.16b, v30.16b"),
+              lambda: ins(f"orr     {r()}.16b, {r()}.16b, v31.16b"),
+              lambda: ins(f"orr     {r()}.16b, {r()}.16b, {r()}.16b")]
+    for _ in range(4):
+        if cluster:
+            for f in shifts: f()
+            for f in others: f()
+        else:
+            seq = [others[0], shifts[0], others[1], others[2], shifts[1], others[3],
+                   others[4], shifts[2], others[5], shifts[3], others[6]]
+            for f in seq: f()
+
+# --- emit ----------------------------------------------------------------
+KERNELS = {}
+def kernel(name, body, unit):
+    """unit: instructions or steps per iteration, for the report"""
+    KERNELS[name] = unit
+    e(f"        .globl  FUNC(vmix_{name})")
+    e("#if !defined(__APPLE__)")
+    e(f"        .type   vmix_{name}, %function")
+    e("#endif")
+    e("        .p2align 6")
+    e(f"FUNC(vmix_{name}):")
+    ins("stp     x29, x30, [sp, #-16]!")
+    ins("mov     x29, sp")
+    ins("sub     sp, sp, #64")
+    ins("stp     d8, d9, [sp, #0]")
+    ins("stp     d10, d11, [sp, #16]")
+    ins("stp     d12, d13, [sp, #32]")
+    ins("stp     d14, d15, [sp, #48]")
+    ins("add     x10, x1, #1024             // S source / scratch rows")
+    ins("add     x11, x1, #1024             // S dest")
+    ins("add     x12, x1, #4096             // L area")
+    ins("movi    v30.4s, #31")
+    ins("mvni    v31.4s, #31")
+    e(f"L(vmix_{name}_loop):")
+    body()
+    ins("subs    x0, x0, #1")
+    e(f"        b.ne    L(vmix_{name}_loop)")
+    ins("ldp     d8, d9, [sp, #0]")
+    ins("ldp     d10, d11, [sp, #16]")
+    ins("ldp     d12, d13, [sp, #32]")
+    ins("ldp     d14, d15, [sp, #48]")
+    ins("mov     sp, x29")
+    ins("ldp     x29, x30, [sp], #16")
+    ins("ret")
+    e()
+
+e("""// Generated by tools/ci-bench/gen_vmix.py. See that file.
+#if defined(__APPLE__)
+#define FUNC(name) _##name
+#define L(name) L##name
+#else
+#define FUNC(name) name
+#define L(name) .L##name
+#endif
+        .text
+""")
+for op in ("add", "shl", "sri", "ushl", "stp"):
+    kernel(op, lambda op=op: simple(op), 32)
+kernel("mix_ind_cluster", lambda: mix_ind(True), 44)
+kernel("mix_ind_inter", lambda: mix_ind(False), 44)
+def lock():
+    ks_step(-STRIDE, 1, 2); ks_step(0, 2, 0); ks_step(STRIDE, 0, 1)
+kernel("step32_lockstep", lock, 3)
+kernel("step32_skew", lambda: skewed_round(concat), 3)
+kernel("step32_fine", lambda: skewed_round(alternate), 3)
+def nostore():
+    global STORES
+    STORES = False; lock(); STORES = True
+kernel("step32_nostore", nostore, 3)
+kernel("step16_lockstep", step16, 3)
+
+e("#if !defined(__APPLE__)")
+e('        .section .note.GNU-stack,"",%progbits')
+e("#endif")
+sys.stdout.write("\n".join(out) + "\n")
+sys.stderr.write("kernels: " + " ".join(f"{k}={v}" for k, v in KERNELS.items()) + "\n")

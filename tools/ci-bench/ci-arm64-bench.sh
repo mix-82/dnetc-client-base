@@ -70,6 +70,12 @@ GHZ=$(awk '{ v[++n] = $1 } END { if (!n) { print 0; exit }
   for (a = 1; a <= n; a++) for (b = a + 1; b <= n; b++) if (v[b] < v[a]) { t = v[a]; v[a] = v[b]; v[b] = t }
   print (n % 2) ? v[(n + 1) / 2] : (v[n / 2] + v[n / 2 + 1]) / 2 }' "$OUT/clock.txt")
 
+# ---- instruction-mix microbenchmark (tools/ci-bench/vmix.c, gen_vmix.py) ----
+VMIX=""
+if cc -O2 "$ROOT/tools/ci-bench/vmix.c" "$ROOT/tools/ci-bench/vmix.S" -o "$OUT/vmix" > "$OUT/vmix-build.txt" 2>&1; then
+  "$OUT/vmix" 5 > "$OUT/vmix.md" 2>&1 && VMIX=1
+fi
+
 # ---- summary ---------------------------------------------------------
 CPU=$(grep -m1 -E 'Model name|machdep|Apple' "$OUT/machine.txt" | sed -E 's/^Model name: *//')
 {
@@ -102,6 +108,12 @@ CPU=$(grep -m1 -E 'Model name|machdep|Apple' "$OUT/machine.txt" | sed -E 's/^Mod
         printf "| %s | %.2f | %s | %s | %s |\n", c, med[c] / 1e6, rounds[c], rel, cpk
       }
     }' "$OUT/rates.tsv"
+  if [ -n "$VMIX" ]; then
+    echo
+    echo "### Instruction-mix microbenchmark (cycles per unit, min of 5)"
+    echo
+    cat "$OUT/vmix.md"
+  fi
 } > "$OUT/summary.md"
 
 cat "$OUT/summary.md"
