@@ -10,7 +10,8 @@
 // USHL reads the low byte of each lane as a signed shift amount, so
 // s | 0xFFFFFFE0 is (s & 31) - 32: a right shift by 32 - (s & 31), or a
 // shift out to 0 when s & 31 = 0. Both amounts come from s in parallel.
-// Rotate by 3 is shl + usra.
+// Rotate by 3 is shl + sri (sri: 2 cycles everywhere; usra is 3 on Apple and
+// a slow forwarding producer on Neoverse N2).
 //
 // All key state stays in v0-v31 (no spills); the S table is on the stack,
 // 64-byte aligned.
@@ -190,10 +191,10 @@ L(round):
         shl     v9.4s, v1.4s, #3
         shl     v10.4s, v2.4s, #3
         shl     v11.4s, v3.4s, #3
-        usra    v8.4s, v0.4s, #29
-        usra    v9.4s, v1.4s, #29
-        usra    v10.4s, v2.4s, #29
-        usra    v11.4s, v3.4s, #29
+        sri     v8.4s, v0.4s, #29
+        sri     v9.4s, v1.4s, #29
+        sri     v10.4s, v2.4s, #29
+        sri     v11.4s, v3.4s, #29
         stp     q8, q9, [x11, #-64]
         stp     q10, q11, [x11, #-32]
         add     v0.4s, v13.4s, v8.4s
@@ -244,10 +245,10 @@ L(round1):
         shl     v9.4s, v1.4s, #3
         shl     v10.4s, v2.4s, #3
         shl     v11.4s, v3.4s, #3
-        usra    v8.4s, v0.4s, #29
-        usra    v9.4s, v1.4s, #29
-        usra    v10.4s, v2.4s, #29
-        usra    v11.4s, v3.4s, #29
+        sri     v8.4s, v0.4s, #29
+        sri     v9.4s, v1.4s, #29
+        sri     v10.4s, v2.4s, #29
+        sri     v11.4s, v3.4s, #29
         stp     q8, q9, [x11, #0]
         stp     q10, q11, [x11, #32]
         add     v0.4s, v14.4s, v8.4s
@@ -297,10 +298,10 @@ L(round1):
         shl     v9.4s, v1.4s, #3
         shl     v10.4s, v2.4s, #3
         shl     v11.4s, v3.4s, #3
-        usra    v8.4s, v0.4s, #29
-        usra    v9.4s, v1.4s, #29
-        usra    v10.4s, v2.4s, #29
-        usra    v11.4s, v3.4s, #29
+        sri     v8.4s, v0.4s, #29
+        sri     v9.4s, v1.4s, #29
+        sri     v10.4s, v2.4s, #29
+        sri     v11.4s, v3.4s, #29
         stp     q8, q9, [x11, #64]
         stp     q10, q11, [x11, #96]
         add     v0.4s, v12.4s, v8.4s
@@ -529,10 +530,10 @@ L(check_hi):
         shl     v1.4s, v9.4s, #3
         shl     v2.4s, v10.4s, #3
         shl     v3.4s, v11.4s, #3
-        usra    v0.4s, v8.4s, #29
-        usra    v1.4s, v9.4s, #29
-        usra    v2.4s, v10.4s, #29
-        usra    v3.4s, v11.4s, #29
+        sri     v0.4s, v8.4s, #29
+        sri     v1.4s, v9.4s, #29
+        sri     v2.4s, v10.4s, #29
+        sri     v3.4s, v11.4s, #29
         eor     v18.16b, v18.16b, v12.16b
         eor     v20.16b, v20.16b, v14.16b
         eor     v21.16b, v21.16b, v15.16b

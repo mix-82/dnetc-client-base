@@ -54,7 +54,7 @@ def vrotl(x, s, t1, t2):
 
 def rotl3(dst, src):
     each("shl     {d}, {s}, #3", d=[s4(r) for r in dst], s=[s4(r) for r in src])
-    each("usra    {d}, {s}, #29", d=[s4(r) for r in dst], s=[s4(r) for r in src])
+    each("sri     {d}, {s}, #29", d=[s4(r) for r in dst], s=[s4(r) for r in src])
 
 def ks_step(off, bx, by, title):
     """MIX ZMM STEP A/B/C for all pipes:
@@ -144,7 +144,8 @@ e("""// RC5-72 NEON core for AArch64 (MIX NEON16), 16 keys per batch.
 // USHL reads the low byte of each lane as a signed shift amount, so
 // s | 0xFFFFFFE0 is (s & 31) - 32: a right shift by 32 - (s & 31), or a
 // shift out to 0 when s & 31 = 0. Both amounts come from s in parallel.
-// Rotate by 3 is shl + usra.
+// Rotate by 3 is shl + sri (sri: 2 cycles everywhere; usra is 3 on Apple and
+// a slow forwarding producer on Neoverse N2).
 //
 // All key state stays in v0-v31 (no spills); the S table is on the stack,
 // 64-byte aligned.

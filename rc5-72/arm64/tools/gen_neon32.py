@@ -60,7 +60,7 @@ def gl(regs, g): return [regs[p] for p in g] if len(regs) == NP else regs
 
 def rotl3(dst, src, g):
     grp("shl     {d}.4s, {s}.4s, #3", g, d=dst, s=src)
-    grp("usra    {d}.4s, {s}.4s, #29", g, d=dst, s=src)
+    grp("sri     {d}.4s, {s}.4s, #29", g, d=dst, s=src)
 
 def vrotl(dst, x, s, t1, t2, g):
     """dst = x <<< s per lane; t1, t2 scratch (t2 may be s)."""
@@ -156,7 +156,7 @@ e("""// RC5-72 NEON core for AArch64 (MIX NEON32), 32 keys per batch.
 //
 // Variable rotate: x <<< s = ushl(x, s & 31) | ushl(x, s | 0xFFFFFFE0)
 // (USHL takes the low byte of each lane as a signed shift). Rotate by 3:
-// shl + usra.
+// shl + sri.
 // Needs MINIMUM_ITERATIONS to be a multiple of 32, so that L0hi is a
 // multiple of 32 on entry.
 //

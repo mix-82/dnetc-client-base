@@ -15,7 +15,7 @@
 //
 // Variable rotate: x <<< s = ushl(x, s & 31) | ushl(x, s | 0xFFFFFFE0)
 // (USHL takes the low byte of each lane as a signed shift). Rotate by 3:
-// shl + usra.
+// shl + sri.
 // Needs MINIMUM_ITERATIONS to be a multiple of 32, so that L0hi is a
 // multiple of 32 on entry.
 //
@@ -217,10 +217,10 @@ L(round):
         shl     v9.4s, v1.4s, #3
         shl     v10.4s, v2.4s, #3
         shl     v11.4s, v3.4s, #3
-        usra    v8.4s, v0.4s, #29
-        usra    v9.4s, v1.4s, #29
-        usra    v10.4s, v2.4s, #29
-        usra    v11.4s, v3.4s, #29
+        sri     v8.4s, v0.4s, #29
+        sri     v9.4s, v1.4s, #29
+        sri     v10.4s, v2.4s, #29
+        sri     v11.4s, v3.4s, #29
         stp     q8, q9, [x11, #-128]
         stp     q10, q11, [x11, #-96]
         add     v0.4s, v16.4s, v8.4s
@@ -269,10 +269,10 @@ L(round):
         shl     v13.4s, v1.4s, #3
         shl     v14.4s, v2.4s, #3
         shl     v15.4s, v3.4s, #3
-        usra    v12.4s, v0.4s, #29
-        usra    v13.4s, v1.4s, #29
-        usra    v14.4s, v2.4s, #29
-        usra    v15.4s, v3.4s, #29
+        sri     v12.4s, v0.4s, #29
+        sri     v13.4s, v1.4s, #29
+        sri     v14.4s, v2.4s, #29
+        sri     v15.4s, v3.4s, #29
         stp     q12, q13, [x11, #-64]
         stp     q14, q15, [x11, #-32]
         add     v0.4s, v20.4s, v12.4s
@@ -327,10 +327,10 @@ L(round1):
         shl     v9.4s, v1.4s, #3
         shl     v10.4s, v2.4s, #3
         shl     v11.4s, v3.4s, #3
-        usra    v8.4s, v0.4s, #29
-        usra    v9.4s, v1.4s, #29
-        usra    v10.4s, v2.4s, #29
-        usra    v11.4s, v3.4s, #29
+        sri     v8.4s, v0.4s, #29
+        sri     v9.4s, v1.4s, #29
+        sri     v10.4s, v2.4s, #29
+        sri     v11.4s, v3.4s, #29
         stp     q8, q9, [x11, #0]
         stp     q10, q11, [x11, #32]
         add     v0.4s, v16.4s, v8.4s
@@ -379,10 +379,10 @@ L(round1):
         shl     v13.4s, v1.4s, #3
         shl     v14.4s, v2.4s, #3
         shl     v15.4s, v3.4s, #3
-        usra    v12.4s, v0.4s, #29
-        usra    v13.4s, v1.4s, #29
-        usra    v14.4s, v2.4s, #29
-        usra    v15.4s, v3.4s, #29
+        sri     v12.4s, v0.4s, #29
+        sri     v13.4s, v1.4s, #29
+        sri     v14.4s, v2.4s, #29
+        sri     v15.4s, v3.4s, #29
         stp     q12, q13, [x11, #64]
         stp     q14, q15, [x11, #96]
         add     v0.4s, v20.4s, v12.4s
@@ -436,10 +436,10 @@ L(round1):
         shl     v9.4s, v1.4s, #3
         shl     v10.4s, v2.4s, #3
         shl     v11.4s, v3.4s, #3
-        usra    v8.4s, v0.4s, #29
-        usra    v9.4s, v1.4s, #29
-        usra    v10.4s, v2.4s, #29
-        usra    v11.4s, v3.4s, #29
+        sri     v8.4s, v0.4s, #29
+        sri     v9.4s, v1.4s, #29
+        sri     v10.4s, v2.4s, #29
+        sri     v11.4s, v3.4s, #29
         stp     q8, q9, [x11, #128]
         stp     q10, q11, [x11, #160]
         add     v0.4s, v16.4s, v8.4s
@@ -488,10 +488,10 @@ L(round1):
         shl     v13.4s, v1.4s, #3
         shl     v14.4s, v2.4s, #3
         shl     v15.4s, v3.4s, #3
-        usra    v12.4s, v0.4s, #29
-        usra    v13.4s, v1.4s, #29
-        usra    v14.4s, v2.4s, #29
-        usra    v15.4s, v3.4s, #29
+        sri     v12.4s, v0.4s, #29
+        sri     v13.4s, v1.4s, #29
+        sri     v14.4s, v2.4s, #29
+        sri     v15.4s, v3.4s, #29
         stp     q12, q13, [x11, #192]
         stp     q14, q15, [x11, #224]
         add     v0.4s, v20.4s, v12.4s
@@ -861,10 +861,10 @@ L(check_hi):
         shl     v25.4s, v1.4s, #3
         shl     v26.4s, v2.4s, #3
         shl     v27.4s, v3.4s, #3
-        usra    v24.4s, v0.4s, #29
-        usra    v25.4s, v1.4s, #29
-        usra    v26.4s, v2.4s, #29
-        usra    v27.4s, v3.4s, #29
+        sri     v24.4s, v0.4s, #29
+        sri     v25.4s, v1.4s, #29
+        sri     v26.4s, v2.4s, #29
+        sri     v27.4s, v3.4s, #29
         eor     v16.16b, v16.16b, v8.16b
         eor     v17.16b, v17.16b, v9.16b
         eor     v18.16b, v18.16b, v10.16b
@@ -905,10 +905,10 @@ L(check_hi):
         shl     v25.4s, v1.4s, #3
         shl     v26.4s, v2.4s, #3
         shl     v27.4s, v3.4s, #3
-        usra    v24.4s, v0.4s, #29
-        usra    v25.4s, v1.4s, #29
-        usra    v26.4s, v2.4s, #29
-        usra    v27.4s, v3.4s, #29
+        sri     v24.4s, v0.4s, #29
+        sri     v25.4s, v1.4s, #29
+        sri     v26.4s, v2.4s, #29
+        sri     v27.4s, v3.4s, #29
         eor     v20.16b, v20.16b, v12.16b
         eor     v21.16b, v21.16b, v13.16b
         eor     v22.16b, v22.16b, v14.16b
