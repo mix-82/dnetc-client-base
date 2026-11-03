@@ -47,8 +47,16 @@ TESTS=$(sed -E 's/^\[[^]]*\] //' "$OUT/test.txt" | awk '
   /Tests Passed/ { print core ": " $2 }')
 echo "$TESTS" | grep -vq ' 32/32' && STATUS=1
 
+# ---- clock calibration -------------------------------------------------
+CLOCKCAL=""
+if cc -O2 "$ROOT/tools/ci-bench/clockcal.c" -o "$OUT/clockcal" > "$OUT/clockcal-build.txt" 2>&1; then
+  CLOCKCAL="$OUT/clockcal"
+fi
+
 # ---- benchmark rounds --------------------------------------------------
+: > "$OUT/clock.txt"
 for r in $(seq 1 "$ROUNDS"); do
+  [ -n "$CLOCKCAL" ] && "$CLOCKCAL" >> "$OUT/clock.txt"
   "$DNETC" -bench rc5-72 > "$OUT/bench-$r.txt" 2>&1 || STATUS=1
   sed -E 's/^\[[^]]*\] //' "$OUT/bench-$r.txt" | awk -v round="$r" '
     /Benchmark for core #/ { match($0, /#[0-9]+ \([^)]*\)/); core = substr($0, RSTART, RLENGTH) }
@@ -56,6 +64,11 @@ for r in $(seq 1 "$ROUNDS"); do
       match($0, /\[[0-9,]+ keys\/sec\]/); rate = substr($0, RSTART + 1, RLENGTH - 11)
       gsub(",", "", rate); print round "\t" core "\t" rate; core = "" }'
 done > "$OUT/rates.tsv"
+[ -n "$CLOCKCAL" ] && "$CLOCKCAL" >> "$OUT/clock.txt"
+# clock: median of the per-calibration medians, in GHz (0 if unavailable)
+GHZ=$(awk '{ v[++n] = $1 } END { if (!n) { print 0; exit }
+  for (a = 1; a <= n; a++) for (b = a + 1; b <= n; b++) if (v[b] < v[a]) { t = v[a]; v[a] = v[b]; v[b] = t }
+  print (n % 2) ? v[(n + 1) / 2] : (v[n / 2] + v[n / 2 + 1]) / 2 }' "$OUT/clock.txt")
 
 # ---- summary ---------------------------------------------------------
 CPU=$(grep -m1 -E 'Model name|machdep|Apple' "$OUT/machine.txt" | sed -E 's/^Model name: *//')
@@ -67,9 +80,11 @@ CPU=$(grep -m1 -E 'Model name|machdep|Apple' "$OUT/machine.txt" | sed -E 's/^Mod
   echo "$TESTS"
   echo '```'
   echo
-  echo "| Core | Mkeys/s (median of $ROUNDS) | Rounds | vs NEON 8x4 |"
-  echo "|---|---|---|---|"
-  awk -F'\t' '
+  echo "Clock (clockcal, median / range of medians, GHz): $GHZ / $(awk 'NR == 1 { lo = hi = $1 } { if ($1 < lo) lo = $1; if ($1 > hi) hi = $1 } END { printf "%.2f-%.2f", lo, hi }' "$OUT/clock.txt")"
+  echo
+  echo "| Core | Mkeys/s (median of $ROUNDS) | Rounds | vs NEON 8x4 | cycles/key |"
+  echo "|---|---|---|---|---|"
+  awk -F'\t' -v ghz="$GHZ" '
     { r[$2] = r[$2] (r[$2] == "" ? "" : " ") $3; if (!($2 in seen)) { seen[$2] = 1; order[++n] = $2 } }
     END {
       for (i = 1; i <= n; i++) {
@@ -83,7 +98,8 @@ CPU=$(grep -m1 -E 'Model name|machdep|Apple' "$OUT/machine.txt" | sed -E 's/^Mod
       for (i = 1; i <= n; i++) {
         c = order[i]
         rel = base ? sprintf("%+.1f%%", (med[c] / base - 1) * 100) : "-"
-        printf "| %s | %.2f | %s | %s |\n", c, med[c] / 1e6, rounds[c], rel
+        cpk = ghz > 0 ? sprintf("%.0f", ghz * 1e9 / med[c]) : "-"
+        printf "| %s | %.2f | %s | %s | %s |\n", c, med[c] / 1e6, rounds[c], rel, cpk
       }
     }' "$OUT/rates.tsv"
 } > "$OUT/summary.md"
