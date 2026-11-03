@@ -585,6 +585,11 @@ int CliGetMonotonicClock( struct timeval *tv )
     /*only RTlinux has clock_gettime/gethrtime*/
     {
       static int supports_clock_gettime = -1;
+      #if defined(CLOCK_MONOTONIC)
+      struct timespec probe; /* ask the kernel directly; /proc may be unreadable in sandboxes */
+      if (supports_clock_gettime == -1 && clock_gettime(CLOCK_MONOTONIC, &probe) == 0)
+        supports_clock_gettime = 1;
+      #endif
       if (supports_clock_gettime == -1)
       {
         FILE* fp = fopen("/proc/sys/kernel/osrelease","r");
