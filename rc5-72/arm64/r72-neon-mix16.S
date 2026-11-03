@@ -12,7 +12,8 @@
 // shift out to 0 when s & 31 = 0. Both amounts come from s in parallel.
 // Rotate by 3 is shl + usra.
 //
-// All key state stays in v0-v31 (no spills); the S table is on the stack.
+// All key state stays in v0-v31 (no spills); the S table is on the stack,
+// 64-byte aligned.
 // Needs MINIMUM_ITERATIONS to be a multiple of 16, so that L0hi is a
 // multiple of 16 on entry.
 //
@@ -51,7 +52,13 @@ FUNC(rc5_72_unit_func_neon_mix16):
 //   v24 = 31  v25 = 0xFFFFFFE0  v26 = cypher.lo  v27 = cypher.hi
 //   v28-v31 = L0hi lane offsets 0-3, 4-7, 8-11, 12-15
 
-        sub     sp, sp, #1728
+        // frame pointer, then a 64-byte-aligned frame: the S table, L area and
+        // constant rows are 64 or 128 bytes, and a 32-byte ldp/stp pair must not
+        // straddle a cache line
+        stp     x29, x30, [sp, #-16]!
+        mov     x29, sp
+        sub     x16, x29, #1728
+        and     sp, x16, #-64
         stp     d8, d9, [sp, #0]
         stp     d10, d11, [sp, #16]
         stp     d12, d13, [sp, #32]
@@ -647,14 +654,15 @@ L(finished):
         ldp     d10, d11, [sp, #16]
         ldp     d12, d13, [sp, #32]
         ldp     d14, d15, [sp, #48]
-        add     sp, sp, #1728
+        mov     sp, x29
+        ldp     x29, x30, [sp], #16
         ret
 #if !defined(__APPLE__)
         .size   rc5_72_unit_func_neon_mix16, . - rc5_72_unit_func_neon_mix16
 #endif
 
         // Constant tables, in .text so adr reaches them on both ELF and Mach-O.
-        .p2align 4
+        .p2align 6
 L(lanes):
         .word   0, 1, 2, 3
         .word   4, 5, 6, 7
@@ -664,6 +672,7 @@ L(weights):
         .word   1, 2, 4, 8
 // pass-1 subkey constants, one 64-byte row (4 pipes x 4 lanes) per subkey;
 // IS0 follows IS25 so the walking pointer reads pass-1 S[0] at k=26
+        .p2align 6
 L(IS3):
         .word   0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E
 L(IS4):

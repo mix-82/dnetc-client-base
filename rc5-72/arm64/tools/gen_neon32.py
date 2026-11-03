@@ -31,7 +31,7 @@ LS = SAVE                                     # L area: 3 words x 128 B
 AB = LS + 3 * STRIDE                          # A + B_1 for the rare path: 128 B
 S_OFF = AB + STRIDE                           # S table: 26 x 128 B
 FRAME = S_OFF + 26 * STRIDE
-assert FRAME % 16 == 0
+assert FRAME % 64 == 0 and S_OFF % 64 == 0      # rows must not straddle cache lines
 def S(n): return S_OFF + n * STRIDE
 def L(j, p=0): return LS + j * STRIDE + 16 * p
 
@@ -191,9 +191,15 @@ FUNC(rc5_72_unit_func_neon_mix32):
 //   v16-v23 last-updated B word, pipes 0-7 (D during encryption)
 //   v0-v7, v24-v27 scratch (shared by the two groups of 4 pipes)
 //   v28 = cypher.lo  v29 = cypher.hi  v30 = 31  v31 = 0xFFFFFFE0
-// Stack: d8-d15 | L words (3 x 128 B) | A + B_1 (128 B) | S table (26 x 128 B)
+// Stack (64-byte aligned): d8-d15 | L words (3 x 128 B) | A + B_1 (128 B) | S table (26 x 128 B)
 """)
-ins(f"sub     sp, sp, #{FRAME}")
+ins("// frame pointer, then a 64-byte-aligned frame: the S table, L area and")
+ins("// constant rows are 64 or 128 bytes, and a 32-byte ldp/stp pair must not")
+ins("// straddle a cache line")
+ins("stp     x29, x30, [sp, #-16]!")
+ins("mov     x29, sp")
+ins(f"sub     x16, x29, #{FRAME}")
+ins("and     sp, x16, #-64")
 ins("stp     d8, d9, [sp, #0]")
 ins("stp     d10, d11, [sp, #16]")
 ins("stp     d12, d13, [sp, #32]")
@@ -444,14 +450,15 @@ ins("ldp     d8, d9, [sp, #0]")
 ins("ldp     d10, d11, [sp, #16]")
 ins("ldp     d12, d13, [sp, #32]")
 ins("ldp     d14, d15, [sp, #48]")
-ins(f"add     sp, sp, #{FRAME}")
+ins("mov     sp, x29")
+ins("ldp     x29, x30, [sp], #16")
 ins("ret")
 e("#if !defined(__APPLE__)")
 ins(".size   rc5_72_unit_func_neon_mix32, . - rc5_72_unit_func_neon_mix32")
 e("#endif")
 e()
 ins("// Constant tables, in .text so adr reaches them on both ELF and Mach-O.")
-ins(".p2align 4")
+ins(".p2align 6")
 e("L(lanes):")
 for p in range(NP):
     ins(".word   " + ", ".join(str(4 * p + i) for i in range(4)))
@@ -459,6 +466,7 @@ e("L(weights):")
 ins(".word   1, 2, 4, 8")
 e("// pass-1 subkey constants, one 128-byte row (8 pipes x 4 lanes) per subkey;")
 e("// IS0 follows IS25 so the walking pointer reads pass-1 S[0] at k=26")
+ins(".p2align 6")
 names = [f"IS{i}" for i in range(3, 26)] + ["IS0"]
 for name, val in zip(names, ROM):
     e(f"L({name}):")

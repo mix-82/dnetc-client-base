@@ -50,9 +50,15 @@ FUNC(rc5_72_unit_func_neon_mix32):
 //   v16-v23 last-updated B word, pipes 0-7 (D during encryption)
 //   v0-v7, v24-v27 scratch (shared by the two groups of 4 pipes)
 //   v28 = cypher.lo  v29 = cypher.hi  v30 = 31  v31 = 0xFFFFFFE0
-// Stack: d8-d15 | L words (3 x 128 B) | A + B_1 (128 B) | S table (26 x 128 B)
+// Stack (64-byte aligned): d8-d15 | L words (3 x 128 B) | A + B_1 (128 B) | S table (26 x 128 B)
 
-        sub     sp, sp, #3904
+        // frame pointer, then a 64-byte-aligned frame: the S table, L area and
+        // constant rows are 64 or 128 bytes, and a 32-byte ldp/stp pair must not
+        // straddle a cache line
+        stp     x29, x30, [sp, #-16]!
+        mov     x29, sp
+        sub     x16, x29, #3904
+        and     sp, x16, #-64
         stp     d8, d9, [sp, #0]
         stp     d10, d11, [sp, #16]
         stp     d12, d13, [sp, #32]
@@ -1044,14 +1050,15 @@ L(finished):
         ldp     d10, d11, [sp, #16]
         ldp     d12, d13, [sp, #32]
         ldp     d14, d15, [sp, #48]
-        add     sp, sp, #3904
+        mov     sp, x29
+        ldp     x29, x30, [sp], #16
         ret
 #if !defined(__APPLE__)
         .size   rc5_72_unit_func_neon_mix32, . - rc5_72_unit_func_neon_mix32
 #endif
 
         // Constant tables, in .text so adr reaches them on both ELF and Mach-O.
-        .p2align 4
+        .p2align 6
 L(lanes):
         .word   0, 1, 2, 3
         .word   4, 5, 6, 7
@@ -1065,6 +1072,7 @@ L(weights):
         .word   1, 2, 4, 8
 // pass-1 subkey constants, one 128-byte row (8 pipes x 4 lanes) per subkey;
 // IS0 follows IS25 so the walking pointer reads pass-1 S[0] at k=26
+        .p2align 6
 L(IS3):
         .word   0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E
         .word   0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E, 0x9287BE8E

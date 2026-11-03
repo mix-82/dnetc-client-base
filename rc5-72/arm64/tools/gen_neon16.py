@@ -127,7 +127,7 @@ ROM = [(P + i * Q) & M for i in range(3, 26)] + [S0]   # IS3..IS25, IS0 (read at
 SAVE = 64                                    # d8-d15
 S_OFF = SAVE                                 # S table at sp+64
 FRAME = SAVE + 26 * STRIDE                   # 1728
-assert FRAME % 16 == 0
+assert FRAME % 64 == 0 and S_OFF % 64 == 0      # rows must not straddle cache lines
 
 def S(n): return S_OFF + n * STRIDE          # sp offset of S[n]
 
@@ -146,7 +146,8 @@ e("""// RC5-72 NEON core for AArch64 (MIX NEON16), 16 keys per batch.
 // shift out to 0 when s & 31 = 0. Both amounts come from s in parallel.
 // Rotate by 3 is shl + usra.
 //
-// All key state stays in v0-v31 (no spills); the S table is on the stack.
+// All key state stays in v0-v31 (no spills); the S table is on the stack,
+// 64-byte aligned.
 // Needs MINIMUM_ITERATIONS to be a multiple of 16, so that L0hi is a
 // multiple of 16 on entry.
 //
@@ -185,7 +186,13 @@ FUNC(rc5_72_unit_func_neon_mix16):
 //   v24 = 31  v25 = 0xFFFFFFE0  v26 = cypher.lo  v27 = cypher.hi
 //   v28-v31 = L0hi lane offsets 0-3, 4-7, 8-11, 12-15
 """)
-ins(f"sub     sp, sp, #{FRAME}")
+ins("// frame pointer, then a 64-byte-aligned frame: the S table, L area and")
+ins("// constant rows are 64 or 128 bytes, and a 32-byte ldp/stp pair must not")
+ins("// straddle a cache line")
+ins("stp     x29, x30, [sp, #-16]!")
+ins("mov     x29, sp")
+ins(f"sub     x16, x29, #{FRAME}")
+ins("and     sp, x16, #-64")
 ins("stp     d8, d9, [sp, #0]")
 ins("stp     d10, d11, [sp, #16]")
 ins("stp     d12, d13, [sp, #32]")
@@ -418,14 +425,15 @@ ins("ldp     d8, d9, [sp, #0]")
 ins("ldp     d10, d11, [sp, #16]")
 ins("ldp     d12, d13, [sp, #32]")
 ins("ldp     d14, d15, [sp, #48]")
-ins(f"add     sp, sp, #{FRAME}")
+ins("mov     sp, x29")
+ins("ldp     x29, x30, [sp], #16")
 ins("ret")
 e("#if !defined(__APPLE__)")
 ins(".size   rc5_72_unit_func_neon_mix16, . - rc5_72_unit_func_neon_mix16")
 e("#endif")
 e()
 ins("// Constant tables, in .text so adr reaches them on both ELF and Mach-O.")
-ins(".p2align 4")
+ins(".p2align 6")
 e("L(lanes):")
 for p in range(NP):
     ins(".word   " + ", ".join(str(4 * p + i) for i in range(4)))
@@ -433,6 +441,7 @@ e("L(weights):")
 ins(".word   1, 2, 4, 8")
 e("// pass-1 subkey constants, one 64-byte row (4 pipes x 4 lanes) per subkey;")
 e("// IS0 follows IS25 so the walking pointer reads pass-1 S[0] at k=26")
+ins(".p2align 6")
 names = [f"IS{i}" for i in range(3, 26)] + ["IS0"]
 for name, val in zip(names, ROM):
     e(f"L({name}):")
