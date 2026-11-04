@@ -1,14 +1,20 @@
-name: ANSI core compiler options (linux-arm64, gcc)
+name: ANSI core compiler options (arm64)
 
-# Experiment: which gcc option set makes the RC5-72 ANSI cores fastest on
-# arm64. Runs tools/ansi-flags/run.sh on the Neoverse N2 runner (2 slots).
-# Runs on pushes to the ansi-flags-exp branch, or by hand:
-#   gh workflow run ansi-flags.yml --ref ansi-flags-exp
+# Experiment: which compiler option set makes the RC5-72 ANSI cores fastest
+# on arm64. Runs tools/ansi-flags/run.sh: clang on the macOS M1 runners
+# (macosx-arm64), gcc on the Neoverse N2 runner (linux-arm64, by hand only:
+# its results are already in). Runs on pushes to ansi-flags-exp, or by hand:
+#   gh workflow run ansi-flags.yml --ref ansi-flags-exp -f linux=true
 
 on:
   push:
     branches: [ansi-flags-exp]
   workflow_dispatch:
+    inputs:
+      linux:
+        description: also run the linux-arm64 (gcc, N2) job
+        required: false
+        default: 'false'
 
 permissions:
   contents: read
@@ -18,8 +24,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  n2:
-    name: linux-arm64 slot ${{ matrix.slot }}
+  macos:
+    name: ${{ matrix.os }} (clang)
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, macos-15]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Run
+      run: sh tools/ansi-flags/run.sh ansi-flags-out 3
+    - name: Summary
+      if: always()
+      run: cat ansi-flags-out/results.md >> "$GITHUB_STEP_SUMMARY" || true
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: ansi-flags-${{ matrix.os }}
+        path: |
+          ansi-flags-out
+          !ansi-flags-out/dnetc-*
+
+  linux:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.linux == 'true'
+    name: linux-arm64 slot ${{ matrix.slot }} (gcc)
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
     strategy:
@@ -37,4 +67,6 @@ jobs:
       if: always()
       with:
         name: ansi-flags-slot${{ matrix.slot }}
-        path: ansi-flags-out
+        path: |
+          ansi-flags-out
+          !ansi-flags-out/dnetc-*
