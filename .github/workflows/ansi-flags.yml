@@ -1,0 +1,40 @@
+name: ANSI core compiler options (linux-arm64, gcc)
+
+# Experiment: which gcc option set makes the RC5-72 ANSI cores fastest on
+# arm64. Runs tools/ansi-flags/run.sh on the Neoverse N2 runner (2 slots).
+# Runs on pushes to the ansi-flags-exp branch, or by hand:
+#   gh workflow run ansi-flags.yml --ref ansi-flags-exp
+
+on:
+  push:
+    branches: [ansi-flags-exp]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ansi-flags-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  n2:
+    name: linux-arm64 slot ${{ matrix.slot }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        slot: [1, 2]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Run
+      run: sh tools/ansi-flags/run.sh ansi-flags-out 2
+    - name: Summary
+      if: always()
+      run: cat ansi-flags-out/results.md >> "$GITHUB_STEP_SUMMARY" || true
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: ansi-flags-slot${{ matrix.slot }}
+        path: ansi-flags-out
