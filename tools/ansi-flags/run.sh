@@ -12,6 +12,7 @@ ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 OUT=${1:-$ROOT/ansi-flags-out}
 ROUNDS=${2:-2}
 RUN=${RUN:-}
+MAKE_ARGS=${MAKE_ARGS:-}
 mkdir -p "$OUT"
 OUT=$(cd "$OUT" && pwd)
 cd "$ROOT" || exit 1
