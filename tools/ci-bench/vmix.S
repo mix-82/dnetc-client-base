@@ -26,6 +26,7 @@ FUNC(vmix_add):
         add     x12, x1, #4096             // L area
         movi    v30.4s, #31
         mvni    v31.4s, #31
+        movi    v28.16b, #0                // zero register for XAR
 L(vmix_add_loop):
         add     v8.4s, v13.4s, v8.4s
         add     v9.4s, v14.4s, v9.4s
@@ -87,6 +88,7 @@ FUNC(vmix_shl):
         add     x12, x1, #4096             // L area
         movi    v30.4s, #31
         mvni    v31.4s, #31
+        movi    v28.16b, #0                // zero register for XAR
 L(vmix_shl_loop):
         shl     v8.4s, v13.4s, #3
         shl     v9.4s, v14.4s, #3
@@ -148,6 +150,7 @@ FUNC(vmix_sri):
         add     x12, x1, #4096             // L area
         movi    v30.4s, #31
         mvni    v31.4s, #31
+        movi    v28.16b, #0                // zero register for XAR
 L(vmix_sri_loop):
         sri     v8.4s, v13.4s, #29
         sri     v9.4s, v14.4s, #29
@@ -209,6 +212,7 @@ FUNC(vmix_ushl):
         add     x12, x1, #4096             // L area
         movi    v30.4s, #31
         mvni    v31.4s, #31
+        movi    v28.16b, #0                // zero register for XAR
 L(vmix_ushl_loop):
         ushl    v8.4s, v13.4s, v30.4s
         ushl    v9.4s, v14.4s, v30.4s
@@ -270,6 +274,7 @@ FUNC(vmix_stp):
         add     x12, x1, #4096             // L area
         movi    v30.4s, #31
         mvni    v31.4s, #31
+        movi    v28.16b, #0                // zero register for XAR
 L(vmix_stp_loop):
         stp     q8, q13, [x10, #0]
         stp     q9, q14, [x10, #32]
@@ -331,6 +336,7 @@ FUNC(vmix_mix_ind_cluster):
         add     x12, x1, #4096             // L area
         movi    v30.4s, #31
         mvni    v31.4s, #31
+        movi    v28.16b, #0                // zero register for XAR
 L(vmix_mix_ind_cluster_loop):
         shl     v9.4s, v10.4s, #3
         sri     v11.4s, v12.4s, #29
@@ -404,6 +410,7 @@ FUNC(vmix_mix_ind_inter):
         add     x12, x1, #4096             // L area
         movi    v30.4s, #31
         mvni    v31.4s, #31
+        movi    v28.16b, #0                // zero register for XAR
 L(vmix_mix_ind_inter_loop):
         add     v9.4s, v10.4s, v11.4s
         shl     v12.4s, v13.4s, #3
@@ -477,6 +484,7 @@ FUNC(vmix_step32_lockstep):
         add     x12, x1, #4096             // L area
         movi    v30.4s, #31
         mvni    v31.4s, #31
+        movi    v28.16b, #0                // zero register for XAR
 L(vmix_step32_lockstep_loop):
         ldp     q0, q1, [x10, #-128]
         ldp     q2, q3, [x10, #-96]
@@ -818,6 +826,7 @@ FUNC(vmix_step32_skew):
         add     x12, x1, #4096             // L area
         movi    v30.4s, #31
         mvni    v31.4s, #31
+        movi    v28.16b, #0                // zero register for XAR
 L(vmix_step32_skew_loop):
         ldp     q0, q1, [x10, #-128]
         ldp     q2, q3, [x10, #-96]
@@ -1159,6 +1168,7 @@ FUNC(vmix_step32_fine):
         add     x12, x1, #4096             // L area
         movi    v30.4s, #31
         mvni    v31.4s, #31
+        movi    v28.16b, #0                // zero register for XAR
 L(vmix_step32_fine_loop):
         ldp     q0, q1, [x10, #-128]
         ldp     q20, q21, [x12, #192]
@@ -1500,6 +1510,7 @@ FUNC(vmix_step32_nostore):
         add     x12, x1, #4096             // L area
         movi    v30.4s, #31
         mvni    v31.4s, #31
+        movi    v28.16b, #0                // zero register for XAR
 L(vmix_step32_nostore_loop):
         ldp     q0, q1, [x10, #-128]
         ldp     q2, q3, [x10, #-96]
@@ -1817,6 +1828,7 @@ FUNC(vmix_step16_lockstep):
         add     x12, x1, #4096             // L area
         movi    v30.4s, #31
         mvni    v31.4s, #31
+        movi    v28.16b, #0                // zero register for XAR
 L(vmix_step16_lockstep_loop):
         ldp     q0, q1, [x10, #192]
         ldp     q2, q3, [x10, #224]
@@ -1972,6 +1984,551 @@ L(vmix_step16_lockstep_loop):
         ldp     x29, x30, [sp], #16
         ret
 
+#if !defined(__APPLE__)
+        .arch_extension sve2
+        .globl  FUNC(vmix_xar)
+#if !defined(__APPLE__)
+        .type   vmix_xar, %function
+#endif
+        .p2align 6
+FUNC(vmix_xar):
+        stp     x29, x30, [sp, #-16]!
+        mov     x29, sp
+        sub     sp, sp, #64
+        stp     d8, d9, [sp, #0]
+        stp     d10, d11, [sp, #16]
+        stp     d12, d13, [sp, #32]
+        stp     d14, d15, [sp, #48]
+        add     x10, x1, #1024             // S source / scratch rows
+        add     x11, x1, #1024             // S dest
+        add     x12, x1, #4096             // L area
+        movi    v30.4s, #31
+        mvni    v31.4s, #31
+        movi    v28.16b, #0                // zero register for XAR
+L(vmix_xar_loop):
+        xar     z8.s, z8.s, z13.s, #29
+        xar     z9.s, z9.s, z14.s, #29
+        xar     z10.s, z10.s, z15.s, #29
+        xar     z11.s, z11.s, z16.s, #29
+        xar     z12.s, z12.s, z17.s, #29
+        xar     z13.s, z13.s, z18.s, #29
+        xar     z14.s, z14.s, z19.s, #29
+        xar     z15.s, z15.s, z20.s, #29
+        xar     z16.s, z16.s, z21.s, #29
+        xar     z17.s, z17.s, z22.s, #29
+        xar     z18.s, z18.s, z23.s, #29
+        xar     z19.s, z19.s, z8.s, #29
+        xar     z20.s, z20.s, z9.s, #29
+        xar     z21.s, z21.s, z10.s, #29
+        xar     z22.s, z22.s, z11.s, #29
+        xar     z23.s, z23.s, z12.s, #29
+        xar     z8.s, z8.s, z13.s, #29
+        xar     z9.s, z9.s, z14.s, #29
+        xar     z10.s, z10.s, z15.s, #29
+        xar     z11.s, z11.s, z16.s, #29
+        xar     z12.s, z12.s, z17.s, #29
+        xar     z13.s, z13.s, z18.s, #29
+        xar     z14.s, z14.s, z19.s, #29
+        xar     z15.s, z15.s, z20.s, #29
+        xar     z16.s, z16.s, z21.s, #29
+        xar     z17.s, z17.s, z22.s, #29
+        xar     z18.s, z18.s, z23.s, #29
+        xar     z19.s, z19.s, z8.s, #29
+        xar     z20.s, z20.s, z9.s, #29
+        xar     z21.s, z21.s, z10.s, #29
+        xar     z22.s, z22.s, z11.s, #29
+        xar     z23.s, z23.s, z12.s, #29
+        subs    x0, x0, #1
+        b.ne    L(vmix_xar_loop)
+        ldp     d8, d9, [sp, #0]
+        ldp     d10, d11, [sp, #16]
+        ldp     d12, d13, [sp, #32]
+        ldp     d14, d15, [sp, #48]
+        mov     sp, x29
+        ldp     x29, x30, [sp], #16
+        ret
+
+        .globl  FUNC(vmix_step32_xar)
+#if !defined(__APPLE__)
+        .type   vmix_step32_xar, %function
+#endif
+        .p2align 6
+FUNC(vmix_step32_xar):
+        stp     x29, x30, [sp, #-16]!
+        mov     x29, sp
+        sub     sp, sp, #64
+        stp     d8, d9, [sp, #0]
+        stp     d10, d11, [sp, #16]
+        stp     d12, d13, [sp, #32]
+        stp     d14, d15, [sp, #48]
+        add     x10, x1, #1024             // S source / scratch rows
+        add     x11, x1, #1024             // S dest
+        add     x12, x1, #4096             // L area
+        movi    v30.4s, #31
+        mvni    v31.4s, #31
+        movi    v28.16b, #0                // zero register for XAR
+L(vmix_step32_xar_loop):
+        ldp     q0, q1, [x10, #-128]
+        ldp     q2, q3, [x10, #-96]
+        add     v8.4s, v8.4s, v0.4s
+        add     v9.4s, v9.4s, v1.4s
+        add     v10.4s, v10.4s, v2.4s
+        add     v11.4s, v11.4s, v3.4s
+        add     v8.4s, v8.4s, v16.4s
+        add     v9.4s, v9.4s, v17.4s
+        add     v10.4s, v10.4s, v18.4s
+        add     v11.4s, v11.4s, v19.4s
+        xar     z8.s, z8.s, z28.s, #29
+        xar     z9.s, z9.s, z28.s, #29
+        xar     z10.s, z10.s, z28.s, #29
+        xar     z11.s, z11.s, z28.s, #29
+        stp     q8, q9, [x11, #-128]
+        stp     q10, q11, [x11, #-96]
+        add     v0.4s, v16.4s, v8.4s
+        add     v1.4s, v17.4s, v9.4s
+        add     v2.4s, v18.4s, v10.4s
+        add     v3.4s, v19.4s, v11.4s
+        ldp     q24, q25, [x12, #256]
+        ldp     q26, q27, [x12, #288]
+        stp     q16, q17, [x12, #128]
+        stp     q18, q19, [x12, #160]
+        add     v24.4s, v24.4s, v0.4s
+        add     v25.4s, v25.4s, v1.4s
+        add     v26.4s, v26.4s, v2.4s
+        add     v27.4s, v27.4s, v3.4s
+        and     v4.16b, v0.16b, v30.16b
+        and     v5.16b, v1.16b, v30.16b
+        and     v6.16b, v2.16b, v30.16b
+        and     v7.16b, v3.16b, v30.16b
+        orr     v0.16b, v0.16b, v31.16b
+        orr     v1.16b, v1.16b, v31.16b
+        orr     v2.16b, v2.16b, v31.16b
+        orr     v3.16b, v3.16b, v31.16b
+        ushl    v4.4s, v24.4s, v4.4s
+        ushl    v5.4s, v25.4s, v5.4s
+        ushl    v6.4s, v26.4s, v6.4s
+        ushl    v7.4s, v27.4s, v7.4s
+        ushl    v0.4s, v24.4s, v0.4s
+        ushl    v1.4s, v25.4s, v1.4s
+        ushl    v2.4s, v26.4s, v2.4s
+        ushl    v3.4s, v27.4s, v3.4s
+        orr     v16.16b, v4.16b, v0.16b
+        orr     v17.16b, v5.16b, v1.16b
+        orr     v18.16b, v6.16b, v2.16b
+        orr     v19.16b, v7.16b, v3.16b
+        ldp     q0, q1, [x10, #-64]
+        ldp     q2, q3, [x10, #-32]
+        add     v12.4s, v12.4s, v0.4s
+        add     v13.4s, v13.4s, v1.4s
+        add     v14.4s, v14.4s, v2.4s
+        add     v15.4s, v15.4s, v3.4s
+        add     v12.4s, v12.4s, v20.4s
+        add     v13.4s, v13.4s, v21.4s
+        add     v14.4s, v14.4s, v22.4s
+        add     v15.4s, v15.4s, v23.4s
+        xar     z12.s, z12.s, z28.s, #29
+        xar     z13.s, z13.s, z28.s, #29
+        xar     z14.s, z14.s, z28.s, #29
+        xar     z15.s, z15.s, z28.s, #29
+        stp     q12, q13, [x11, #-64]
+        stp     q14, q15, [x11, #-32]
+        add     v0.4s, v20.4s, v12.4s
+        add     v1.4s, v21.4s, v13.4s
+        add     v2.4s, v22.4s, v14.4s
+        add     v3.4s, v23.4s, v15.4s
+        ldp     q24, q25, [x12, #320]
+        ldp     q26, q27, [x12, #352]
+        stp     q20, q21, [x12, #192]
+        stp     q22, q23, [x12, #224]
+        add     v24.4s, v24.4s, v0.4s
+        add     v25.4s, v25.4s, v1.4s
+        add     v26.4s, v26.4s, v2.4s
+        add     v27.4s, v27.4s, v3.4s
+        and     v4.16b, v0.16b, v30.16b
+        and     v5.16b, v1.16b, v30.16b
+        and     v6.16b, v2.16b, v30.16b
+        and     v7.16b, v3.16b, v30.16b
+        orr     v0.16b, v0.16b, v31.16b
+        orr     v1.16b, v1.16b, v31.16b
+        orr     v2.16b, v2.16b, v31.16b
+        orr     v3.16b, v3.16b, v31.16b
+        ushl    v4.4s, v24.4s, v4.4s
+        ushl    v5.4s, v25.4s, v5.4s
+        ushl    v6.4s, v26.4s, v6.4s
+        ushl    v7.4s, v27.4s, v7.4s
+        ushl    v0.4s, v24.4s, v0.4s
+        ushl    v1.4s, v25.4s, v1.4s
+        ushl    v2.4s, v26.4s, v2.4s
+        ushl    v3.4s, v27.4s, v3.4s
+        orr     v20.16b, v4.16b, v0.16b
+        orr     v21.16b, v5.16b, v1.16b
+        orr     v22.16b, v6.16b, v2.16b
+        orr     v23.16b, v7.16b, v3.16b
+        ldp     q0, q1, [x10, #0]
+        ldp     q2, q3, [x10, #32]
+        add     v8.4s, v8.4s, v0.4s
+        add     v9.4s, v9.4s, v1.4s
+        add     v10.4s, v10.4s, v2.4s
+        add     v11.4s, v11.4s, v3.4s
+        add     v8.4s, v8.4s, v16.4s
+        add     v9.4s, v9.4s, v17.4s
+        add     v10.4s, v10.4s, v18.4s
+        add     v11.4s, v11.4s, v19.4s
+        xar     z8.s, z8.s, z28.s, #29
+        xar     z9.s, z9.s, z28.s, #29
+        xar     z10.s, z10.s, z28.s, #29
+        xar     z11.s, z11.s, z28.s, #29
+        stp     q8, q9, [x11, #0]
+        stp     q10, q11, [x11, #32]
+        add     v0.4s, v16.4s, v8.4s
+        add     v1.4s, v17.4s, v9.4s
+        add     v2.4s, v18.4s, v10.4s
+        add     v3.4s, v19.4s, v11.4s
+        ldp     q24, q25, [x12, #0]
+        ldp     q26, q27, [x12, #32]
+        stp     q16, q17, [x12, #256]
+        stp     q18, q19, [x12, #288]
+        add     v24.4s, v24.4s, v0.4s
+        add     v25.4s, v25.4s, v1.4s
+        add     v26.4s, v26.4s, v2.4s
+        add     v27.4s, v27.4s, v3.4s
+        and     v4.16b, v0.16b, v30.16b
+        and     v5.16b, v1.16b, v30.16b
+        and     v6.16b, v2.16b, v30.16b
+        and     v7.16b, v3.16b, v30.16b
+        orr     v0.16b, v0.16b, v31.16b
+        orr     v1.16b, v1.16b, v31.16b
+        orr     v2.16b, v2.16b, v31.16b
+        orr     v3.16b, v3.16b, v31.16b
+        ushl    v4.4s, v24.4s, v4.4s
+        ushl    v5.4s, v25.4s, v5.4s
+        ushl    v6.4s, v26.4s, v6.4s
+        ushl    v7.4s, v27.4s, v7.4s
+        ushl    v0.4s, v24.4s, v0.4s
+        ushl    v1.4s, v25.4s, v1.4s
+        ushl    v2.4s, v26.4s, v2.4s
+        ushl    v3.4s, v27.4s, v3.4s
+        orr     v16.16b, v4.16b, v0.16b
+        orr     v17.16b, v5.16b, v1.16b
+        orr     v18.16b, v6.16b, v2.16b
+        orr     v19.16b, v7.16b, v3.16b
+        ldp     q0, q1, [x10, #64]
+        ldp     q2, q3, [x10, #96]
+        add     v12.4s, v12.4s, v0.4s
+        add     v13.4s, v13.4s, v1.4s
+        add     v14.4s, v14.4s, v2.4s
+        add     v15.4s, v15.4s, v3.4s
+        add     v12.4s, v12.4s, v20.4s
+        add     v13.4s, v13.4s, v21.4s
+        add     v14.4s, v14.4s, v22.4s
+        add     v15.4s, v15.4s, v23.4s
+        xar     z12.s, z12.s, z28.s, #29
+        xar     z13.s, z13.s, z28.s, #29
+        xar     z14.s, z14.s, z28.s, #29
+        xar     z15.s, z15.s, z28.s, #29
+        stp     q12, q13, [x11, #64]
+        stp     q14, q15, [x11, #96]
+        add     v0.4s, v20.4s, v12.4s
+        add     v1.4s, v21.4s, v13.4s
+        add     v2.4s, v22.4s, v14.4s
+        add     v3.4s, v23.4s, v15.4s
+        ldp     q24, q25, [x12, #64]
+        ldp     q26, q27, [x12, #96]
+        stp     q20, q21, [x12, #320]
+        stp     q22, q23, [x12, #352]
+        add     v24.4s, v24.4s, v0.4s
+        add     v25.4s, v25.4s, v1.4s
+        add     v26.4s, v26.4s, v2.4s
+        add     v27.4s, v27.4s, v3.4s
+        and     v4.16b, v0.16b, v30.16b
+        and     v5.16b, v1.16b, v30.16b
+        and     v6.16b, v2.16b, v30.16b
+        and     v7.16b, v3.16b, v30.16b
+        orr     v0.16b, v0.16b, v31.16b
+        orr     v1.16b, v1.16b, v31.16b
+        orr     v2.16b, v2.16b, v31.16b
+        orr     v3.16b, v3.16b, v31.16b
+        ushl    v4.4s, v24.4s, v4.4s
+        ushl    v5.4s, v25.4s, v5.4s
+        ushl    v6.4s, v26.4s, v6.4s
+        ushl    v7.4s, v27.4s, v7.4s
+        ushl    v0.4s, v24.4s, v0.4s
+        ushl    v1.4s, v25.4s, v1.4s
+        ushl    v2.4s, v26.4s, v2.4s
+        ushl    v3.4s, v27.4s, v3.4s
+        orr     v20.16b, v4.16b, v0.16b
+        orr     v21.16b, v5.16b, v1.16b
+        orr     v22.16b, v6.16b, v2.16b
+        orr     v23.16b, v7.16b, v3.16b
+        ldp     q0, q1, [x10, #128]
+        ldp     q2, q3, [x10, #160]
+        add     v8.4s, v8.4s, v0.4s
+        add     v9.4s, v9.4s, v1.4s
+        add     v10.4s, v10.4s, v2.4s
+        add     v11.4s, v11.4s, v3.4s
+        add     v8.4s, v8.4s, v16.4s
+        add     v9.4s, v9.4s, v17.4s
+        add     v10.4s, v10.4s, v18.4s
+        add     v11.4s, v11.4s, v19.4s
+        xar     z8.s, z8.s, z28.s, #29
+        xar     z9.s, z9.s, z28.s, #29
+        xar     z10.s, z10.s, z28.s, #29
+        xar     z11.s, z11.s, z28.s, #29
+        stp     q8, q9, [x11, #128]
+        stp     q10, q11, [x11, #160]
+        add     v0.4s, v16.4s, v8.4s
+        add     v1.4s, v17.4s, v9.4s
+        add     v2.4s, v18.4s, v10.4s
+        add     v3.4s, v19.4s, v11.4s
+        ldp     q24, q25, [x12, #128]
+        ldp     q26, q27, [x12, #160]
+        stp     q16, q17, [x12, #0]
+        stp     q18, q19, [x12, #32]
+        add     v24.4s, v24.4s, v0.4s
+        add     v25.4s, v25.4s, v1.4s
+        add     v26.4s, v26.4s, v2.4s
+        add     v27.4s, v27.4s, v3.4s
+        and     v4.16b, v0.16b, v30.16b
+        and     v5.16b, v1.16b, v30.16b
+        and     v6.16b, v2.16b, v30.16b
+        and     v7.16b, v3.16b, v30.16b
+        orr     v0.16b, v0.16b, v31.16b
+        orr     v1.16b, v1.16b, v31.16b
+        orr     v2.16b, v2.16b, v31.16b
+        orr     v3.16b, v3.16b, v31.16b
+        ushl    v4.4s, v24.4s, v4.4s
+        ushl    v5.4s, v25.4s, v5.4s
+        ushl    v6.4s, v26.4s, v6.4s
+        ushl    v7.4s, v27.4s, v7.4s
+        ushl    v0.4s, v24.4s, v0.4s
+        ushl    v1.4s, v25.4s, v1.4s
+        ushl    v2.4s, v26.4s, v2.4s
+        ushl    v3.4s, v27.4s, v3.4s
+        orr     v16.16b, v4.16b, v0.16b
+        orr     v17.16b, v5.16b, v1.16b
+        orr     v18.16b, v6.16b, v2.16b
+        orr     v19.16b, v7.16b, v3.16b
+        ldp     q0, q1, [x10, #192]
+        ldp     q2, q3, [x10, #224]
+        add     v12.4s, v12.4s, v0.4s
+        add     v13.4s, v13.4s, v1.4s
+        add     v14.4s, v14.4s, v2.4s
+        add     v15.4s, v15.4s, v3.4s
+        add     v12.4s, v12.4s, v20.4s
+        add     v13.4s, v13.4s, v21.4s
+        add     v14.4s, v14.4s, v22.4s
+        add     v15.4s, v15.4s, v23.4s
+        xar     z12.s, z12.s, z28.s, #29
+        xar     z13.s, z13.s, z28.s, #29
+        xar     z14.s, z14.s, z28.s, #29
+        xar     z15.s, z15.s, z28.s, #29
+        stp     q12, q13, [x11, #192]
+        stp     q14, q15, [x11, #224]
+        add     v0.4s, v20.4s, v12.4s
+        add     v1.4s, v21.4s, v13.4s
+        add     v2.4s, v22.4s, v14.4s
+        add     v3.4s, v23.4s, v15.4s
+        ldp     q24, q25, [x12, #192]
+        ldp     q26, q27, [x12, #224]
+        stp     q20, q21, [x12, #64]
+        stp     q22, q23, [x12, #96]
+        add     v24.4s, v24.4s, v0.4s
+        add     v25.4s, v25.4s, v1.4s
+        add     v26.4s, v26.4s, v2.4s
+        add     v27.4s, v27.4s, v3.4s
+        and     v4.16b, v0.16b, v30.16b
+        and     v5.16b, v1.16b, v30.16b
+        and     v6.16b, v2.16b, v30.16b
+        and     v7.16b, v3.16b, v30.16b
+        orr     v0.16b, v0.16b, v31.16b
+        orr     v1.16b, v1.16b, v31.16b
+        orr     v2.16b, v2.16b, v31.16b
+        orr     v3.16b, v3.16b, v31.16b
+        ushl    v4.4s, v24.4s, v4.4s
+        ushl    v5.4s, v25.4s, v5.4s
+        ushl    v6.4s, v26.4s, v6.4s
+        ushl    v7.4s, v27.4s, v7.4s
+        ushl    v0.4s, v24.4s, v0.4s
+        ushl    v1.4s, v25.4s, v1.4s
+        ushl    v2.4s, v26.4s, v2.4s
+        ushl    v3.4s, v27.4s, v3.4s
+        orr     v20.16b, v4.16b, v0.16b
+        orr     v21.16b, v5.16b, v1.16b
+        orr     v22.16b, v6.16b, v2.16b
+        orr     v23.16b, v7.16b, v3.16b
+        subs    x0, x0, #1
+        b.ne    L(vmix_step32_xar_loop)
+        ldp     d8, d9, [sp, #0]
+        ldp     d10, d11, [sp, #16]
+        ldp     d12, d13, [sp, #32]
+        ldp     d14, d15, [sp, #48]
+        mov     sp, x29
+        ldp     x29, x30, [sp], #16
+        ret
+
+        .globl  FUNC(vmix_step16_xar)
+#if !defined(__APPLE__)
+        .type   vmix_step16_xar, %function
+#endif
+        .p2align 6
+FUNC(vmix_step16_xar):
+        stp     x29, x30, [sp, #-16]!
+        mov     x29, sp
+        sub     sp, sp, #64
+        stp     d8, d9, [sp, #0]
+        stp     d10, d11, [sp, #16]
+        stp     d12, d13, [sp, #32]
+        stp     d14, d15, [sp, #48]
+        add     x10, x1, #1024             // S source / scratch rows
+        add     x11, x1, #1024             // S dest
+        add     x12, x1, #4096             // L area
+        movi    v30.4s, #31
+        mvni    v31.4s, #31
+        movi    v28.16b, #0                // zero register for XAR
+L(vmix_step16_xar_loop):
+        ldp     q0, q1, [x10, #192]
+        ldp     q2, q3, [x10, #224]
+        add     v8.4s, v8.4s, v0.4s
+        add     v9.4s, v9.4s, v1.4s
+        add     v10.4s, v10.4s, v2.4s
+        add     v11.4s, v11.4s, v3.4s
+        add     v8.4s, v8.4s, v13.4s
+        add     v9.4s, v9.4s, v16.4s
+        add     v10.4s, v10.4s, v19.4s
+        add     v11.4s, v11.4s, v22.4s
+        xar     z8.s, z8.s, z28.s, #29
+        xar     z9.s, z9.s, z28.s, #29
+        xar     z10.s, z10.s, z28.s, #29
+        xar     z11.s, z11.s, z28.s, #29
+        stp     q8, q9, [x11, #192]
+        stp     q10, q11, [x11, #224]
+        add     v0.4s, v13.4s, v8.4s
+        add     v1.4s, v16.4s, v9.4s
+        add     v2.4s, v19.4s, v10.4s
+        add     v3.4s, v22.4s, v11.4s
+        add     v14.4s, v14.4s, v0.4s
+        add     v17.4s, v17.4s, v1.4s
+        add     v20.4s, v20.4s, v2.4s
+        add     v23.4s, v23.4s, v3.4s
+        and     v4.16b, v0.16b, v30.16b
+        and     v5.16b, v1.16b, v30.16b
+        and     v6.16b, v2.16b, v30.16b
+        and     v7.16b, v3.16b, v30.16b
+        orr     v0.16b, v0.16b, v31.16b
+        orr     v1.16b, v1.16b, v31.16b
+        orr     v2.16b, v2.16b, v31.16b
+        orr     v3.16b, v3.16b, v31.16b
+        ushl    v4.4s, v14.4s, v4.4s
+        ushl    v5.4s, v17.4s, v5.4s
+        ushl    v6.4s, v20.4s, v6.4s
+        ushl    v7.4s, v23.4s, v7.4s
+        ushl    v0.4s, v14.4s, v0.4s
+        ushl    v1.4s, v17.4s, v1.4s
+        ushl    v2.4s, v20.4s, v2.4s
+        ushl    v3.4s, v23.4s, v3.4s
+        orr     v14.16b, v4.16b, v0.16b
+        orr     v17.16b, v5.16b, v1.16b
+        orr     v20.16b, v6.16b, v2.16b
+        orr     v23.16b, v7.16b, v3.16b
+        ldp     q0, q1, [x10, #256]
+        ldp     q2, q3, [x10, #288]
+        add     v8.4s, v8.4s, v0.4s
+        add     v9.4s, v9.4s, v1.4s
+        add     v10.4s, v10.4s, v2.4s
+        add     v11.4s, v11.4s, v3.4s
+        add     v8.4s, v8.4s, v14.4s
+        add     v9.4s, v9.4s, v17.4s
+        add     v10.4s, v10.4s, v20.4s
+        add     v11.4s, v11.4s, v23.4s
+        xar     z8.s, z8.s, z28.s, #29
+        xar     z9.s, z9.s, z28.s, #29
+        xar     z10.s, z10.s, z28.s, #29
+        xar     z11.s, z11.s, z28.s, #29
+        stp     q8, q9, [x11, #256]
+        stp     q10, q11, [x11, #288]
+        add     v0.4s, v14.4s, v8.4s
+        add     v1.4s, v17.4s, v9.4s
+        add     v2.4s, v20.4s, v10.4s
+        add     v3.4s, v23.4s, v11.4s
+        add     v12.4s, v12.4s, v0.4s
+        add     v15.4s, v15.4s, v1.4s
+        add     v18.4s, v18.4s, v2.4s
+        add     v21.4s, v21.4s, v3.4s
+        and     v4.16b, v0.16b, v30.16b
+        and     v5.16b, v1.16b, v30.16b
+        and     v6.16b, v2.16b, v30.16b
+        and     v7.16b, v3.16b, v30.16b
+        orr     v0.16b, v0.16b, v31.16b
+        orr     v1.16b, v1.16b, v31.16b
+        orr     v2.16b, v2.16b, v31.16b
+        orr     v3.16b, v3.16b, v31.16b
+        ushl    v4.4s, v12.4s, v4.4s
+        ushl    v5.4s, v15.4s, v5.4s
+        ushl    v6.4s, v18.4s, v6.4s
+        ushl    v7.4s, v21.4s, v7.4s
+        ushl    v0.4s, v12.4s, v0.4s
+        ushl    v1.4s, v15.4s, v1.4s
+        ushl    v2.4s, v18.4s, v2.4s
+        ushl    v3.4s, v21.4s, v3.4s
+        orr     v12.16b, v4.16b, v0.16b
+        orr     v15.16b, v5.16b, v1.16b
+        orr     v18.16b, v6.16b, v2.16b
+        orr     v21.16b, v7.16b, v3.16b
+        ldp     q0, q1, [x10, #320]
+        ldp     q2, q3, [x10, #352]
+        add     v8.4s, v8.4s, v0.4s
+        add     v9.4s, v9.4s, v1.4s
+        add     v10.4s, v10.4s, v2.4s
+        add     v11.4s, v11.4s, v3.4s
+        add     v8.4s, v8.4s, v12.4s
+        add     v9.4s, v9.4s, v15.4s
+        add     v10.4s, v10.4s, v18.4s
+        add     v11.4s, v11.4s, v21.4s
+        xar     z8.s, z8.s, z28.s, #29
+        xar     z9.s, z9.s, z28.s, #29
+        xar     z10.s, z10.s, z28.s, #29
+        xar     z11.s, z11.s, z28.s, #29
+        stp     q8, q9, [x11, #320]
+        stp     q10, q11, [x11, #352]
+        add     v0.4s, v12.4s, v8.4s
+        add     v1.4s, v15.4s, v9.4s
+        add     v2.4s, v18.4s, v10.4s
+        add     v3.4s, v21.4s, v11.4s
+        add     v13.4s, v13.4s, v0.4s
+        add     v16.4s, v16.4s, v1.4s
+        add     v19.4s, v19.4s, v2.4s
+        add     v22.4s, v22.4s, v3.4s
+        and     v4.16b, v0.16b, v30.16b
+        and     v5.16b, v1.16b, v30.16b
+        and     v6.16b, v2.16b, v30.16b
+        and     v7.16b, v3.16b, v30.16b
+        orr     v0.16b, v0.16b, v31.16b
+        orr     v1.16b, v1.16b, v31.16b
+        orr     v2.16b, v2.16b, v31.16b
+        orr     v3.16b, v3.16b, v31.16b
+        ushl    v4.4s, v13.4s, v4.4s
+        ushl    v5.4s, v16.4s, v5.4s
+        ushl    v6.4s, v19.4s, v6.4s
+        ushl    v7.4s, v22.4s, v7.4s
+        ushl    v0.4s, v13.4s, v0.4s
+        ushl    v1.4s, v16.4s, v1.4s
+        ushl    v2.4s, v19.4s, v2.4s
+        ushl    v3.4s, v22.4s, v3.4s
+        orr     v13.16b, v4.16b, v0.16b
+        orr     v16.16b, v5.16b, v1.16b
+        orr     v19.16b, v6.16b, v2.16b
+        orr     v22.16b, v7.16b, v3.16b
+        subs    x0, x0, #1
+        b.ne    L(vmix_step16_xar_loop)
+        ldp     d8, d9, [sp, #0]
+        ldp     d10, d11, [sp, #16]
+        ldp     d12, d13, [sp, #32]
+        ldp     d14, d15, [sp, #48]
+        mov     sp, x29
+        ldp     x29, x30, [sp], #16
+        ret
+
+#endif
 #if !defined(__APPLE__)
         .section .note.GNU-stack,"",%progbits
 #endif

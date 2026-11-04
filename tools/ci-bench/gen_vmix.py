@@ -16,6 +16,10 @@ Kernels:
   step32_fine                  same, the two groups' instructions alternated
   step32_nostore               lockstep without the stores (store cost)
   step16_lockstep              the MIX NEON16 step (4 pipes)
+  xar, step32_xar, step16_xar  SVE2 (Linux only, run only when HWCAP2_SVE2 is set):
+                               XAR alone, and the two steps with rotate-by-3 done as
+                               one in-place XAR with a zero register instead of
+                               shl + sri (A += S; A += B; xar A, A, zero, #29)
 """
 import sys
 
@@ -58,6 +62,9 @@ def st4(src, base, off):
 
 def gl(regs, g): return [regs[p] for p in g] if len(regs) == NP else regs
 
+XAR = False         # SVE2: rotate A in place with XAR (needs zero register v28)
+def z(r): return "z" + r[1:]
+
 def rotl3(dst, src, g):
     grp("shl     {d}.4s, {s}.4s, #3", g, d=dst, s=src)
     grp("sri     {d}.4s, {s}.4s, #29", g, d=dst, s=src)
@@ -75,9 +82,14 @@ def ks_step(off, x, y):
     for g in (G1, G2):
         p0 = g[0]
         ld4(T, "x10", off + 16 * p0)
-        grp("add     {t}.4s, {t}.4s, {a}.4s", g, t=T, a=A)
-        grp("add     {t}.4s, {t}.4s, {b}.4s", g, t=T, b=BL)
-        rotl3(A, T, g)
+        if XAR:
+            grp("add     {a}.4s, {a}.4s, {t}.4s", g, a=A, t=T)
+            grp("add     {a}.4s, {a}.4s, {b}.4s", g, a=A, b=BL)
+            for p in g: ins(f"xar     {z(A[p])}.s, {z(A[p])}.s, z28.s, #29")
+        else:
+            grp("add     {t}.4s, {t}.4s, {a}.4s", g, t=T, a=A)
+            grp("add     {t}.4s, {t}.4s, {b}.4s", g, t=T, b=BL)
+            rotl3(A, T, g)
         if STORES: st4(gl(A, g), "x11", off + 16 * p0)
         grp("add     {t}.4s, {b}.4s, {a}.4s", g, t=T, b=BL, a=A)
         ld4(Y, "x12", 128 * y + 16 * p0)
@@ -132,10 +144,15 @@ def step16():
         Bx = [B16[p][bx] for p in range(4)]; By = [B16[p][by] for p in range(4)]
         ins(f"ldp     q0, q1, [x10, #{off + 256}]")
         ins(f"ldp     q2, q3, [x10, #{off + 288}]")
-        grp4("add     {t}.4s, {t}.4s, {a}.4s", t=T, a=A16)
-        grp4("add     {t}.4s, {t}.4s, {b}.4s", t=T, b=Bx)
-        grp4("shl     {a}.4s, {t}.4s, #3", a=A16, t=T)
-        grp4("sri     {a}.4s, {t}.4s, #29", a=A16, t=T)
+        if XAR:
+            grp4("add     {a}.4s, {a}.4s, {t}.4s", a=A16, t=T)
+            grp4("add     {a}.4s, {a}.4s, {b}.4s", a=A16, b=Bx)
+            for i in range(4): ins(f"xar     z{8 + i}.s, z{8 + i}.s, z28.s, #29")
+        else:
+            grp4("add     {t}.4s, {t}.4s, {a}.4s", t=T, a=A16)
+            grp4("add     {t}.4s, {t}.4s, {b}.4s", t=T, b=Bx)
+            grp4("shl     {a}.4s, {t}.4s, #3", a=A16, t=T)
+            grp4("sri     {a}.4s, {t}.4s, #29", a=A16, t=T)
         ins(f"stp     q8, q9, [x11, #{off + 256}]")
         ins(f"stp     q10, q11, [x11, #{off + 288}]")
         grp4("add     {t}.4s, {b}.4s, {a}.4s", t=T, b=Bx, a=A16)
@@ -156,6 +173,7 @@ def simple(op, n=32):
         if op == "sri":  ins(f"sri     {d}.4s, {s}.4s, #29")
         if op == "ushl": ins(f"ushl    {d}.4s, {s}.4s, v30.4s")
         if op == "stp":  ins(f"stp     {q(d)}, {q(s)}, [x10, #{(i % 8) * 32}]")
+        if op == "xar":  ins(f"xar     {z(d)}.s, {z(d)}.s, {z(s)}.s, #29")
 
 def mix_ind(cluster):
     """44 instructions = 4 x (4 shifts + 7 others), independent."""
@@ -203,6 +221,7 @@ def kernel(name, body, unit):
     ins("add     x12, x1, #4096             // L area")
     ins("movi    v30.4s, #31")
     ins("mvni    v31.4s, #31")
+    ins("movi    v28.16b, #0                // zero register for XAR")
     e(f"L(vmix_{name}_loop):")
     body()
     ins("subs    x0, x0, #1")
@@ -240,6 +259,21 @@ def nostore():
     STORES = False; lock(); STORES = True
 kernel("step32_nostore", nostore, 3)
 kernel("step16_lockstep", step16, 3)
+
+# SVE2 kernels: ELF only (Apple has no SVE); vmix.c runs them only if the
+# kernel reports HWCAP2_SVE2.
+e("#if !defined(__APPLE__)")
+e("        .arch_extension sve2")
+kernel("xar", lambda: simple("xar"), 32)
+def lock_xar():
+    global XAR
+    XAR = True; lock(); XAR = False
+kernel("step32_xar", lock_xar, 3)
+def step16_xar():
+    global XAR
+    XAR = True; step16(); XAR = False
+kernel("step16_xar", step16_xar, 3)
+e("#endif")
 
 e("#if !defined(__APPLE__)")
 e('        .section .note.GNU-stack,"",%progbits')

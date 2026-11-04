@@ -8,6 +8,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#if defined(__linux__)
+#include <sys/auxv.h>
+#define HAVE_SVE2_KERNELS 1
+#ifndef HWCAP2_SVE2
+#define HWCAP2_SVE2 (1 << 1)
+#endif
+#endif
 
 #define K(name, unit, what) { #name, vmix_##name, unit, what }
 #define DECL(name) void vmix_##name(uint64_t, void *);
@@ -15,6 +22,14 @@ DECL(add) DECL(shl) DECL(sri) DECL(ushl) DECL(stp)
 DECL(mix_ind_cluster) DECL(mix_ind_inter)
 DECL(step32_lockstep) DECL(step32_skew) DECL(step32_fine) DECL(step32_nostore)
 DECL(step16_lockstep)
+#ifdef HAVE_SVE2_KERNELS
+DECL(xar) DECL(step32_xar) DECL(step16_xar)
+static struct { const char *name; void (*fn)(uint64_t, void *); int unit; const char *what; } sve2_kernels[] = {
+  K(xar, 32, "SVE2 xar z.s #29 (rotate by 3), independent"),
+  K(step32_xar, 3, "MIX NEON32 step with XAR for rotate-by-3 (8 pipes)"),
+  K(step16_xar, 3, "MIX NEON16 step with XAR for rotate-by-3 (4 pipes)"),
+};
+#endif
 
 static struct { const char *name; void (*fn)(uint64_t, void *); int unit; const char *what; } kernels[] = {
   K(add, 32, "add v.4s, independent"),
@@ -63,6 +78,20 @@ static double time_kernel(void (*fn)(uint64_t, void *), void *scratch, double ta
   return t / iters;                            /* seconds per iteration */
 }
 
+static void run(const char *name, void (*fn)(uint64_t, void *), int unit, const char *what,
+                void *scratch, double g, int repeats)
+{
+  double best = 1e9, runs[16];
+  for (int r = 0; r < repeats && r < 16; r++) {
+    double s = time_kernel(fn, scratch, 0.15);
+    runs[r] = s * g * 1e9 / unit;
+    if (runs[r] < best) best = runs[r];
+  }
+  printf("| %s | %.2f | ", name, best);
+  for (int r = 0; r < repeats && r < 16; r++) printf("%s%.2f", r ? " " : "", runs[r]);
+  printf(" | %s |\n", what);
+}
+
 int main(int argc, char **argv)
 {
   int repeats = argc > 1 ? atoi(argv[1]) : 5;
@@ -72,16 +101,16 @@ int main(int argc, char **argv)
   double g = g0 < g1 ? (g1 < g2 ? g1 : (g0 < g2 ? g2 : g0)) : (g0 < g2 ? g0 : (g1 < g2 ? g2 : g1));
   printf("clock: %.3f GHz (median of %.3f %.3f %.3f)\n\n", g, g0, g1, g2);
   printf("| kernel | cycles/unit (min of %d) | runs | what |\n|---|---|---|---|\n", repeats);
-  for (unsigned i = 0; i < sizeof kernels / sizeof *kernels; i++) {
-    double best = 1e9, runs[16];
-    for (int r = 0; r < repeats && r < 16; r++) {
-      double s = time_kernel(kernels[i].fn, scratch, 0.15);
-      runs[r] = s * g * 1e9 / kernels[i].unit;
-      if (runs[r] < best) best = runs[r];
-    }
-    printf("| %s | %.2f | ", kernels[i].name, best);
-    for (int r = 0; r < repeats && r < 16; r++) printf("%s%.2f", r ? " " : "", runs[r]);
-    printf(" | %s |\n", kernels[i].what);
-  }
+  for (unsigned i = 0; i < sizeof kernels / sizeof *kernels; i++)
+    run(kernels[i].name, kernels[i].fn, kernels[i].unit, kernels[i].what, scratch, g, repeats);
+#ifdef HAVE_SVE2_KERNELS
+  if (getauxval(AT_HWCAP2) & HWCAP2_SVE2) {
+    for (unsigned i = 0; i < sizeof sve2_kernels / sizeof *sve2_kernels; i++)
+      run(sve2_kernels[i].name, sve2_kernels[i].fn, sve2_kernels[i].unit, sve2_kernels[i].what, scratch, g, repeats);
+  } else
+    printf("\n(no SVE2 on this CPU: XAR kernels skipped)\n");
+#else
+  printf("\n(not Linux: XAR kernels not built)\n");
+#endif
   return 0;
 }
