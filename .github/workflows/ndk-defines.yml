@@ -20,6 +20,7 @@ jobs:
         unzip -q android-ndk-r22-linux-x86_64.zip
     - name: Dump and diff
       run: |
+        set +e
         R22=/tmp/android-ndk-r22/toolchains/llvm/prebuilt/linux-x86_64/bin
         R30=$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin
         mkdir out
