@@ -6,11 +6,11 @@ set -u
 NDK=${NDK:-$ANDROID_NDK_LATEST_HOME}
 B=$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin
 OUT=$PWD/cmp; mkdir -p "$OUT"
-for v in orig fix; do
-  ref=$([ $v = orig ] && echo upstream/master || echo origin/android-detect)
+for v in raw orig fix; do
+  ref=$([ $v = fix ] && echo origin/android-detect || echo upstream/master)
   rm -rf "t-$v"; git worktree add -q --detach "t-$v" "$ref"
   ( cd "t-$v"
-    sed -i 's|^#if (defined(__GLIBC__) \&\& (__GLIBC__ >= 2)) \\$|&\n    \|\| defined(__ANDROID__) \\|' common/netbase.cpp
+    [ $v = raw ] || grep -q "defined(__ANDROID__)" common/netbase.cpp ||     sed -i 's|^#if (defined(__GLIBC__) \&\& (__GLIBC__ >= 2)) \\$|&\n    \|\| defined(__ANDROID__) \\|' common/netbase.cpp
     sed -i '/gcc-arm64 optimizations need to be determined/{n;/^\s*exit\s*$/d}' configure
     SHELL=/bin/sh ./configure linux-arm64 > "$OUT/cfg-$v.log" 2>&1
     make -k -j4 CC="$B/aarch64-linux-android30-clang++ -std=gnu++14 -DANDROID" \
@@ -24,9 +24,11 @@ done
 {
   echo "## Full NDK build: dcti master vs android-detect"
   echo "NDK: $(grep Pkg.Revision $NDK/source.properties)"
-  for v in orig fix; do
+  for v in raw orig fix; do
     echo "- $v: $(tail -1 "$OUT/build-$v.log"), errors $(wc -l < "$OUT/err-$v.txt"), unique warnings $(grep -c 'warning:' "$OUT/diag-$v.txt"), binary: $([ -f "$OUT/dnetc-$v" ] && file -b "$OUT/dnetc-$v" | cut -c1-80 || echo none)"
   done
+  echo "(raw = dcti master with no socklen_t workaround; orig = master + workaround; fix = android-detect, no workaround)"
+  echo; echo "### errors (raw)"; sed 's/^/    /' "$OUT/err-raw.txt" | head -20
   echo; echo "### errors (orig)"; sed 's/^/    /' "$OUT/err-orig.txt" | head -40
   echo; echo "### errors (fix)"; sed 's/^/    /' "$OUT/err-fix.txt" | head -40
   echo; echo "### diagnostics only in fix"; comm -13 "$OUT/diag-orig.txt" "$OUT/diag-fix.txt" | sed 's/^/    /' | head -40

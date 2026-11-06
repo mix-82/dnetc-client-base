@@ -58,7 +58,7 @@ jobs:
       continue-on-error: true
       run: |
         cd cmp
-        for v in orig fix; do
+        for v in raw orig fix; do
           [ -f dnetc-$v ] || { echo "$v: no binary" | tee -a run.md; continue; }
           chmod +x dnetc-$v
           echo "### ${{ matrix.ndk }} $v" >> run.md
