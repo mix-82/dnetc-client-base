@@ -1,0 +1,28 @@
+name: NDK cputypes probe
+
+on:
+  push:
+    branches: [ndk-probe]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+    - uses: actions/checkout@v4
+    - name: Probe
+      run: |
+        ls -d /usr/local/lib/android/sdk/ndk/* || true
+        sh tools/ndk-probe/run.sh
+        cat results.md >> "$GITHUB_STEP_SUMMARY"
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: ndk-probe
+        path: |
+          results.md
+          fix.diff
