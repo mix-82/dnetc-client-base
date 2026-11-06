@@ -66,6 +66,19 @@ jobs:
           ./dnetc-$v -test rc5-72 2>&1 | grep -E 'Tests Passed|FAIL' | sed -E 's/^\[[^]]*\] /    /' >> run.md
         done
         cat run.md; cat run.md >> "$GITHUB_STEP_SUMMARY"
+    - name: dnetc.log with -cpuinfo and -test (fixed build)
+      continue-on-error: true
+      run: |
+        mkdir -p log && cp cmp/dnetc-fix log/dnetc && cd log
+        { echo "\$ uname -a"; uname -a; echo "\$ ./dnetc -cpuinfo"; ./dnetc -l dnetc.log -cpuinfo; echo "\$ ./dnetc -test"; ./dnetc -l dnetc.log -test; } > console.txt 2>&1
+        ls -la; wc -l dnetc.log console.txt
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: ndk-log-${{ matrix.ndk }}
+        path: |
+          log/dnetc.log
+          log/console.txt
     - uses: actions/upload-artifact@v4
       if: always()
       with:
