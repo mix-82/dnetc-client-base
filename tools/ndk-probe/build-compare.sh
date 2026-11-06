@@ -11,6 +11,7 @@ for v in orig fix; do
   rm -rf "t-$v"; git worktree add -q --detach "t-$v" "$ref"
   ( cd "t-$v"
     sed -i 's|^#if (defined(__GLIBC__) \&\& (__GLIBC__ >= 2)) \\$|&\n    \|\| defined(__ANDROID__) \\|' common/netbase.cpp
+    sed -i '/gcc-arm64 optimizations need to be determined/{n;/^\s*exit\s*$/d}' configure
     SHELL=/bin/sh ./configure linux-arm64 > "$OUT/cfg-$v.log" 2>&1
     make -k -j4 CC="$B/aarch64-linux-android30-clang++ -std=gnu++14 -DANDROID" \
          AS="$B/aarch64-linux-android30-clang -c" STRIP="$B/llvm-strip" \
