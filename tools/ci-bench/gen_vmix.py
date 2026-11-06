@@ -141,7 +141,7 @@ def skewed_round(merge):
     merge(L(G1, "C"), E(G2, "C"))
 
 # --- NEON16 step (gen_neon16.py layout) ------------------------------------
-def step16(ngroups=4, loads=True, stores=True):
+def step16(ngroups=4, loads=True, stores=True, mul=False):
     """ngroups < 4 runs only the first ngroups vector chains (latency probe);
     loads/stores False drop the S-row ldp/stp (memory-cost probe)."""
     A16 = [f"v{i}" for i in range(8, 12)]
@@ -162,7 +162,10 @@ def step16(ngroups=4, loads=True, stores=True):
         else:
             grp4("add     {t}.4s, {t}.4s, {a}.4s", t=T, a=A16)
             grp4("add     {t}.4s, {t}.4s, {b}.4s", t=T, b=Bx)
-            grp4("shl     {a}.4s, {t}.4s, #3", a=A16, t=T)
+            if mul:  # x<<3 as x*8: vector mul issues on V0, shifts only on V1 (N2)
+                grp4("mul     {a}.4s, {t}.4s, v29.4s", a=A16, t=T)
+            else:
+                grp4("shl     {a}.4s, {t}.4s, #3", a=A16, t=T)
             grp4("sri     {a}.4s, {t}.4s, #29", a=A16, t=T)
         if stores:
             ins(f"stp     q8, q9, [x11, #{off + 256}]")
@@ -218,8 +221,8 @@ def merge_prop(a, b):
     while bi < len(b):
         out.append(b[bi]); bi += 1
 
-def hyb16(r):
-    merge_prop(cap(step16), sc_lines(3 * r))
+def hyb16(r, mul=False):
+    merge_prop(cap(step16, 4, True, True, mul), sc_lines(3 * r))
 
 def hyb32(r):
     merge_prop(cap(lock), sc_lines(3 * r))
@@ -287,6 +290,7 @@ def kernel(name, body, unit):
     ins("movi    v30.4s, #31")
     ins("mvni    v31.4s, #31")
     ins("movi    v28.16b, #0                // zero register for XAR")
+    ins("movi    v29.4s, #8                 // multiplier for the mul variants")
     e(f"L(vmix_{name}_loop):")
     body()
     ins("subs    x0, x0, #1")
@@ -333,11 +337,14 @@ kernel("step16_nomem", lambda: step16(loads=False, stores=False), 3)
 kernel("step16_g1", lambda: step16(ngroups=1), 3)
 kernel("step16_g2", lambda: step16(ngroups=2), 3)
 kernel("step16_g3", lambda: step16(ngroups=3), 3)
+kernel("step16_mul", lambda: step16(mul=True), 3)
 def sc3():
     sc_step(15, SCB, SCC); sc_step(16, SCC, SCB); sc_step(17, SCB, SCC)
 kernel("sc4", sc3, 3)
 for r in (1, 2, 3):
     kernel(f"hyb16_{r}", lambda r=r: hyb16(r), 3)
+for r in (1, 2):
+    kernel(f"hyb16_mul_{r}", lambda r=r: hyb16(r, True), 3)
 for r in (2, 4, 6):
     kernel(f"hyb32_{r}", lambda r=r: hyb32(r), 3)
 

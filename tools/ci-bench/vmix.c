@@ -22,7 +22,7 @@ DECL(add) DECL(shl) DECL(sri) DECL(ushl) DECL(stp)
 DECL(mix_ind_cluster) DECL(mix_ind_inter)
 DECL(step32_lockstep) DECL(step32_skew) DECL(step32_fine) DECL(step32_nostore)
 DECL(step16_lockstep)
-DECL(step16_noload) DECL(step16_nomem) DECL(step16_g1) DECL(step16_g2) DECL(step16_g3)
+DECL(step16_noload) DECL(step16_nomem) DECL(step16_g1) DECL(step16_g2) DECL(step16_g3) DECL(step16_mul) DECL(hyb16_mul_1) DECL(hyb16_mul_2)
 DECL(sc4) DECL(hyb16_1) DECL(hyb16_2) DECL(hyb16_3)
 DECL(hyb32_2) DECL(hyb32_4) DECL(hyb32_6)
 #ifdef HAVE_SVE2_KERNELS
@@ -52,6 +52,9 @@ static struct { const char *name; void (*fn)(uint64_t, void *); int unit; const 
   K(step16_g1, 3, "only 1 of the 4 vector chains (latency)"),
   K(step16_g2, 3, "only 2 of the 4 vector chains"),
   K(step16_g3, 3, "only 3 of the 4 vector chains"),
+  K(step16_mul, 3, "step16 with x<<3 done as mul x,8 (V0 instead of V1)"),
+  K(hyb16_mul_1, 3, "step16_mul + 1 scalar 4-key step, interleaved"),
+  K(hyb16_mul_2, 3, "step16_mul + 2 scalar 4-key steps, interleaved"),
   K(sc4, 3, "4-key scalar key-schedule step (hybrid scalar phase)"),
   K(hyb16_1, 3, "NEON16 step + 1 scalar 4-key step, interleaved"),
   K(hyb16_2, 3, "NEON16 step + 2 scalar 4-key steps, interleaved"),
