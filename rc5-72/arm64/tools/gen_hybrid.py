@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate rc5-72/arm64/r72-neon-hyb.S: the scalar+NEON hybrid RC5-72 core,
+"""Generate rc5-72/arm64/r72-neon-hyb.S: MIX HYBRID, the scalar+NEON RC5-72 core,
 16 keys per batch (4 NEON pipes x 4 lanes), software-pipelined so the integer
 units run the early key schedule for batch g+1 while the vector units run the
 late key schedule and encryption for batch g (the structure of Didier Levet's
@@ -279,7 +279,7 @@ def hi_lead_next():
     ins(f"str     {ST[0]}, [sp, #{SP_HI}]")
 
 # ==========================================================================
-e(f"""// RC5-72 hybrid scalar+NEON core for AArch64, 16 keys per batch.
+e(f"""// RC5-72 hybrid scalar+NEON core for AArch64, 16 keys per batch (MIX HYBRID).
 // 4 NEON pipes x 4 lanes run key-schedule steps k={SPLIT}..77 and the
 // encryption for batch g while 16 scalar chains (4 keys at a time) run
 // steps k=3..{SPLIT-1} for batch g+1 into a second S table (ping-pong),

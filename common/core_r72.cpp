@@ -238,7 +238,7 @@ const char **corenames_for_contest_rc572()
       "NEON 8x4",
       "MIX NEON16",
       "MIX NEON32",
-      "MIX HYB",
+      "MIX HYBRID",
   #elif (CLIENT_CPU == CPU_MIPS)
       "ANSI 4-pipe",
       "ANSI 2-pipe",

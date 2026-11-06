@@ -1,4 +1,4 @@
-// RC5-72 hybrid scalar+NEON core for AArch64, 16 keys per batch.
+// RC5-72 hybrid scalar+NEON core for AArch64, 16 keys per batch (MIX HYBRID).
 // 4 NEON pipes x 4 lanes run key-schedule steps k=26..77 and the
 // encryption for batch g while 16 scalar chains (4 keys at a time) run
 // steps k=3..25 for batch g+1 into a second S table (ping-pong),
