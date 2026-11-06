@@ -7,7 +7,7 @@ NDK=${NDK:-$ANDROID_NDK_LATEST_HOME}
 B=$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin
 OUT=$PWD/cmp; mkdir -p "$OUT"
 for v in raw orig fix; do
-  ref=$([ $v = fix ] && echo origin/android-detect || echo upstream/master)
+  ref=$([ $v = fix ] && echo origin/${FIXREF:-android-detect} || echo upstream/master)
   rm -rf "t-$v"; git worktree add -q --detach "t-$v" "$ref"
   ( cd "t-$v"
     [ $v = raw ] || grep -q "defined(__ANDROID__)" common/netbase.cpp ||     sed -i 's|^#if (defined(__GLIBC__) \&\& (__GLIBC__ >= 2)) \\$|&\n    \|\| defined(__ANDROID__) \\|' common/netbase.cpp

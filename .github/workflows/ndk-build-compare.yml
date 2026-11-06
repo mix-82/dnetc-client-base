@@ -24,7 +24,7 @@ jobs:
       run: |
         git remote add upstream https://github.com/dcti/dnetc-client-base
         git fetch -q upstream master
-        git fetch -q origin android-detect
+        git fetch -q origin android-detect pr49-timer-test
     - name: Fetch NDK r22
       if: matrix.ndk == 'r22'
       working-directory: /tmp
@@ -33,6 +33,8 @@ jobs:
         unzip -q android-ndk-r22-linux-x86_64.zip
         echo "NDK=/tmp/android-ndk-r22" >> $GITHUB_ENV
     - name: Build both
+      env:
+        FIXREF: pr49-timer-test
       run: |
         bash tools/ndk-probe/build-compare.sh
         cat cmp/summary.md >> "$GITHUB_STEP_SUMMARY"
