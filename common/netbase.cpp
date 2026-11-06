@@ -215,6 +215,7 @@
 
 // added OS_OPENBSD. grub 20020321
 #if (defined(__GLIBC__) && (__GLIBC__ >= 2)) \
+    || defined(__ANDROID__) /* bionic */ \
     || (CLIENT_OS == OS_OPENBSD) \
     || (CLIENT_OS == OS_NETBSD) \
     || (CLIENT_OS == OS_DRAGONFLY) \
