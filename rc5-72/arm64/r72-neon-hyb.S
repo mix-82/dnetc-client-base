@@ -37,8 +37,7 @@ FUNC(rc5_72_unit_func_neon_hyb):
 
         stp     x29, x30, [sp, #-16]!
         mov     x29, sp
-        mov     x16, #4160
-        sub     x16, x29, x16
+        sub     x16, x29, #4032
         and     sp, x16, #-64
         stp     d8, d9, [sp, #0]
         stp     d10, d11, [sp, #16]
@@ -50,76 +49,6 @@ FUNC(rc5_72_unit_func_neon_hyb):
         stp     x25, x26, [sp, #112]
         stp     x27, x28, [sp, #128]
         str     x1, [sp, #144]
-        // the scalar stream's pass-1 subkey constants (one ldr per step)
-        mov     w16, #0xBE8E
-        movk    w16, #0x9287, lsl #16
-        str     w16, [sp, #4044]
-        mov     w16, #0x3847
-        movk    w16, #0x30BF, lsl #16
-        str     w16, [sp, #4048]
-        mov     w16, #0xB200
-        movk    w16, #0xCEF6, lsl #16
-        str     w16, [sp, #4052]
-        mov     w16, #0x2BB9
-        movk    w16, #0x6D2E, lsl #16
-        str     w16, [sp, #4056]
-        mov     w16, #0xA572
-        movk    w16, #0x0B65, lsl #16
-        str     w16, [sp, #4060]
-        mov     w16, #0x1F2B
-        movk    w16, #0xA99D, lsl #16
-        str     w16, [sp, #4064]
-        mov     w16, #0x98E4
-        movk    w16, #0x47D4, lsl #16
-        str     w16, [sp, #4068]
-        mov     w16, #0x129D
-        movk    w16, #0xE60C, lsl #16
-        str     w16, [sp, #4072]
-        mov     w16, #0x8C56
-        movk    w16, #0x8443, lsl #16
-        str     w16, [sp, #4076]
-        mov     w16, #0x060F
-        movk    w16, #0x227B, lsl #16
-        str     w16, [sp, #4080]
-        mov     w16, #0x7FC8
-        movk    w16, #0xC0B2, lsl #16
-        str     w16, [sp, #4084]
-        mov     w16, #0xF981
-        movk    w16, #0x5EE9, lsl #16
-        str     w16, [sp, #4088]
-        mov     w16, #0x733A
-        movk    w16, #0xFD21, lsl #16
-        str     w16, [sp, #4092]
-        mov     w16, #0xECF3
-        movk    w16, #0x9B58, lsl #16
-        str     w16, [sp, #4096]
-        mov     w16, #0x66AC
-        movk    w16, #0x3990, lsl #16
-        str     w16, [sp, #4100]
-        mov     w16, #0xE065
-        movk    w16, #0xD7C7, lsl #16
-        str     w16, [sp, #4104]
-        mov     w16, #0x5A1E
-        movk    w16, #0x75FF, lsl #16
-        str     w16, [sp, #4108]
-        mov     w16, #0xD3D7
-        movk    w16, #0x1436, lsl #16
-        str     w16, [sp, #4112]
-        mov     w16, #0x4D90
-        movk    w16, #0xB26E, lsl #16
-        str     w16, [sp, #4116]
-        mov     w16, #0xC749
-        movk    w16, #0x50A5, lsl #16
-        str     w16, [sp, #4120]
-        mov     w16, #0x4102
-        movk    w16, #0xEEDD, lsl #16
-        str     w16, [sp, #4124]
-        mov     w16, #0xBABB
-        movk    w16, #0x8D14, lsl #16
-        str     w16, [sp, #4128]
-        mov     w16, #0x3474
-        movk    w16, #0x2B4C, lsl #16
-        str     w16, [sp, #4132]
 
         ldr     w9, [x1]
         lsr     w9, w9, #4                 // 16 keys per batch
@@ -268,7 +197,7 @@ L(batch_loop):
         and     v7.16b, v3.16b, v24.16b
         ror     w26, w26, w27
         orr     v0.16b, v0.16b, v25.16b
-        ldr     w11, [sp, #4044]
+        ldr     w11, L(sck3)
         orr     v1.16b, v1.16b, v25.16b
         add     w27, w2, w23
         orr     v2.16b, v2.16b, v25.16b
@@ -334,7 +263,7 @@ L(batch_loop):
         shl     v11.4s, v3.4s, #3
         ror     w17, w17, w27
         sri     v8.4s, v0.4s, #29
-        ldr     w11, [sp, #4048]
+        ldr     w11, L(sck4)
         sri     v9.4s, v1.4s, #29
         add     w27, w2, w6
         sri     v10.4s, v2.4s, #29
@@ -398,7 +327,7 @@ L(batch_loop):
         orr     v18.16b, v6.16b, v2.16b
         ror     w22, w22, w27
         orr     v21.16b, v7.16b, v3.16b
-        ldr     w11, [sp, #4052]
+        ldr     w11, L(sck5)
         // k=28: A = (A + S[2] + B0) <<< 3; S[2] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
         add     w27, w2, w19
         ldr     w16, [sp, #172]
@@ -462,7 +391,7 @@ L(batch_loop):
         add     v22.4s, v22.4s, v3.4s
         ror     w26, w26, w27
         and     v4.16b, v0.16b, v24.16b
-        ldr     w11, [sp, #4056]
+        ldr     w11, L(sck6)
         and     v5.16b, v1.16b, v24.16b
         add     w27, w2, w23
         and     v6.16b, v2.16b, v24.16b
@@ -526,7 +455,7 @@ L(batch_loop):
         shl     v9.4s, v1.4s, #3
         ror     w17, w17, w27
         shl     v10.4s, v2.4s, #3
-        ldr     w11, [sp, #4060]
+        ldr     w11, L(sck7)
         shl     v11.4s, v3.4s, #3
         add     w27, w2, w6
         sri     v8.4s, v0.4s, #29
@@ -590,7 +519,7 @@ L(batch_loop):
         orr     v14.16b, v4.16b, v0.16b
         ror     w22, w22, w27
         orr     v17.16b, v5.16b, v1.16b
-        ldr     w11, [sp, #4064]
+        ldr     w11, L(sck8)
         orr     v20.16b, v6.16b, v2.16b
         add     w27, w2, w19
         orr     v23.16b, v7.16b, v3.16b
@@ -654,7 +583,7 @@ L(batch_loop):
         and     v4.16b, v0.16b, v24.16b
         ror     w26, w26, w27
         and     v5.16b, v1.16b, v24.16b
-        ldr     w11, [sp, #4068]
+        ldr     w11, L(sck9)
         and     v6.16b, v2.16b, v24.16b
         add     w27, w2, w23
         and     v7.16b, v3.16b, v24.16b
@@ -718,7 +647,7 @@ L(batch_loop):
         shl     v10.4s, v2.4s, #3
         ror     w17, w17, w27
         shl     v11.4s, v3.4s, #3
-        ldr     w11, [sp, #4072]
+        ldr     w11, L(sck10)
         sri     v8.4s, v0.4s, #29
         add     w27, w2, w6
         sri     v9.4s, v1.4s, #29
@@ -782,7 +711,7 @@ L(batch_loop):
         orr     v16.16b, v5.16b, v1.16b
         ror     w22, w22, w27
         orr     v19.16b, v6.16b, v2.16b
-        ldr     w11, [sp, #4076]
+        ldr     w11, L(sck11)
         orr     v22.16b, v7.16b, v3.16b
         add     w27, w2, w19
         // k=32: A = (A + S[6] + B1) <<< 3; S[6] = A; B2 = (B2 + B1 + A) <<< (B1 + A)
@@ -848,7 +777,7 @@ L(batch_loop):
         and     v6.16b, v2.16b, v24.16b
         ror     w26, w26, w27
         and     v7.16b, v3.16b, v24.16b
-        ldr     w11, [sp, #4080]
+        ldr     w11, L(sck12)
         orr     v0.16b, v0.16b, v25.16b
         add     w27, w2, w23
         orr     v1.16b, v1.16b, v25.16b
@@ -912,7 +841,7 @@ L(batch_loop):
         sri     v8.4s, v0.4s, #29
         ror     w17, w17, w27
         sri     v9.4s, v1.4s, #29
-        ldr     w11, [sp, #4084]
+        ldr     w11, L(sck13)
         sri     v10.4s, v2.4s, #29
         add     w27, w2, w6
         sri     v11.4s, v3.4s, #29
@@ -976,7 +905,7 @@ L(batch_loop):
         orr     v21.16b, v7.16b, v3.16b
         ror     w22, w22, w27
         // k=34: A = (A + S[8] + B0) <<< 3; S[8] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
-        ldr     w11, [sp, #4088]
+        ldr     w11, L(sck14)
         ldp     q0, q1, [x10, #-320]
         add     w27, w2, w19
         ldp     q2, q3, [x10, #-288]
@@ -1040,7 +969,7 @@ L(batch_loop):
         and     v7.16b, v3.16b, v24.16b
         ror     w26, w26, w27
         orr     v0.16b, v0.16b, v25.16b
-        ldr     w11, [sp, #4092]
+        ldr     w11, L(sck15)
         orr     v1.16b, v1.16b, v25.16b
         add     w27, w2, w23
         orr     v2.16b, v2.16b, v25.16b
@@ -1104,7 +1033,7 @@ L(batch_loop):
         sri     v9.4s, v1.4s, #29
         ror     w17, w17, w27
         sri     v10.4s, v2.4s, #29
-        ldr     w11, [sp, #4096]
+        ldr     w11, L(sck16)
         sri     v11.4s, v3.4s, #29
         add     w27, w2, w6
         stp     q8, q9, [x10, #-256]
@@ -1168,7 +1097,7 @@ L(batch_loop):
         // k=36: A = (A + S[10] + B2) <<< 3; S[10] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
         ror     w22, w22, w27
         ldp     q0, q1, [x10, #-192]
-        ldr     w11, [sp, #4100]
+        ldr     w11, L(sck17)
         ldp     q2, q3, [x10, #-160]
         add     w27, w2, w19
         add     v0.4s, v0.4s, v8.4s
@@ -1232,7 +1161,7 @@ L(batch_loop):
         orr     v0.16b, v0.16b, v25.16b
         ror     w26, w26, w27
         orr     v1.16b, v1.16b, v25.16b
-        ldr     w11, [sp, #4104]
+        ldr     w11, L(sck18)
         orr     v2.16b, v2.16b, v25.16b
         add     w27, w2, w23
         orr     v3.16b, v3.16b, v25.16b
@@ -1296,7 +1225,7 @@ L(batch_loop):
         sri     v10.4s, v2.4s, #29
         ror     w17, w17, w27
         sri     v11.4s, v3.4s, #29
-        ldr     w11, [sp, #4108]
+        ldr     w11, L(sck19)
         stp     q8, q9, [x10, #-128]
         add     w27, w2, w6
         stp     q10, q11, [x10, #-96]
@@ -1362,7 +1291,7 @@ L(batch_loop):
         ldp     q2, q3, [x10, #-32]
         ror     w22, w22, w27
         add     v0.4s, v0.4s, v8.4s
-        ldr     w11, [sp, #4112]
+        ldr     w11, L(sck20)
         add     v1.4s, v1.4s, v9.4s
         add     w27, w2, w19
         add     v2.4s, v2.4s, v10.4s
@@ -1426,7 +1355,7 @@ L(batch_loop):
         orr     v2.16b, v2.16b, v25.16b
         ror     w26, w26, w27
         orr     v3.16b, v3.16b, v25.16b
-        ldr     w11, [sp, #4116]
+        ldr     w11, L(sck21)
         ushl    v4.4s, v14.4s, v4.4s
         add     w27, w2, w23
         ushl    v5.4s, v17.4s, v5.4s
@@ -1490,7 +1419,7 @@ L(batch_loop):
         stp     q8, q9, [x10, #0]
         ror     w17, w17, w27
         stp     q10, q11, [x10, #32]
-        ldr     w11, [sp, #4120]
+        ldr     w11, L(sck22)
         add     v0.4s, v14.4s, v8.4s
         add     w27, w2, w6
         add     v1.4s, v17.4s, v9.4s
@@ -1554,7 +1483,7 @@ L(batch_loop):
         add     v0.4s, v0.4s, v8.4s
         ror     w22, w22, w27
         add     v1.4s, v1.4s, v9.4s
-        ldr     w11, [sp, #4124]
+        ldr     w11, L(sck23)
         add     v2.4s, v2.4s, v10.4s
         add     w27, w2, w19
         add     v3.4s, v3.4s, v11.4s
@@ -1618,7 +1547,7 @@ L(batch_loop):
         ror     w26, w26, w27
         orr     v3.16b, v3.16b, v25.16b
         ushl    v4.4s, v13.4s, v4.4s
-        ldr     w11, [sp, #4128]
+        ldr     w11, L(sck24)
         ushl    v5.4s, v16.4s, v5.4s
         add     w27, w2, w23
         ushl    v6.4s, v19.4s, v6.4s
@@ -1682,7 +1611,7 @@ L(batch_loop):
         ror     w17, w17, w27
         stp     q10, q11, [x10, #160]
         add     v0.4s, v13.4s, v8.4s
-        ldr     w11, [sp, #4132]
+        ldr     w11, L(sck25)
         add     v1.4s, v16.4s, v9.4s
         add     w27, w2, w6
         add     v2.4s, v19.4s, v10.4s
@@ -1832,7 +1761,7 @@ L(batch_loop):
         orr     v21.16b, v7.16b, v3.16b
         ror     w26, w26, w27
         // k=43: A = (A + S[17] + B0) <<< 3; S[17] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
-        ldr     w11, [sp, #4044]
+        ldr     w11, L(sck3)
         ldp     q0, q1, [x10, #256]
         add     w27, w2, w23
         ldp     q2, q3, [x10, #288]
@@ -1898,7 +1827,7 @@ L(batch_loop):
         orr     v0.16b, v0.16b, v25.16b
         ror     w17, w17, w27
         orr     v1.16b, v1.16b, v25.16b
-        ldr     w11, [sp, #4048]
+        ldr     w11, L(sck4)
         orr     v2.16b, v2.16b, v25.16b
         add     w27, w2, w6
         orr     v3.16b, v3.16b, v25.16b
@@ -1962,7 +1891,7 @@ L(batch_loop):
         sri     v10.4s, v2.4s, #29
         ror     w22, w22, w27
         sri     v11.4s, v3.4s, #29
-        ldr     w11, [sp, #4052]
+        ldr     w11, L(sck5)
         stp     q8, q9, [x10, #320]
         add     w27, w2, w19
         stp     q10, q11, [x10, #352]
@@ -2026,7 +1955,7 @@ L(batch_loop):
         ldp     q0, q1, [x10, #384]
         ror     w26, w26, w27
         ldp     q2, q3, [x10, #416]
-        ldr     w11, [sp, #4056]
+        ldr     w11, L(sck6)
         add     v0.4s, v0.4s, v8.4s
         add     w27, w2, w23
         add     v1.4s, v1.4s, v9.4s
@@ -2090,7 +2019,7 @@ L(batch_loop):
         orr     v1.16b, v1.16b, v25.16b
         ror     w17, w17, w27
         orr     v2.16b, v2.16b, v25.16b
-        ldr     w11, [sp, #4060]
+        ldr     w11, L(sck7)
         orr     v3.16b, v3.16b, v25.16b
         add     w27, w2, w6
         ushl    v4.4s, v12.4s, v4.4s
@@ -2154,7 +2083,7 @@ L(batch_loop):
         sri     v11.4s, v3.4s, #29
         ror     w22, w22, w27
         stp     q8, q9, [x10, #448]
-        ldr     w11, [sp, #4064]
+        ldr     w11, L(sck8)
         stp     q10, q11, [x10, #480]
         add     w27, w2, w19
         add     v0.4s, v12.4s, v8.4s
@@ -2218,7 +2147,7 @@ L(batch_loop):
         ldp     q2, q3, [x10, #544]
         ror     w26, w26, w27
         add     v0.4s, v0.4s, v8.4s
-        ldr     w11, [sp, #4068]
+        ldr     w11, L(sck9)
         add     v1.4s, v1.4s, v9.4s
         add     w27, w2, w23
         add     v2.4s, v2.4s, v10.4s
@@ -2282,7 +2211,7 @@ L(batch_loop):
         orr     v2.16b, v2.16b, v25.16b
         ror     w17, w17, w27
         orr     v3.16b, v3.16b, v25.16b
-        ldr     w11, [sp, #4072]
+        ldr     w11, L(sck10)
         ushl    v4.4s, v14.4s, v4.4s
         add     w27, w2, w6
         ushl    v5.4s, v17.4s, v5.4s
@@ -2346,7 +2275,7 @@ L(batch_loop):
         stp     q8, q9, [x10, #576]
         ror     w22, w22, w27
         stp     q10, q11, [x10, #608]
-        ldr     w11, [sp, #4076]
+        ldr     w11, L(sck11)
         add     v0.4s, v14.4s, v8.4s
         add     w27, w2, w19
         add     v1.4s, v17.4s, v9.4s
@@ -2412,7 +2341,7 @@ L(batch_loop):
         add     v1.4s, v1.4s, v9.4s
         ror     w26, w26, w27
         add     v2.4s, v2.4s, v10.4s
-        ldr     w11, [sp, #4080]
+        ldr     w11, L(sck12)
         add     v3.4s, v3.4s, v11.4s
         add     w27, w2, w23
         add     v0.4s, v0.4s, v12.4s
@@ -2476,7 +2405,7 @@ L(batch_loop):
         ushl    v4.4s, v13.4s, v4.4s
         ror     w17, w17, w27
         ushl    v5.4s, v16.4s, v5.4s
-        ldr     w11, [sp, #4084]
+        ldr     w11, L(sck13)
         ushl    v6.4s, v19.4s, v6.4s
         add     w27, w2, w6
         ushl    v7.4s, v22.4s, v7.4s
@@ -2540,7 +2469,7 @@ L(batch_loop):
         add     v0.4s, v13.4s, v8.4s
         ror     w22, w22, w27
         add     v1.4s, v16.4s, v9.4s
-        ldr     w11, [sp, #4088]
+        ldr     w11, L(sck14)
         add     v2.4s, v19.4s, v10.4s
         add     w27, w2, w19
         add     v3.4s, v22.4s, v11.4s
@@ -2604,7 +2533,7 @@ L(batch_loop):
         add     v2.4s, v2.4s, v10.4s
         ror     w26, w26, w27
         add     v3.4s, v3.4s, v11.4s
-        ldr     w11, [sp, #4092]
+        ldr     w11, L(sck15)
         add     v0.4s, v0.4s, v14.4s
         add     w27, w2, w23
         add     v1.4s, v1.4s, v17.4s
@@ -2668,7 +2597,7 @@ L(batch_loop):
         ushl    v5.4s, v15.4s, v5.4s
         ror     w17, w17, w27
         ushl    v6.4s, v18.4s, v6.4s
-        ldr     w11, [sp, #4096]
+        ldr     w11, L(sck16)
         ushl    v7.4s, v21.4s, v7.4s
         add     w27, w2, w6
         ushl    v0.4s, v12.4s, v0.4s
@@ -2732,7 +2661,7 @@ L(batch_loop):
         add     v1.4s, v15.4s, v9.4s
         ror     w22, w22, w27
         add     v2.4s, v18.4s, v10.4s
-        ldr     w11, [sp, #4100]
+        ldr     w11, L(sck17)
         add     v3.4s, v21.4s, v11.4s
         add     w27, w2, w19
         add     v13.4s, v13.4s, v0.4s
@@ -2796,7 +2725,7 @@ L(batch_loop):
         add     v3.4s, v3.4s, v11.4s
         ror     w26, w26, w27
         add     v0.4s, v0.4s, v13.4s
-        ldr     w11, [sp, #4104]
+        ldr     w11, L(sck18)
         add     v1.4s, v1.4s, v16.4s
         add     w27, w2, w23
         add     v2.4s, v2.4s, v19.4s
@@ -2860,7 +2789,7 @@ L(batch_loop):
         ushl    v6.4s, v20.4s, v6.4s
         ror     w17, w17, w27
         ushl    v7.4s, v23.4s, v7.4s
-        ldr     w11, [sp, #4108]
+        ldr     w11, L(sck19)
         ushl    v0.4s, v14.4s, v0.4s
         add     w27, w2, w6
         ushl    v1.4s, v17.4s, v1.4s
@@ -2926,7 +2855,7 @@ L(batch_loop):
         add     v3.4s, v23.4s, v11.4s
         ror     w22, w22, w27
         add     v12.4s, v12.4s, v0.4s
-        ldr     w11, [sp, #4112]
+        ldr     w11, L(sck20)
         add     v15.4s, v15.4s, v1.4s
         add     w27, w2, w19
         add     v18.4s, v18.4s, v2.4s
@@ -2990,7 +2919,7 @@ L(batch_loop):
         add     v1.4s, v1.4s, v15.4s
         ror     w26, w26, w27
         add     v2.4s, v2.4s, v18.4s
-        ldr     w11, [sp, #4116]
+        ldr     w11, L(sck21)
         add     v3.4s, v3.4s, v21.4s
         add     w27, w2, w23
         shl     v8.4s, v0.4s, #3
@@ -3054,7 +2983,7 @@ L(batch_loop):
         ushl    v0.4s, v13.4s, v0.4s
         ror     w17, w17, w27
         ushl    v1.4s, v16.4s, v1.4s
-        ldr     w11, [sp, #4120]
+        ldr     w11, L(sck22)
         ushl    v2.4s, v19.4s, v2.4s
         add     w27, w2, w6
         ushl    v3.4s, v22.4s, v3.4s
@@ -3118,7 +3047,7 @@ L(batch_loop):
         add     v14.4s, v14.4s, v0.4s
         ror     w22, w22, w27
         add     v17.4s, v17.4s, v1.4s
-        ldr     w11, [sp, #4124]
+        ldr     w11, L(sck23)
         add     v20.4s, v20.4s, v2.4s
         add     w27, w2, w19
         add     v23.4s, v23.4s, v3.4s
@@ -3182,7 +3111,7 @@ L(batch_loop):
         add     v2.4s, v2.4s, v20.4s
         ror     w26, w26, w27
         add     v3.4s, v3.4s, v23.4s
-        ldr     w11, [sp, #4128]
+        ldr     w11, L(sck24)
         shl     v8.4s, v0.4s, #3
         add     w27, w2, w23
         shl     v9.4s, v1.4s, #3
@@ -3246,7 +3175,7 @@ L(batch_loop):
         ushl    v1.4s, v15.4s, v1.4s
         ror     w17, w17, w27
         ushl    v2.4s, v18.4s, v2.4s
-        ldr     w11, [sp, #4132]
+        ldr     w11, L(sck25)
         ushl    v3.4s, v21.4s, v3.4s
         add     w27, w2, w6
         orr     v12.16b, v4.16b, v0.16b
@@ -3397,7 +3326,7 @@ L(batch_loop):
         add     v1.4s, v16.4s, v9.4s
         ror     w26, w26, w27
         add     v2.4s, v19.4s, v10.4s
-        ldr     w11, [sp, #4044]
+        ldr     w11, L(sck3)
         add     v3.4s, v22.4s, v11.4s
         add     w27, w2, w23
         add     v14.4s, v14.4s, v0.4s
@@ -3463,7 +3392,7 @@ L(batch_loop):
         add     v0.4s, v0.4s, v14.4s
         ror     w17, w17, w27
         add     v1.4s, v1.4s, v17.4s
-        ldr     w11, [sp, #4048]
+        ldr     w11, L(sck4)
         add     v2.4s, v2.4s, v20.4s
         add     w27, w2, w6
         add     v3.4s, v3.4s, v23.4s
@@ -3527,7 +3456,7 @@ L(batch_loop):
         ushl    v7.4s, v21.4s, v7.4s
         ror     w22, w22, w27
         ushl    v0.4s, v12.4s, v0.4s
-        ldr     w11, [sp, #4052]
+        ldr     w11, L(sck5)
         ushl    v1.4s, v15.4s, v1.4s
         add     w27, w2, w19
         ushl    v2.4s, v18.4s, v2.4s
@@ -3591,7 +3520,7 @@ L(batch_loop):
         add     v3.4s, v21.4s, v11.4s
         ror     w26, w26, w27
         add     v13.4s, v13.4s, v0.4s
-        ldr     w11, [sp, #4056]
+        ldr     w11, L(sck6)
         add     v16.4s, v16.4s, v1.4s
         add     w27, w2, w23
         add     v19.4s, v19.4s, v2.4s
@@ -3655,7 +3584,7 @@ L(batch_loop):
         add     v1.4s, v1.4s, v16.4s
         ror     w17, w17, w27
         add     v2.4s, v2.4s, v19.4s
-        ldr     w11, [sp, #4060]
+        ldr     w11, L(sck7)
         add     v3.4s, v3.4s, v22.4s
         add     w27, w2, w6
         shl     v8.4s, v0.4s, #3
@@ -3719,7 +3648,7 @@ L(batch_loop):
         ushl    v0.4s, v14.4s, v0.4s
         ror     w22, w22, w27
         ushl    v1.4s, v17.4s, v1.4s
-        ldr     w11, [sp, #4064]
+        ldr     w11, L(sck8)
         ushl    v2.4s, v20.4s, v2.4s
         add     w27, w2, w19
         ushl    v3.4s, v23.4s, v3.4s
@@ -3783,7 +3712,7 @@ L(batch_loop):
         add     v12.4s, v12.4s, v0.4s
         ror     w26, w26, w27
         add     v15.4s, v15.4s, v1.4s
-        ldr     w11, [sp, #4068]
+        ldr     w11, L(sck9)
         add     v18.4s, v18.4s, v2.4s
         add     w27, w2, w23
         add     v21.4s, v21.4s, v3.4s
@@ -3847,7 +3776,7 @@ L(batch_loop):
         add     v2.4s, v2.4s, v18.4s
         ror     w17, w17, w27
         add     v3.4s, v3.4s, v21.4s
-        ldr     w11, [sp, #4072]
+        ldr     w11, L(sck10)
         shl     v8.4s, v0.4s, #3
         add     w27, w2, w6
         shl     v9.4s, v1.4s, #3
@@ -3911,7 +3840,7 @@ L(batch_loop):
         ushl    v1.4s, v16.4s, v1.4s
         ror     w22, w22, w27
         ushl    v2.4s, v19.4s, v2.4s
-        ldr     w11, [sp, #4076]
+        ldr     w11, L(sck11)
         ushl    v3.4s, v22.4s, v3.4s
         add     w27, w2, w19
         orr     v13.16b, v4.16b, v0.16b
@@ -3977,7 +3906,7 @@ L(batch_loop):
         add     v20.4s, v20.4s, v2.4s
         ror     w26, w26, w27
         add     v23.4s, v23.4s, v3.4s
-        ldr     w11, [sp, #4080]
+        ldr     w11, L(sck12)
         and     v4.16b, v0.16b, v24.16b
         add     w27, w2, w23
         and     v5.16b, v1.16b, v24.16b
@@ -4041,7 +3970,7 @@ L(batch_loop):
         shl     v8.4s, v0.4s, #3
         ror     w17, w17, w27
         shl     v9.4s, v1.4s, #3
-        ldr     w11, [sp, #4084]
+        ldr     w11, L(sck13)
         shl     v10.4s, v2.4s, #3
         add     w27, w2, w6
         shl     v11.4s, v3.4s, #3
@@ -4105,7 +4034,7 @@ L(batch_loop):
         ushl    v3.4s, v21.4s, v3.4s
         ror     w22, w22, w27
         orr     v12.16b, v4.16b, v0.16b
-        ldr     w11, [sp, #4088]
+        ldr     w11, L(sck14)
         orr     v15.16b, v5.16b, v1.16b
         add     w27, w2, w19
         orr     v18.16b, v6.16b, v2.16b
@@ -4169,7 +4098,7 @@ L(batch_loop):
         add     v22.4s, v22.4s, v3.4s
         ror     w26, w26, w27
         and     v4.16b, v0.16b, v24.16b
-        ldr     w11, [sp, #4092]
+        ldr     w11, L(sck15)
         and     v5.16b, v1.16b, v24.16b
         add     w27, w2, w23
         and     v6.16b, v2.16b, v24.16b
@@ -4233,7 +4162,7 @@ L(batch_loop):
         shl     v9.4s, v1.4s, #3
         ror     w17, w17, w27
         shl     v10.4s, v2.4s, #3
-        ldr     w11, [sp, #4096]
+        ldr     w11, L(sck16)
         shl     v11.4s, v3.4s, #3
         add     w27, w2, w6
         sri     v8.4s, v0.4s, #29
@@ -4297,7 +4226,7 @@ L(batch_loop):
         ror     w22, w22, w27
         orr     v14.16b, v4.16b, v0.16b
         orr     v17.16b, v5.16b, v1.16b
-        ldr     w11, [sp, #4100]
+        ldr     w11, L(sck17)
         orr     v20.16b, v6.16b, v2.16b
         add     w27, w2, w19
         orr     v23.16b, v7.16b, v3.16b
@@ -4361,7 +4290,7 @@ L(batch_loop):
         ror     w26, w26, w27
         and     v4.16b, v0.16b, v24.16b
         and     v5.16b, v1.16b, v24.16b
-        ldr     w11, [sp, #4104]
+        ldr     w11, L(sck18)
         and     v6.16b, v2.16b, v24.16b
         add     w27, w2, w23
         and     v7.16b, v3.16b, v24.16b
@@ -4425,7 +4354,7 @@ L(batch_loop):
         ror     w17, w17, w27
         shl     v10.4s, v2.4s, #3
         shl     v11.4s, v3.4s, #3
-        ldr     w11, [sp, #4108]
+        ldr     w11, L(sck19)
         sri     v8.4s, v0.4s, #29
         add     w27, w2, w6
         sri     v9.4s, v1.4s, #29
@@ -4491,7 +4420,7 @@ L(batch_loop):
         ror     w22, w22, w27
         orr     v19.16b, v6.16b, v2.16b
         orr     v22.16b, v7.16b, v3.16b
-        ldr     w11, [sp, #4112]
+        ldr     w11, L(sck20)
         // k=71: A = (A + S[19] + B1) <<< 3; S[19] = A; B2 = (B2 + B1 + A) <<< (B1 + A)
         add     w27, w2, w19
         ldp     q0, q1, [x10, #384]
@@ -4555,7 +4484,7 @@ L(batch_loop):
         ror     w26, w26, w27
         and     v6.16b, v2.16b, v24.16b
         and     v7.16b, v3.16b, v24.16b
-        ldr     w11, [sp, #4116]
+        ldr     w11, L(sck21)
         orr     v0.16b, v0.16b, v25.16b
         add     w27, w2, w23
         orr     v1.16b, v1.16b, v25.16b
@@ -4619,7 +4548,7 @@ L(batch_loop):
         ror     w17, w17, w27
         sri     v8.4s, v0.4s, #29
         sri     v9.4s, v1.4s, #29
-        ldr     w11, [sp, #4120]
+        ldr     w11, L(sck22)
         sri     v10.4s, v2.4s, #29
         add     w27, w2, w6
         sri     v11.4s, v3.4s, #29
@@ -4683,7 +4612,7 @@ L(batch_loop):
         ror     w22, w22, w27
         orr     v21.16b, v7.16b, v3.16b
         // k=73: A = (A + S[21] + B0) <<< 3; S[21] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
-        ldr     w11, [sp, #4124]
+        ldr     w11, L(sck23)
         ldp     q0, q1, [x10, #512]
         add     w27, w2, w19
         ldp     q2, q3, [x10, #544]
@@ -4746,7 +4675,7 @@ L(batch_loop):
         and     v6.16b, v2.16b, v24.16b
         ror     w26, w26, w27
         and     v7.16b, v3.16b, v24.16b
-        ldr     w11, [sp, #4128]
+        ldr     w11, L(sck24)
         orr     v0.16b, v0.16b, v25.16b
         orr     v1.16b, v1.16b, v25.16b
         add     w27, w2, w23
@@ -4810,7 +4739,7 @@ L(batch_loop):
         sri     v8.4s, v0.4s, #29
         ror     w17, w17, w27
         sri     v9.4s, v1.4s, #29
-        ldr     w11, [sp, #4132]
+        ldr     w11, L(sck25)
         sri     v10.4s, v2.4s, #29
         sri     v11.4s, v3.4s, #29
         add     w27, w2, w6
@@ -4961,7 +4890,7 @@ L(batch_loop):
         ushl    v3.4s, v21.4s, v3.4s
         ror     w26, w26, w27
         orr     v12.16b, v4.16b, v0.16b
-        ldr     w11, [sp, #4044]
+        ldr     w11, L(sck3)
         orr     v15.16b, v5.16b, v1.16b
         add     w27, w2, w23
         orr     v18.16b, v6.16b, v2.16b
@@ -5027,7 +4956,7 @@ L(batch_loop):
         and     v4.16b, v0.16b, v24.16b
         ror     w17, w17, w27
         and     v5.16b, v1.16b, v24.16b
-        ldr     w11, [sp, #4048]
+        ldr     w11, L(sck4)
         and     v6.16b, v2.16b, v24.16b
         add     w27, w2, w6
         and     v7.16b, v3.16b, v24.16b
@@ -5091,7 +5020,7 @@ L(batch_loop):
         add     v18.4s, v0.4s, v5.4s
         ror     w22, w22, w27
         add     v20.4s, v1.4s, v5.4s
-        ldr     w11, [sp, #4052]
+        ldr     w11, L(sck5)
         add     v21.4s, v2.4s, v5.4s
         add     w27, w2, w19
         add     v23.4s, v3.4s, v5.4s
@@ -5155,7 +5084,7 @@ L(batch_loop):
         add     v15.4s, v15.4s, v2.4s
         ror     w26, w26, w27
         add     v17.4s, v17.4s, v3.4s
-        ldr     w11, [sp, #4056]
+        ldr     w11, L(sck6)
         eor     v18.16b, v18.16b, v12.16b
         add     w27, w2, w23
         eor     v20.16b, v20.16b, v14.16b
@@ -5219,7 +5148,7 @@ L(batch_loop):
         eor     v12.16b, v12.16b, v18.16b
         ror     w17, w17, w27
         eor     v14.16b, v14.16b, v20.16b
-        ldr     w11, [sp, #4060]
+        ldr     w11, L(sck7)
         eor     v15.16b, v15.16b, v21.16b
         add     w27, w2, w6
         eor     v17.16b, v17.16b, v23.16b
@@ -5283,7 +5212,7 @@ L(batch_loop):
         eor     v23.16b, v23.16b, v17.16b
         ror     w22, w22, w27
         and     v4.16b, v12.16b, v24.16b
-        ldr     w11, [sp, #4064]
+        ldr     w11, L(sck8)
         and     v5.16b, v14.16b, v24.16b
         add     w27, w2, w19
         and     v6.16b, v15.16b, v24.16b
@@ -5347,7 +5276,7 @@ L(batch_loop):
         and     v5.16b, v20.16b, v24.16b
         ror     w26, w26, w27
         and     v6.16b, v21.16b, v24.16b
-        ldr     w11, [sp, #4068]
+        ldr     w11, L(sck9)
         and     v7.16b, v23.16b, v24.16b
         add     w27, w2, w23
         orr     v0.16b, v18.16b, v25.16b
@@ -5411,7 +5340,7 @@ L(batch_loop):
         orr     v0.16b, v12.16b, v25.16b
         ror     w17, w17, w27
         orr     v1.16b, v14.16b, v25.16b
-        ldr     w11, [sp, #4072]
+        ldr     w11, L(sck10)
         orr     v2.16b, v15.16b, v25.16b
         add     w27, w2, w6
         orr     v3.16b, v17.16b, v25.16b
@@ -5475,7 +5404,7 @@ L(batch_loop):
         orr     v2.16b, v21.16b, v25.16b
         ror     w22, w22, w27
         orr     v3.16b, v23.16b, v25.16b
-        ldr     w11, [sp, #4076]
+        ldr     w11, L(sck11)
         ushl    v4.4s, v12.4s, v4.4s
         add     w27, w2, w19
         ushl    v5.4s, v14.4s, v5.4s
@@ -5541,7 +5470,7 @@ L(batch_loop):
         ushl    v6.4s, v21.4s, v6.4s
         ror     w26, w26, w27
         ushl    v7.4s, v23.4s, v7.4s
-        ldr     w11, [sp, #4080]
+        ldr     w11, L(sck12)
         ushl    v0.4s, v18.4s, v0.4s
         add     w27, w2, w23
         ushl    v1.4s, v20.4s, v1.4s
@@ -5605,7 +5534,7 @@ L(batch_loop):
         ushl    v0.4s, v12.4s, v0.4s
         ror     w17, w17, w27
         ushl    v1.4s, v14.4s, v1.4s
-        ldr     w11, [sp, #4084]
+        ldr     w11, L(sck13)
         ushl    v2.4s, v15.4s, v2.4s
         add     w27, w2, w6
         ushl    v3.4s, v17.4s, v3.4s
@@ -5669,7 +5598,7 @@ L(batch_loop):
         ushl    v3.4s, v23.4s, v3.4s
         ror     w22, w22, w27
         orr     v18.16b, v4.16b, v0.16b
-        ldr     w11, [sp, #4088]
+        ldr     w11, L(sck14)
         orr     v20.16b, v5.16b, v1.16b
         add     w27, w2, w19
         orr     v21.16b, v6.16b, v2.16b
@@ -5733,7 +5662,7 @@ L(batch_loop):
         orr     v14.16b, v5.16b, v1.16b
         ror     w26, w26, w27
         orr     v15.16b, v6.16b, v2.16b
-        ldr     w11, [sp, #4092]
+        ldr     w11, L(sck15)
         orr     v17.16b, v7.16b, v3.16b
         add     w27, w2, w23
         ldp     q0, q1, [x10, #-64]
@@ -5797,7 +5726,7 @@ L(batch_loop):
         ldp     q0, q1, [x10, #0]
         ror     w17, w17, w27
         ldp     q2, q3, [x10, #32]
-        ldr     w11, [sp, #4096]
+        ldr     w11, L(sck16)
         add     v18.4s, v18.4s, v0.4s
         add     w27, w2, w6
         add     v20.4s, v20.4s, v1.4s
@@ -5861,7 +5790,7 @@ L(batch_loop):
         add     v12.4s, v12.4s, v0.4s
         ror     w22, w22, w27
         add     v14.4s, v14.4s, v1.4s
-        ldr     w11, [sp, #4100]
+        ldr     w11, L(sck17)
         add     v15.4s, v15.4s, v2.4s
         add     w27, w2, w19
         add     v17.4s, v17.4s, v3.4s
@@ -5925,7 +5854,7 @@ L(batch_loop):
         add     v23.4s, v23.4s, v3.4s
         ror     w26, w26, w27
         // round 8: C = ((C ^ D) <<< D) + S[16]; D = ((D ^ C) <<< C) + S[17]
-        ldr     w11, [sp, #4104]
+        ldr     w11, L(sck18)
         eor     v12.16b, v12.16b, v18.16b
         add     w27, w2, w23
         eor     v14.16b, v14.16b, v20.16b
@@ -5989,7 +5918,7 @@ L(batch_loop):
         eor     v20.16b, v20.16b, v14.16b
         ror     w17, w17, w27
         eor     v21.16b, v21.16b, v15.16b
-        ldr     w11, [sp, #4108]
+        ldr     w11, L(sck19)
         eor     v23.16b, v23.16b, v17.16b
         add     w27, w2, w6
         and     v4.16b, v12.16b, v24.16b
@@ -6055,7 +5984,7 @@ L(batch_loop):
         and     v4.16b, v18.16b, v24.16b
         ror     w22, w22, w27
         and     v5.16b, v20.16b, v24.16b
-        ldr     w11, [sp, #4112]
+        ldr     w11, L(sck20)
         and     v6.16b, v21.16b, v24.16b
         add     w27, w2, w19
         and     v7.16b, v23.16b, v24.16b
@@ -6119,7 +6048,7 @@ L(batch_loop):
         and     v7.16b, v17.16b, v24.16b
         ror     w26, w26, w27
         orr     v0.16b, v12.16b, v25.16b
-        ldr     w11, [sp, #4116]
+        ldr     w11, L(sck21)
         orr     v1.16b, v14.16b, v25.16b
         add     w27, w2, w23
         orr     v2.16b, v15.16b, v25.16b
@@ -6183,7 +6112,7 @@ L(batch_loop):
         orr     v1.16b, v20.16b, v25.16b
         ror     w17, w17, w27
         orr     v2.16b, v21.16b, v25.16b
-        ldr     w11, [sp, #4120]
+        ldr     w11, L(sck22)
         orr     v3.16b, v23.16b, v25.16b
         add     w27, w2, w6
         ushl    v4.4s, v12.4s, v4.4s
@@ -6247,7 +6176,7 @@ L(batch_loop):
         ushl    v4.4s, v18.4s, v4.4s
         ror     w22, w22, w27
         ushl    v5.4s, v20.4s, v5.4s
-        ldr     w11, [sp, #4124]
+        ldr     w11, L(sck23)
         ushl    v6.4s, v21.4s, v6.4s
         add     w27, w2, w19
         ushl    v7.4s, v23.4s, v7.4s
@@ -6311,7 +6240,7 @@ L(batch_loop):
         ushl    v6.4s, v15.4s, v6.4s
         ror     w26, w26, w27
         ushl    v7.4s, v17.4s, v7.4s
-        ldr     w11, [sp, #4128]
+        ldr     w11, L(sck24)
         ushl    v0.4s, v12.4s, v0.4s
         add     w27, w2, w23
         ushl    v1.4s, v14.4s, v1.4s
@@ -6375,7 +6304,7 @@ L(batch_loop):
         ushl    v1.4s, v20.4s, v1.4s
         ror     w17, w17, w27
         ushl    v2.4s, v21.4s, v2.4s
-        ldr     w11, [sp, #4132]
+        ldr     w11, L(sck25)
         ushl    v3.4s, v23.4s, v3.4s
         add     w27, w2, w6
         orr     v18.16b, v4.16b, v0.16b
@@ -6733,7 +6662,7 @@ L(scalar_prep):
         ror     w25, w25, w27
         add     w26, w26, w11
         ror     w26, w26, w27
-        ldr     w11, [sp, #4044]
+        ldr     w11, L(sck3)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -6765,7 +6694,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4048]
+        ldr     w11, L(sck4)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -6796,7 +6725,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4052]
+        ldr     w11, L(sck5)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -6827,7 +6756,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4056]
+        ldr     w11, L(sck6)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -6858,7 +6787,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4060]
+        ldr     w11, L(sck7)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -6889,7 +6818,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4064]
+        ldr     w11, L(sck8)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -6920,7 +6849,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4068]
+        ldr     w11, L(sck9)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -6951,7 +6880,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4072]
+        ldr     w11, L(sck10)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -6982,7 +6911,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4076]
+        ldr     w11, L(sck11)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7014,7 +6943,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4080]
+        ldr     w11, L(sck12)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7045,7 +6974,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4084]
+        ldr     w11, L(sck13)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7076,7 +7005,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4088]
+        ldr     w11, L(sck14)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7107,7 +7036,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4092]
+        ldr     w11, L(sck15)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7138,7 +7067,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4096]
+        ldr     w11, L(sck16)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7169,7 +7098,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4100]
+        ldr     w11, L(sck17)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7200,7 +7129,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4104]
+        ldr     w11, L(sck18)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7231,7 +7160,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4108]
+        ldr     w11, L(sck19)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7263,7 +7192,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4112]
+        ldr     w11, L(sck20)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7294,7 +7223,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4116]
+        ldr     w11, L(sck21)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7325,7 +7254,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4120]
+        ldr     w11, L(sck22)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7356,7 +7285,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4124]
+        ldr     w11, L(sck23)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7387,7 +7316,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4128]
+        ldr     w11, L(sck24)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7418,7 +7347,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4132]
+        ldr     w11, L(sck25)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7491,7 +7420,7 @@ L(scalar_prep):
         ror     w25, w25, w27
         add     w26, w26, w11
         ror     w26, w26, w27
-        ldr     w11, [sp, #4044]
+        ldr     w11, L(sck3)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7523,7 +7452,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4048]
+        ldr     w11, L(sck4)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7554,7 +7483,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4052]
+        ldr     w11, L(sck5)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7585,7 +7514,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4056]
+        ldr     w11, L(sck6)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7616,7 +7545,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4060]
+        ldr     w11, L(sck7)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7647,7 +7576,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4064]
+        ldr     w11, L(sck8)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7678,7 +7607,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4068]
+        ldr     w11, L(sck9)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7709,7 +7638,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4072]
+        ldr     w11, L(sck10)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7740,7 +7669,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4076]
+        ldr     w11, L(sck11)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7772,7 +7701,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4080]
+        ldr     w11, L(sck12)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7803,7 +7732,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4084]
+        ldr     w11, L(sck13)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7834,7 +7763,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4088]
+        ldr     w11, L(sck14)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7865,7 +7794,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4092]
+        ldr     w11, L(sck15)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7896,7 +7825,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4096]
+        ldr     w11, L(sck16)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7927,7 +7856,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4100]
+        ldr     w11, L(sck17)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7958,7 +7887,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4104]
+        ldr     w11, L(sck18)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -7989,7 +7918,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4108]
+        ldr     w11, L(sck19)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8021,7 +7950,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4112]
+        ldr     w11, L(sck20)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8052,7 +7981,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4116]
+        ldr     w11, L(sck21)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8083,7 +8012,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4120]
+        ldr     w11, L(sck22)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8114,7 +8043,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4124]
+        ldr     w11, L(sck23)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8145,7 +8074,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4128]
+        ldr     w11, L(sck24)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8176,7 +8105,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4132]
+        ldr     w11, L(sck25)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8249,7 +8178,7 @@ L(scalar_prep):
         ror     w25, w25, w27
         add     w26, w26, w11
         ror     w26, w26, w27
-        ldr     w11, [sp, #4044]
+        ldr     w11, L(sck3)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8281,7 +8210,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4048]
+        ldr     w11, L(sck4)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8312,7 +8241,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4052]
+        ldr     w11, L(sck5)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8343,7 +8272,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4056]
+        ldr     w11, L(sck6)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8374,7 +8303,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4060]
+        ldr     w11, L(sck7)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8405,7 +8334,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4064]
+        ldr     w11, L(sck8)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8436,7 +8365,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4068]
+        ldr     w11, L(sck9)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8467,7 +8396,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4072]
+        ldr     w11, L(sck10)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8498,7 +8427,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4076]
+        ldr     w11, L(sck11)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8530,7 +8459,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4080]
+        ldr     w11, L(sck12)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8561,7 +8490,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4084]
+        ldr     w11, L(sck13)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8592,7 +8521,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4088]
+        ldr     w11, L(sck14)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8623,7 +8552,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4092]
+        ldr     w11, L(sck15)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8654,7 +8583,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4096]
+        ldr     w11, L(sck16)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8685,7 +8614,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4100]
+        ldr     w11, L(sck17)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8716,7 +8645,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4104]
+        ldr     w11, L(sck18)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8747,7 +8676,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4108]
+        ldr     w11, L(sck19)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8779,7 +8708,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4112]
+        ldr     w11, L(sck20)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8810,7 +8739,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4116]
+        ldr     w11, L(sck21)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8841,7 +8770,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4120]
+        ldr     w11, L(sck22)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8872,7 +8801,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4124]
+        ldr     w11, L(sck23)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8903,7 +8832,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4128]
+        ldr     w11, L(sck24)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -8934,7 +8863,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4132]
+        ldr     w11, L(sck25)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9007,7 +8936,7 @@ L(scalar_prep):
         ror     w25, w25, w27
         add     w26, w26, w11
         ror     w26, w26, w27
-        ldr     w11, [sp, #4044]
+        ldr     w11, L(sck3)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9039,7 +8968,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4048]
+        ldr     w11, L(sck4)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9070,7 +8999,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4052]
+        ldr     w11, L(sck5)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9101,7 +9030,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4056]
+        ldr     w11, L(sck6)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9132,7 +9061,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4060]
+        ldr     w11, L(sck7)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9163,7 +9092,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4064]
+        ldr     w11, L(sck8)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9194,7 +9123,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4068]
+        ldr     w11, L(sck9)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9225,7 +9154,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4072]
+        ldr     w11, L(sck10)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9256,7 +9185,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4076]
+        ldr     w11, L(sck11)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9288,7 +9217,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4080]
+        ldr     w11, L(sck12)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9319,7 +9248,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4084]
+        ldr     w11, L(sck13)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9350,7 +9279,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4088]
+        ldr     w11, L(sck14)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9381,7 +9310,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4092]
+        ldr     w11, L(sck15)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9412,7 +9341,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4096]
+        ldr     w11, L(sck16)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9443,7 +9372,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4100]
+        ldr     w11, L(sck17)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9474,7 +9403,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4104]
+        ldr     w11, L(sck18)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9505,7 +9434,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4108]
+        ldr     w11, L(sck19)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9537,7 +9466,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4112]
+        ldr     w11, L(sck20)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9568,7 +9497,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4116]
+        ldr     w11, L(sck21)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9599,7 +9528,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4120]
+        ldr     w11, L(sck22)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9630,7 +9559,7 @@ L(scalar_prep):
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        ldr     w11, [sp, #4124]
+        ldr     w11, L(sck23)
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9661,7 +9590,7 @@ L(scalar_prep):
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        ldr     w11, [sp, #4128]
+        ldr     w11, L(sck24)
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9692,7 +9621,7 @@ L(scalar_prep):
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        ldr     w11, [sp, #4132]
+        ldr     w11, L(sck25)
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
@@ -9742,6 +9671,53 @@ L(scalar_prep):
         .p2align 4
 L(weights):
         .word   1, 2, 4, 8
+// the scalar stream's pass-1 subkey constants, read PC-relative (ldr literal)
+L(sck3):
+        .word   0x9287BE8E
+L(sck4):
+        .word   0x30BF3847
+L(sck5):
+        .word   0xCEF6B200
+L(sck6):
+        .word   0x6D2E2BB9
+L(sck7):
+        .word   0x0B65A572
+L(sck8):
+        .word   0xA99D1F2B
+L(sck9):
+        .word   0x47D498E4
+L(sck10):
+        .word   0xE60C129D
+L(sck11):
+        .word   0x84438C56
+L(sck12):
+        .word   0x227B060F
+L(sck13):
+        .word   0xC0B27FC8
+L(sck14):
+        .word   0x5EE9F981
+L(sck15):
+        .word   0xFD21733A
+L(sck16):
+        .word   0x9B58ECF3
+L(sck17):
+        .word   0x399066AC
+L(sck18):
+        .word   0xD7C7E065
+L(sck19):
+        .word   0x75FF5A1E
+L(sck20):
+        .word   0x1436D3D7
+L(sck21):
+        .word   0xB26E4D90
+L(sck22):
+        .word   0x50A5C749
+L(sck23):
+        .word   0xEEDD4102
+L(sck24):
+        .word   0x8D14BABB
+L(sck25):
+        .word   0x2B4C3474
 
 #if !defined(__APPLE__)
         .section .note.GNU-stack,"",%progbits

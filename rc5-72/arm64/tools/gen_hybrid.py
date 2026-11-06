@@ -137,9 +137,8 @@ SP_LR = SP_PRE + 24                 # x30 while scalar_prep runs (x30 = store po
 TAB0, TAB1, TABSZ = 192, 2112, 30 * STRIDE
 ANCHOR = 13 * STRIDE                 # ldp q offsets stay within +-1008
 ROW_A, ROW_L = 26, 27                # handoff rows: A, then L0..L2
-SP_CONST = TAB1 + TABSZ              # scalar pass-1 constants, k=3..26 (word k)
-FRAME = SP_CONST + 128
-assert SP_LR + 8 <= TAB0 and TAB0 + TABSZ <= TAB1 and FRAME % 64 == 0
+FRAME = 4032                         # < 4096: no stack probe needed (Windows)
+assert SP_LR + 8 <= TAB0 and TAB0 + TABSZ <= TAB1 and TAB1 + TABSZ <= FRAME < 4096 and FRAME % 64 == 0
 def roff(n): return (n - 13) * STRIDE       # S row offset from the anchor
 
 # ---- vector stream ---------------------------------------------------------
@@ -262,7 +261,7 @@ def scalar_stream(hi_lead):
             if k <= 25: shared = (P + k * Q) & M
             elif k == 26: shared = S0
             if shared is not None:
-                ins(f"ldr     {SC_K}, [sp, #{SP_CONST + 4 * k}]")
+                ins(f"ldr     {SC_K}, L(sck{k})")
             elif k == 27:
                 ins(f"ldr     {SC_K}, [sp, #{PRE_S1}]")
             elif k == 28:
@@ -332,8 +331,7 @@ FUNC(rc5_72_unit_func_neon_hyb):
 """)
 ins("stp     x29, x30, [sp, #-16]!")
 ins("mov     x29, sp")
-ins(f"mov     x16, #{FRAME}")
-ins("sub     x16, x29, x16")
+ins(f"sub     x16, x29, #{FRAME}")
 ins("and     sp, x16, #-64")
 ins("stp     d8, d9, [sp, #0]")
 ins("stp     d10, d11, [sp, #16]")
@@ -345,10 +343,6 @@ ins(f"stp     x23, x24, [sp, #{SP_X19 + 32}]")
 ins(f"stp     x25, x26, [sp, #{SP_X19 + 48}]")
 ins(f"stp     x27, x28, [sp, #{SP_X19 + 64}]")
 ins(f"str     x1, [sp, #{SP_X1}]")
-ins("// the scalar stream's pass-1 subkey constants (one ldr per step)")
-for k in range(3, min(SPLIT, 27)):
-    mov32("w16", (P + k * Q) & M if k <= 25 else S0)
-    ins(f"str     w16, [sp, #{SP_CONST + 4 * k}]")
 e()
 ins("ldr     w9, [x1]")
 ins("lsr     w9, w9, #4                 // 16 keys per batch")
@@ -583,6 +577,10 @@ e()
 ins(".p2align 4")
 e("L(weights):")
 ins(".word   1, 2, 4, 8")
+e("// the scalar stream's pass-1 subkey constants, read PC-relative (ldr literal)")
+for k in range(3, min(SPLIT, 27)):
+    e(f"L(sck{k}):")
+    ins(f".word   0x{((P + k * Q) & M if k <= 25 else S0):08X}")
 
 e()
 e("#if !defined(__APPLE__)")
