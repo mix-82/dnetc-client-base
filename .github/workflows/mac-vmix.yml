@@ -1,0 +1,36 @@
+name: macOS vmix (hybrid rider capacity)
+
+# Push to the mac-vmix-run branch: git push -f origin neon-mix16:mac-vmix-run
+on:
+  push:
+    branches: [mac-vmix-run]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  vmix:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-26]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: cc -O2 tools/ci-bench/vmix.c tools/ci-bench/vmix.S -o vmix
+    - name: Run (3 rounds)
+      run: |
+        {
+          echo "## ${{ matrix.os }}: $(sysctl -n machdep.cpu.brand_string) x $(sysctl -n hw.ncpu)"
+          for r in 1 2 3; do echo; echo "### round $r"; ./vmix 5; done
+        } | tee vmix-${{ matrix.os }}.md
+        cat vmix-${{ matrix.os }}.md >> "$GITHUB_STEP_SUMMARY"
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: mac-vmix-${{ matrix.os }}
+        path: vmix-*.md
