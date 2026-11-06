@@ -29,20 +29,22 @@ jobs:
         make -j3
     - name: Self-test
       run: ./dnetc -test rc5-72
-    - name: Bench
+    - name: Bench (MIX NEON #7 vs MIX HYBRID #8, alternating)
       run: |
         cc -O2 tools/ci-bench/clockcal.c -o clockcal
+        rate() { sed -E 's/^\[[^]]*\] //' "$1" | grep -oE '\[[0-9,]+ keys/sec\]' | tail -1 | tr -d '[],'; }
         {
           echo "## ${{ matrix.os }}: $(sysctl -n machdep.cpu.brand_string) x $(sysctl -n hw.ncpu)"
-          echo "| core | keys/sec | GHz before/after |"
-          echo "|---|---|---|"
-          for core in 6 7 8; do
-            g1=$(./clockcal 5 | awk '{print $1}')
-            ./dnetc -bench rc5-72 $core > bench-$core.log 2>&1 || true
-            g2=$(./clockcal 5 | awk '{print $1}')
-            k=$(sed -E 's/^\[[^]]*\] //' bench-$core.log | grep -oE '\[[0-9,]+ keys/sec\]' | tail -1 | tr -d '[],' | awk '{print $1}')
-            name=$(grep -oE 'core #[0-9]+ \([^)]*\)' bench-$core.log | head -1)
-            echo "| $name | $k | $g1 / $g2 |"
+          echo "| round | core | keys/sec | GHz before/after |"
+          echo "|---|---|---|---|"
+          for r in 1 2 3 4; do
+            for core in 7 8; do
+              g1=$(./clockcal 5 | awk '{print $1}')
+              ./dnetc -bench rc5-72 $core > bench-$core-$r.log 2>&1 || true
+              g2=$(./clockcal 5 | awk '{print $1}')
+              name=$(grep -oE 'core #[0-9]+ \([^)]*\)' bench-$core-$r.log | head -1)
+              echo "| $r | $name | $(rate bench-$core-$r.log) | $g1 / $g2 |"
+            done
           done
         } | tee results-${{ matrix.os }}.md
         cat results-${{ matrix.os }}.md >> "$GITHUB_STEP_SUMMARY"
