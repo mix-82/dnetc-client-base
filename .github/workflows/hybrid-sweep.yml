@@ -16,9 +16,11 @@ jobs:
     timeout-minutes: 60
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     - name: Sweep
       run: |
-        git show HEAD~1:rc5-72/arm64/tools/gen_hybrid.py > /tmp/gen_hybrid_old.py
+        git show 04a973ee:rc5-72/arm64/tools/gen_hybrid.py   # before the stp/table change > /tmp/gen_hybrid_old.py
         OLDGEN=/tmp/gen_hybrid_old.py SPLITS="old26 26 old28 28 24 25 27 29 30 old26 26 old28 28" \
           sh tools/ci-bench/hybrid-sweep.sh sweep-out 3
     - name: Summary
