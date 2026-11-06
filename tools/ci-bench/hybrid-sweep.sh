@@ -23,7 +23,11 @@ rate() { sed -E 's/^\[[^]]*\] //' "$1" | grep -oE '\[[0-9,]+ keys/sec\]' | tail 
 } > "$OUT/results.md"
 
 for sp in $SPLITS; do
-  python3 rc5-72/arm64/tools/gen_hybrid.py --split=$sp > rc5-72/arm64/r72-neon-hyb.S || continue
+  case $sp in
+    old*) gen=${OLDGEN:?OLDGEN unset}; n=${sp#old} ;;
+    *)    gen=rc5-72/arm64/tools/gen_hybrid.py; n=$sp ;;
+  esac
+  python3 "$gen" --split=$n > rc5-72/arm64/r72-neon-hyb.S || continue
   rm -f output/r72-neon-hyb.s.o dnetc
   make > "$OUT/b$sp.log" 2>&1 || [ -x dnetc ] || { echo "| $sp | build failed | - | - | - |" >> "$OUT/results.md"; continue; }
   ./dnetc -test rc5-72 > "$OUT/t$sp.log" 2>&1

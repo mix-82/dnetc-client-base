@@ -17,7 +17,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Sweep
-      run: SPLITS="24 25 26 27 28 30 31" sh tools/ci-bench/hybrid-sweep.sh sweep-out 2
+      run: |
+        git show HEAD~1:rc5-72/arm64/tools/gen_hybrid.py > /tmp/gen_hybrid_old.py
+        OLDGEN=/tmp/gen_hybrid_old.py SPLITS="old26 26 old28 28 24 25 27 29 30 old26 26 old28 28" \
+          sh tools/ci-bench/hybrid-sweep.sh sweep-out 3
     - name: Summary
       if: always()
       run: cat sweep-out/results.md >> "$GITHUB_STEP_SUMMARY" || true
