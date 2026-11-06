@@ -1,0 +1,47 @@
+name: PMU top-down of MIX NEON vs MIX HYBRID (N2)
+
+on:
+  push:
+    branches: [ndk-probe]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pmu:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 40
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: neon-mix16
+    - name: Build and install perf
+      run: |
+        ./configure linux-arm64 > /dev/null
+        make -j4 > build.log 2>&1 || [ -x dnetc ]
+        ./dnetc -test rc5-72 | grep -c '32/32 Tests Passed'
+        sudo apt-get -qq update > /dev/null
+        sudo apt-get -qq install -y linux-tools-common linux-tools-$(uname -r) > /dev/null
+    - name: Profile
+      run: |
+        set +e
+        P=$(ls /usr/lib/linux-tools/*/perf | head -1)
+        run() { echo; echo "#### core $1: $2"; echo '```'; sudo $P stat $3 -- ./dnetc -bench rc5-72 $1 2>&1 | grep -vE '^\[|^$|distributed.net|Please|Start the|Setting|dnetc v' | tail -30; echo '```'; }
+        {
+          echo "## perf on $(grep -m1 'CPU part' /proc/cpuinfo), $(uname -r)"
+          echo '```'; sudo $P list metricgroup 2>&1 | head -40; echo '```'
+          for c in 7 8; do
+            run $c "TopdownL1" "-M TopdownL1"
+            run $c "TopdownL2 / backend" "-M TopdownL2"
+            run $c "operation mix" "-e cycles,inst_spec,ase_spec,dp_spec,ld_spec,st_spec"
+            run $c "stalls" "-e cycles,stall_frontend,stall_backend,stall_backend_mem,stall_slot_frontend,stall_slot_backend"
+            run $c "slots" "-e cycles,stall_slot,op_spec,op_retired,inst_retired,br_mis_pred_retired"
+          done
+        } > pmu-cores.md 2>&1
+        cat pmu-cores.md >> "$GITHUB_STEP_SUMMARY"
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: pmu-cores
+        path: pmu-cores.md
