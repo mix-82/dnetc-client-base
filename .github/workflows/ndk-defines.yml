@@ -1,0 +1,53 @@
+name: NDK r22 vs r30 predefined macros
+
+on:
+  push:
+    branches: [ndk-probe]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  defines:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+    - name: Fetch NDK r22
+      working-directory: /tmp
+      run: |
+        wget -q https://dl.google.com/android/repository/android-ndk-r22-linux-x86_64.zip
+        unzip -q android-ndk-r22-linux-x86_64.zip
+    - name: Dump and diff
+      run: |
+        R22=/tmp/android-ndk-r22/toolchains/llvm/prebuilt/linux-x86_64/bin
+        R30=$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin
+        mkdir out
+        for t in aarch64-linux-android30 armv7a-linux-androideabi30; do
+          for v in r22 r30; do
+            eval B=\$$(echo $v | tr a-z A-Z)
+            $B/$t-clang++ -dM -E -x c++ /dev/null | sort > out/$t-$v.txt
+            printf '#include <sys/socket.h>\n#include <stdio.h>\n' | $B/$t-clang++ -dM -E -x c++ - | grep -E '__BIONIC__|__GLIBC__|__ANDROID_API__|__ANDROID_NDK__|__NDK_MAJOR__' | sort > out/$t-$v-hdr.txt
+          done
+        done
+        {
+          echo "## NDK r22 vs r30 predefined macros"
+          echo "r22: $($R22/clang --version | head -1)"
+          echo "r30: $($R30/clang --version | head -1)"
+          for t in aarch64-linux-android30 armv7a-linux-androideabi30; do
+            echo; echo "### $t"
+            echo "Key macros (r22 | r30):"
+            for m in linux __linux__ __ANDROID__ ANDROID _ANDROID_ __aarch64__ __arm64__ __arm__ __unix__ __clang_major__ __cplusplus; do
+              a=$(grep -E "^#define $m " out/$t-r22.txt | cut -d' ' -f3-); b=$(grep -E "^#define $m " out/$t-r30.txt | cut -d' ' -f3-)
+              echo "- $m: ${a:-undefined} | ${b:-undefined}"
+            done
+            echo "With headers (r22 then r30):"; cat out/$t-r22-hdr.txt; echo "--"; cat out/$t-r30-hdr.txt
+            echo "Macros only in r22: $(comm -23 <(cut -d' ' -f2 out/$t-r22.txt) <(cut -d' ' -f2 out/$t-r30.txt) | wc -l), only in r30: $(comm -13 <(cut -d' ' -f2 out/$t-r22.txt) <(cut -d' ' -f2 out/$t-r30.txt) | wc -l)"
+          done
+        } > out/summary.md
+        cat out/summary.md >> "$GITHUB_STEP_SUMMARY"
+      shell: bash
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ndk-defines
+        path: out
