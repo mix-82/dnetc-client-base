@@ -16,6 +16,14 @@ Kernels:
   step32_fine                  same, the two groups' instructions alternated
   step32_nostore               lockstep without the stores (store cost)
   step16_lockstep              the MIX NEON16 step (4 pipes)
+  sc4                          the hybrid core's scalar phase: one key-schedule
+                               step for 4 independent scalar keys (pass-2 form:
+                               S load, add, add, ror #29, transposed S store,
+                               t = a+b, neg, add, ror by register)
+  hyb16_1/2/3, hyb32_2/4/6     a NEON16 / NEON32 step with 1-6 scalar 4-key steps
+                               interleaved proportionally: measures how many scalar
+                               steps ride free beside the vector stream (the
+                               KKS7450-style hybrid's balance point)
   xar, step32_xar, step16_xar  SVE2 (Linux only, run only when HWCAP2_SVE2 is set):
                                XAR alone, and the two steps with rotate-by-3 done as
                                one in-place XAR with a zero register instead of
@@ -163,6 +171,55 @@ def step16():
         grp4("ushl    {t}.4s, {x}.4s, {t}.4s", t=T, x=By)
         grp4("orr     {x}.16b, {u}.16b, {t}.16b", x=By, u=U, t=T)
 
+# --- hybrid: scalar 4-key key-schedule step --------------------------------
+# a_k = ROTL3(S_k[i] + a_k + b_k); S stored transposed (4 x 4 B in one 16 B
+# row, the scalar->vector handoff); t = a_k + b_k; l_k = ROTL(l_k + t, t).
+# ARM64 has no rotate-left: ROTL3 = ror #29, ROTL(x,t) = ror x, neg t.
+SCA = ["w2", "w3", "w4", "w5"]        # a (S chain)
+SCB = ["w6", "w7", "w8", "w9"]        # one L word per key
+SCC = ["w19", "w20", "w21", "w22"]    # the other L word per key
+SCT = ["w13", "w14", "w15", "w16"]    # t = a + b
+SCN = ["w23", "w24", "w25", "w26"]    # -t for the register rotate
+# x19-x26 are callee-saved (saved by the kernel wrapper); x17/x18 avoided
+# (x18 is reserved on Apple platforms).
+SC_S = 6144                           # transposed S rows in the scratch area
+
+def sc_step(i, src, dst):
+    off = SC_S + (i % 26) * 16
+    for k in range(4): ins(f"add     {SCT[k]}, {SCA[k]}, {src[k]}")
+    for k in range(4): ins(f"ldr     {SCA[k]}, [x1, #{off + 4 * k}]")
+    for k in range(4): ins(f"add     {SCA[k]}, {SCA[k]}, {SCT[k]}")
+    for k in range(4): ins(f"ror     {SCA[k]}, {SCA[k]}, #29")
+    for k in range(4): ins(f"str     {SCA[k]}, [x1, #{off + 4 * k}]")
+    for k in range(4): ins(f"add     {SCT[k]}, {SCA[k]}, {src[k]}")
+    for k in range(4): ins(f"neg     {SCN[k]}, {SCT[k]}")
+    for k in range(4): ins(f"add     {dst[k]}, {dst[k]}, {SCT[k]}")
+    for k in range(4): ins(f"ror     {dst[k]}, {dst[k]}, {SCN[k]}")
+
+def sc_lines(nsteps, base=10):
+    def f():
+        for i in range(nsteps):
+            src, dst = (SCB, SCC) if i % 2 == 0 else (SCC, SCB)
+            sc_step(base + i, src, dst)
+    return cap(f)
+
+def merge_prop(a, b):
+    """append a with b's lines distributed evenly through it"""
+    bi = 0
+    for i, line in enumerate(a):
+        out.append(line)
+        want = (i + 1) * len(b) // len(a)
+        while bi < want:
+            out.append(b[bi]); bi += 1
+    while bi < len(b):
+        out.append(b[bi]); bi += 1
+
+def hyb16(r):
+    merge_prop(cap(step16), sc_lines(3 * r))
+
+def hyb32(r):
+    merge_prop(cap(lock), sc_lines(3 * r))
+
 # --- simple kernels ----------------------------------------------------------
 def simple(op, n=32):
     """n independent instructions rotating over v8-v23 (16 registers)."""
@@ -211,11 +268,15 @@ def kernel(name, body, unit):
     e(f"FUNC(vmix_{name}):")
     ins("stp     x29, x30, [sp, #-16]!")
     ins("mov     x29, sp")
-    ins("sub     sp, sp, #64")
+    ins("sub     sp, sp, #128")
     ins("stp     d8, d9, [sp, #0]")
     ins("stp     d10, d11, [sp, #16]")
     ins("stp     d12, d13, [sp, #32]")
     ins("stp     d14, d15, [sp, #48]")
+    ins("stp     x19, x20, [sp, #64]")
+    ins("stp     x21, x22, [sp, #80]")
+    ins("stp     x23, x24, [sp, #96]")
+    ins("stp     x25, x26, [sp, #112]")
     ins("add     x10, x1, #1024             // S source / scratch rows")
     ins("add     x11, x1, #1024             // S dest")
     ins("add     x12, x1, #4096             // L area")
@@ -230,6 +291,10 @@ def kernel(name, body, unit):
     ins("ldp     d10, d11, [sp, #16]")
     ins("ldp     d12, d13, [sp, #32]")
     ins("ldp     d14, d15, [sp, #48]")
+    ins("ldp     x19, x20, [sp, #64]")
+    ins("ldp     x21, x22, [sp, #80]")
+    ins("ldp     x23, x24, [sp, #96]")
+    ins("ldp     x25, x26, [sp, #112]")
     ins("mov     sp, x29")
     ins("ldp     x29, x30, [sp], #16")
     ins("ret")
@@ -259,6 +324,13 @@ def nostore():
     STORES = False; lock(); STORES = True
 kernel("step32_nostore", nostore, 3)
 kernel("step16_lockstep", step16, 3)
+def sc3():
+    sc_step(15, SCB, SCC); sc_step(16, SCC, SCB); sc_step(17, SCB, SCC)
+kernel("sc4", sc3, 3)
+for r in (1, 2, 3):
+    kernel(f"hyb16_{r}", lambda r=r: hyb16(r), 3)
+for r in (2, 4, 6):
+    kernel(f"hyb32_{r}", lambda r=r: hyb32(r), 3)
 
 # SVE2 kernels: ELF only (Apple has no SVE); vmix.c runs them only if the
 # kernel reports HWCAP2_SVE2.
