@@ -8,7 +8,7 @@ OUT=${1:-$ROOT/sweep-out}
 ROUNDS=${2:-2}
 mkdir -p "$OUT"; OUT=$(cd "$OUT" && pwd)
 cd "$ROOT" || exit 1
-SPLITS="20 23 26 29 32 35 38 41"
+SPLITS=${SPLITS:-"20 23 26 29 32 35 38 41"}
 
 ./configure linux-arm64 > "$OUT/cfg.log" 2>&1 || exit 1
 make -j"$(getconf _NPROCESSORS_ONLN)" > "$OUT/build.log" 2>&1 || [ -x dnetc ] || { tail -5 "$OUT/build.log"; exit 1; }

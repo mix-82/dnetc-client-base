@@ -26,11 +26,12 @@ import sys
 TESTMASK = "--testmask" in sys.argv
 NP = 4                       # vector pipes
 STRIDE = 16 * NP             # bytes per S row (4 pipes x 4 lanes)
-SPLIT = 23                   # first vector step k; scalar does k=3..SPLIT-1
-# 23 is the one-value compromise across the hybrid's class (cycles/key at
-# split 20/23/26/29/32): N2 125/118/113/112/117, Cortex-A78 124/117/113/-/116,
+SPLIT = 26                   # first vector step k; scalar does k=3..SPLIT-1
+# 26 favors the fast end of the hybrid's class (cycles/key at split
+# 20/23/26/29/32): N2 125/118/113/112/117, Cortex-A78 124/117/113/-/116,
 # Oryon-M 103/104/109/-/118, in-order Cortex-A55 268/266/271/-/340.
-# Every measured CPU is within 5.4% of its own optimum at 23.
+# N2 +0.9% and A78 +-0 from their own optima; the cost lands on Oryon-M
+# (+5.8%) and A55 (+1.9%), far from the A55's split-32 cliff.
 for a in sys.argv:
     if a.startswith("--split="): SPLIT = int(a.split("=")[1])
 # Below 29 the vector side broadcasts the pass-1 constants (mov32 + dup,
