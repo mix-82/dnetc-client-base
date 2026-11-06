@@ -3,7 +3,7 @@
 # Both trees get the same two out-of-scope build fixes (socklen_t, -std)
 # so that the only difference is common/cputypes.h.
 set -u
-NDK=${ANDROID_NDK_LATEST_HOME}
+NDK=${NDK:-$ANDROID_NDK_LATEST_HOME}
 B=$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin
 OUT=$PWD/cmp; mkdir -p "$OUT"
 for v in orig fix; do
@@ -22,7 +22,7 @@ for v in orig fix; do
   grep -E 'error:' "$OUT/diag-$v.txt" > "$OUT/err-$v.txt"
 done
 {
-  echo "## Full NDK r30 build: dcti master vs android-detect"
+  echo "## Full NDK build: dcti master vs android-detect"
   echo "NDK: $(grep Pkg.Revision $NDK/source.properties)"
   for v in orig fix; do
     echo "- $v: $(tail -1 "$OUT/build-$v.log"), errors $(wc -l < "$OUT/err-$v.txt"), unique warnings $(grep -c 'warning:' "$OUT/diag-$v.txt"), binary: $([ -f "$OUT/dnetc-$v" ] && file -b "$OUT/dnetc-$v" | cut -c1-80 || echo none)"

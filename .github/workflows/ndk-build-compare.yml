@@ -12,6 +12,10 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        ndk: [r22, r30]
     steps:
     - uses: actions/checkout@v4
       with:
@@ -21,6 +25,13 @@ jobs:
         git remote add upstream https://github.com/dcti/dnetc-client-base
         git fetch -q upstream master
         git fetch -q origin android-detect
+    - name: Fetch NDK r22
+      if: matrix.ndk == 'r22'
+      working-directory: /tmp
+      run: |
+        wget -q https://dl.google.com/android/repository/android-ndk-r22-linux-x86_64.zip
+        unzip -q android-ndk-r22-linux-x86_64.zip
+        echo "NDK=/tmp/android-ndk-r22" >> $GITHUB_ENV
     - name: Build both
       run: |
         bash tools/ndk-probe/build-compare.sh
@@ -28,16 +39,20 @@ jobs:
     - uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: ndk-build-compare
+        name: ndk-build-compare-${{ matrix.ndk }}
         path: cmp
   run:
     needs: build
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        ndk: [r22, r30]
     steps:
     - uses: actions/download-artifact@v4
       with:
-        name: ndk-build-compare
+        name: ndk-build-compare-${{ matrix.ndk }}
         path: cmp
     - name: Run the static Android binaries natively on arm64 Linux
       continue-on-error: true
@@ -46,14 +61,13 @@ jobs:
         for v in orig fix; do
           [ -f dnetc-$v ] || { echo "$v: no binary" | tee -a run.md; continue; }
           chmod +x dnetc-$v
-          echo "### $v" >> run.md
-          ./dnetc-$v -version 2>&1 | head -5 | sed 's/^/    /' >> run.md
+          echo "### ${{ matrix.ndk }} $v" >> run.md
+          ./dnetc-$v -version 2>&1 | grep -m1 'client for' | sed 's/^/    /' >> run.md
           ./dnetc-$v -test rc5-72 2>&1 | grep -E 'Tests Passed|FAIL' | sed -E 's/^\[[^]]*\] /    /' >> run.md
-          ./dnetc-$v -cpuinfo 2>&1 | grep -iE 'identification|name|cores|rc5' | head -6 | sed 's/^/    /' >> run.md
         done
         cat run.md; cat run.md >> "$GITHUB_STEP_SUMMARY"
     - uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: ndk-run
+        name: ndk-run-${{ matrix.ndk }}
         path: cmp/run.md
