@@ -20,8 +20,8 @@ jobs:
         fetch-depth: 0
     - name: Sweep
       run: |
-        git show 04a973ee:rc5-72/arm64/tools/gen_hybrid.py > /tmp/gen_hybrid_old.py  # before the stp/table change
-        OLDGEN=/tmp/gen_hybrid_old.py SPLITS="old26 26 old28 28 24 25 27 29 30 old26 26 old28 28" \
+        git show 8eab7dfc:rc5-72/arm64/tools/gen_hybrid.py > /tmp/gen_hybrid_old.py  # frame-table constants
+        OLDGEN=/tmp/gen_hybrid_old.py SPLITS="old26 26 old26 26" \
           sh tools/ci-bench/hybrid-sweep.sh sweep-out 3
     - name: Summary
       if: always()
