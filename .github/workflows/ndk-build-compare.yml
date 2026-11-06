@@ -1,0 +1,59 @@
+name: NDK full build compare (cputypes fix)
+
+on:
+  push:
+    branches: [ndk-probe]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Fetch refs
+      run: |
+        git remote add upstream https://github.com/dcti/dnetc-client-base
+        git fetch -q upstream master
+        git fetch -q origin android-detect
+    - name: Build both
+      run: |
+        bash tools/ndk-probe/build-compare.sh
+        cat cmp/summary.md >> "$GITHUB_STEP_SUMMARY"
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: ndk-build-compare
+        path: cmp
+  run:
+    needs: build
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: ndk-build-compare
+        path: cmp
+    - name: Run the static Android binaries natively on arm64 Linux
+      continue-on-error: true
+      run: |
+        cd cmp
+        for v in orig fix; do
+          [ -f dnetc-$v ] || { echo "$v: no binary" | tee -a run.md; continue; }
+          chmod +x dnetc-$v
+          echo "### $v" >> run.md
+          ./dnetc-$v -version 2>&1 | head -5 | sed 's/^/    /' >> run.md
+          ./dnetc-$v -test rc5-72 2>&1 | grep -E 'Tests Passed|FAIL' | sed -E 's/^\[[^]]*\] /    /' >> run.md
+          ./dnetc-$v -cpuinfo 2>&1 | grep -iE 'identification|name|cores|rc5' | head -6 | sed 's/^/    /' >> run.md
+        done
+        cat run.md; cat run.md >> "$GITHUB_STEP_SUMMARY"
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: ndk-run
+        path: cmp/run.md
