@@ -37,7 +37,8 @@ FUNC(rc5_72_unit_func_neon_hyb):
 
         stp     x29, x30, [sp, #-16]!
         mov     x29, sp
-        sub     x16, x29, #4032
+        mov     x16, #4160
+        sub     x16, x29, x16
         and     sp, x16, #-64
         stp     d8, d9, [sp, #0]
         stp     d10, d11, [sp, #16]
@@ -49,6 +50,76 @@ FUNC(rc5_72_unit_func_neon_hyb):
         stp     x25, x26, [sp, #112]
         stp     x27, x28, [sp, #128]
         str     x1, [sp, #144]
+        // the scalar stream's pass-1 subkey constants (one ldr per step)
+        mov     w16, #0xBE8E
+        movk    w16, #0x9287, lsl #16
+        str     w16, [sp, #4044]
+        mov     w16, #0x3847
+        movk    w16, #0x30BF, lsl #16
+        str     w16, [sp, #4048]
+        mov     w16, #0xB200
+        movk    w16, #0xCEF6, lsl #16
+        str     w16, [sp, #4052]
+        mov     w16, #0x2BB9
+        movk    w16, #0x6D2E, lsl #16
+        str     w16, [sp, #4056]
+        mov     w16, #0xA572
+        movk    w16, #0x0B65, lsl #16
+        str     w16, [sp, #4060]
+        mov     w16, #0x1F2B
+        movk    w16, #0xA99D, lsl #16
+        str     w16, [sp, #4064]
+        mov     w16, #0x98E4
+        movk    w16, #0x47D4, lsl #16
+        str     w16, [sp, #4068]
+        mov     w16, #0x129D
+        movk    w16, #0xE60C, lsl #16
+        str     w16, [sp, #4072]
+        mov     w16, #0x8C56
+        movk    w16, #0x8443, lsl #16
+        str     w16, [sp, #4076]
+        mov     w16, #0x060F
+        movk    w16, #0x227B, lsl #16
+        str     w16, [sp, #4080]
+        mov     w16, #0x7FC8
+        movk    w16, #0xC0B2, lsl #16
+        str     w16, [sp, #4084]
+        mov     w16, #0xF981
+        movk    w16, #0x5EE9, lsl #16
+        str     w16, [sp, #4088]
+        mov     w16, #0x733A
+        movk    w16, #0xFD21, lsl #16
+        str     w16, [sp, #4092]
+        mov     w16, #0xECF3
+        movk    w16, #0x9B58, lsl #16
+        str     w16, [sp, #4096]
+        mov     w16, #0x66AC
+        movk    w16, #0x3990, lsl #16
+        str     w16, [sp, #4100]
+        mov     w16, #0xE065
+        movk    w16, #0xD7C7, lsl #16
+        str     w16, [sp, #4104]
+        mov     w16, #0x5A1E
+        movk    w16, #0x75FF, lsl #16
+        str     w16, [sp, #4108]
+        mov     w16, #0xD3D7
+        movk    w16, #0x1436, lsl #16
+        str     w16, [sp, #4112]
+        mov     w16, #0x4D90
+        movk    w16, #0xB26E, lsl #16
+        str     w16, [sp, #4116]
+        mov     w16, #0xC749
+        movk    w16, #0x50A5, lsl #16
+        str     w16, [sp, #4120]
+        mov     w16, #0x4102
+        movk    w16, #0xEEDD, lsl #16
+        str     w16, [sp, #4124]
+        mov     w16, #0xBABB
+        movk    w16, #0x8D14, lsl #16
+        str     w16, [sp, #4128]
+        mov     w16, #0x3474
+        movk    w16, #0x2B4C, lsl #16
+        str     w16, [sp, #4132]
 
         ldr     w9, [x1]
         lsr     w9, w9, #4                 // 16 keys per batch
@@ -126,1647 +197,1574 @@ L(batch_loop):
         // interleaved: vector k=26..77+encryption (this batch, table [x10-832])
         //            x scalar prep k=3..25 (next batch, table [x12])
         // k=26: A = (A + S[0] + B1) <<< 3; S[0] = A; B2 = (B2 + B1 + A) <<< (B1 + A)
-        add     w27, w13, #16            // prep is for the NEXT batch
         mov     w16, #0x8B1D
-        str     w27, [sp, #180]
+        add     w27, w13, #16            // prep is for the NEXT batch
         movk    w16, #0xBF0A, lsl #16
+        str     w27, [sp, #180]
+        dup     v0.4s, w16
         // ---- scalar subgroup 0: keys 0..3 of the next batch
-        dup     v0.4s, w16
+        dup     v1.4s, w16
         ldr     w11, [sp, #172]
-        dup     v1.4s, w16
-        mov     w2, w11
         dup     v2.4s, w16
-        mov     w3, w11
+        mov     w2, w11
         dup     v3.4s, w16
-        mov     w4, w11
+        mov     w3, w11
         add     v0.4s, v0.4s, v8.4s
-        mov     w5, w11
+        mov     w4, w11
         add     v1.4s, v1.4s, v9.4s
-        ldr     w11, [sp, #160]
+        mov     w5, w11
         add     v2.4s, v2.4s, v10.4s
-        mov     w6, w11
+        ldr     w11, [sp, #160]
         add     v3.4s, v3.4s, v11.4s
-        mov     w7, w11
+        mov     w6, w11
         add     v0.4s, v0.4s, v13.4s
-        mov     w8, w11
+        mov     w7, w11
         add     v1.4s, v1.4s, v16.4s
-        mov     w17, w11
+        mov     w8, w11
         add     v2.4s, v2.4s, v19.4s
-        ldr     w11, [sp, #168]
+        mov     w17, w11
         add     v3.4s, v3.4s, v22.4s
-        mov     w19, w11
+        ldr     w11, [sp, #168]
         shl     v8.4s, v0.4s, #3
-        mov     w20, w11
+        mov     w19, w11
         shl     v9.4s, v1.4s, #3
-        mov     w21, w11
         shl     v10.4s, v2.4s, #3
-        mov     w22, w11
+        mov     w20, w11
         shl     v11.4s, v3.4s, #3
-        // L2_i = (L0hi + 0+i + pre_B_2) <<< pre_B_2
+        mov     w21, w11
         sri     v8.4s, v0.4s, #29
-        ldr     w11, [sp, #180]
+        mov     w22, w11
         sri     v9.4s, v1.4s, #29
-        add     w23, w11, #0
+        // L2_i = (L0hi + 0+i + pre_B_2) <<< pre_B_2
         sri     v10.4s, v2.4s, #29
-        add     w24, w11, #1
+        ldr     w11, [sp, #180]
         sri     v11.4s, v3.4s, #29
-        add     w25, w11, #2
+        add     w23, w11, #0
         stp     q8, q9, [x10, #-832]
-        add     w26, w11, #3
+        add     w24, w11, #1
         stp     q10, q11, [x10, #-800]
-        ldr     w11, [sp, #176]
+        add     w25, w11, #2
         add     v0.4s, v13.4s, v8.4s
-        neg     w27, w11
+        add     w26, w11, #3
         add     v1.4s, v16.4s, v9.4s
-        add     w23, w23, w11
+        ldr     w11, [sp, #176]
         add     v2.4s, v19.4s, v10.4s
-        ror     w23, w23, w27
+        neg     w27, w11
         add     v3.4s, v22.4s, v11.4s
-        add     w24, w24, w11
+        add     w23, w23, w11
         add     v14.4s, v14.4s, v0.4s
-        ror     w24, w24, w27
+        ror     w23, w23, w27
         add     v17.4s, v17.4s, v1.4s
-        add     w25, w25, w11
+        add     w24, w24, w11
         add     v20.4s, v20.4s, v2.4s
-        ror     w25, w25, w27
+        ror     w24, w24, w27
         add     v23.4s, v23.4s, v3.4s
-        add     w26, w26, w11
-        ror     w26, w26, w27
+        add     w25, w25, w11
         and     v4.16b, v0.16b, v24.16b
-        mov     w11, #0xBE8E
         and     v5.16b, v1.16b, v24.16b
-        movk    w11, #0x9287, lsl #16
+        ror     w25, w25, w27
         and     v6.16b, v2.16b, v24.16b
-        add     w27, w2, w23
+        add     w26, w26, w11
         and     v7.16b, v3.16b, v24.16b
-        add     w27, w27, w11
+        ror     w26, w26, w27
         orr     v0.16b, v0.16b, v25.16b
-        ror     w2, w27, #29
+        ldr     w11, [sp, #4044]
         orr     v1.16b, v1.16b, v25.16b
-        str     w2, [x12, #192]
-        orr     v2.16b, v2.16b, v25.16b
         add     w27, w2, w23
+        orr     v2.16b, v2.16b, v25.16b
+        add     w27, w27, w11
         orr     v3.16b, v3.16b, v25.16b
-        add     w6, w6, w27
+        ror     w2, w27, #29
         ushl    v4.4s, v14.4s, v4.4s
-        neg     w27, w27
+        add     w27, w2, w23
         ushl    v5.4s, v17.4s, v5.4s
-        ror     w6, w6, w27
+        add     w6, w6, w27
         ushl    v6.4s, v20.4s, v6.4s
-        add     w28, w3, w24
+        neg     w27, w27
         ushl    v7.4s, v23.4s, v7.4s
-        add     w28, w28, w11
+        ror     w6, w6, w27
         ushl    v0.4s, v14.4s, v0.4s
-        ror     w3, w28, #29
-        ushl    v1.4s, v17.4s, v1.4s
-        str     w3, [x12, #196]
-        ushl    v2.4s, v20.4s, v2.4s
         add     w28, w3, w24
+        ushl    v1.4s, v17.4s, v1.4s
+        add     w28, w28, w11
+        ushl    v2.4s, v20.4s, v2.4s
+        ror     w3, w28, #29
         ushl    v3.4s, v23.4s, v3.4s
-        add     w7, w7, w28
+        add     x30, x12, #448
         orr     v14.16b, v4.16b, v0.16b
-        neg     w28, w28
         orr     v17.16b, v5.16b, v1.16b
-        ror     w7, w7, w28
+        stp     w2, w3, [x30, #-256]
         orr     v20.16b, v6.16b, v2.16b
-        add     w1, w4, w25
+        add     w28, w3, w24
         orr     v23.16b, v7.16b, v3.16b
-        add     w1, w1, w11
+        add     w7, w7, w28
         // k=27: A = (A + S[1] + B2) <<< 3; S[1] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
-        ror     w4, w1, #29
+        neg     w28, w28
         ldr     w16, [sp, #164]
-        str     w4, [x12, #200]
+        ror     w7, w7, w28
         dup     v0.4s, w16
         add     w1, w4, w25
         dup     v1.4s, w16
-        add     w8, w8, w1
+        add     w1, w1, w11
         dup     v2.4s, w16
-        neg     w1, w1
+        ror     w4, w1, #29
         dup     v3.4s, w16
-        ror     w8, w8, w1
+        add     w1, w4, w25
         add     v0.4s, v0.4s, v8.4s
-        add     w27, w5, w26
+        add     w8, w8, w1
         add     v1.4s, v1.4s, v9.4s
-        add     w27, w27, w11
+        neg     w1, w1
         add     v2.4s, v2.4s, v10.4s
-        ror     w5, w27, #29
+        ror     w8, w8, w1
         add     v3.4s, v3.4s, v11.4s
-        str     w5, [x12, #204]
-        add     v0.4s, v0.4s, v14.4s
         add     w27, w5, w26
-        add     v1.4s, v1.4s, v17.4s
-        add     w17, w17, w27
-        add     v2.4s, v2.4s, v20.4s
-        neg     w27, w27
-        ror     w17, w17, w27
-        add     v3.4s, v3.4s, v23.4s
-        mov     w11, #0x3847
-        shl     v8.4s, v0.4s, #3
-        movk    w11, #0x30BF, lsl #16
-        shl     v9.4s, v1.4s, #3
-        add     w27, w2, w6
-        shl     v10.4s, v2.4s, #3
+        add     v0.4s, v0.4s, v14.4s
         add     w27, w27, w11
+        add     v1.4s, v1.4s, v17.4s
+        ror     w5, w27, #29
+        add     v2.4s, v2.4s, v20.4s
+        stp     w4, w5, [x30, #-248]
+        add     v3.4s, v3.4s, v23.4s
+        shl     v8.4s, v0.4s, #3
+        add     w27, w5, w26
+        shl     v9.4s, v1.4s, #3
+        add     w17, w17, w27
+        shl     v10.4s, v2.4s, #3
+        neg     w27, w27
         shl     v11.4s, v3.4s, #3
-        ror     w2, w27, #29
+        ror     w17, w17, w27
         sri     v8.4s, v0.4s, #29
-        str     w2, [x12, #256]
+        ldr     w11, [sp, #4048]
         sri     v9.4s, v1.4s, #29
         add     w27, w2, w6
         sri     v10.4s, v2.4s, #29
-        add     w19, w19, w27
+        add     w27, w27, w11
         sri     v11.4s, v3.4s, #29
-        neg     w27, w27
+        ror     w2, w27, #29
         stp     q8, q9, [x10, #-768]
-        ror     w19, w19, w27
+        add     w27, w2, w6
         stp     q10, q11, [x10, #-736]
-        add     w28, w3, w7
+        add     w19, w19, w27
         add     v0.4s, v14.4s, v8.4s
-        add     w28, w28, w11
+        neg     w27, w27
         add     v1.4s, v17.4s, v9.4s
-        ror     w3, w28, #29
+        ror     w19, w19, w27
         add     v2.4s, v20.4s, v10.4s
-        str     w3, [x12, #260]
-        add     v3.4s, v23.4s, v11.4s
         add     w28, w3, w7
+        add     v3.4s, v23.4s, v11.4s
+        add     w28, w28, w11
         add     v12.4s, v12.4s, v0.4s
-        add     w20, w20, w28
+        ror     w3, w28, #29
         add     v15.4s, v15.4s, v1.4s
-        neg     w28, w28
+        stp     w2, w3, [x30, #-192]
         add     v18.4s, v18.4s, v2.4s
-        ror     w20, w20, w28
         add     v21.4s, v21.4s, v3.4s
-        add     w1, w4, w8
+        add     w28, w3, w7
         and     v4.16b, v0.16b, v24.16b
-        add     w1, w1, w11
+        add     w20, w20, w28
         and     v5.16b, v1.16b, v24.16b
-        ror     w4, w1, #29
+        neg     w28, w28
         and     v6.16b, v2.16b, v24.16b
-        str     w4, [x12, #264]
+        ror     w20, w20, w28
         and     v7.16b, v3.16b, v24.16b
         add     w1, w4, w8
         orr     v0.16b, v0.16b, v25.16b
-        add     w21, w21, w1
+        add     w1, w1, w11
         orr     v1.16b, v1.16b, v25.16b
-        neg     w1, w1
+        ror     w4, w1, #29
         orr     v2.16b, v2.16b, v25.16b
-        ror     w21, w21, w1
+        add     w1, w4, w8
         orr     v3.16b, v3.16b, v25.16b
-        add     w27, w5, w17
+        add     w21, w21, w1
         ushl    v4.4s, v12.4s, v4.4s
-        add     w27, w27, w11
+        neg     w1, w1
         ushl    v5.4s, v15.4s, v5.4s
-        ror     w5, w27, #29
+        ror     w21, w21, w1
         ushl    v6.4s, v18.4s, v6.4s
-        str     w5, [x12, #268]
-        ushl    v7.4s, v21.4s, v7.4s
         add     w27, w5, w17
-        ushl    v0.4s, v12.4s, v0.4s
-        add     w22, w22, w27
-        ushl    v1.4s, v15.4s, v1.4s
-        neg     w27, w27
-        ror     w22, w22, w27
-        ushl    v2.4s, v18.4s, v2.4s
-        mov     w11, #0xB200
-        ushl    v3.4s, v21.4s, v3.4s
-        movk    w11, #0xCEF6, lsl #16
-        orr     v12.16b, v4.16b, v0.16b
-        add     w27, w2, w19
-        orr     v15.16b, v5.16b, v1.16b
+        ushl    v7.4s, v21.4s, v7.4s
         add     w27, w27, w11
+        ushl    v0.4s, v12.4s, v0.4s
+        ror     w5, w27, #29
+        ushl    v1.4s, v15.4s, v1.4s
+        stp     w4, w5, [x30, #-184]
+        ushl    v2.4s, v18.4s, v2.4s
+        ushl    v3.4s, v21.4s, v3.4s
+        add     w27, w5, w17
+        orr     v12.16b, v4.16b, v0.16b
+        add     w22, w22, w27
+        orr     v15.16b, v5.16b, v1.16b
+        neg     w27, w27
         orr     v18.16b, v6.16b, v2.16b
-        ror     w2, w27, #29
+        ror     w22, w22, w27
         orr     v21.16b, v7.16b, v3.16b
-        str     w2, [x12, #320]
+        ldr     w11, [sp, #4052]
         // k=28: A = (A + S[2] + B0) <<< 3; S[2] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
         add     w27, w2, w19
         ldr     w16, [sp, #172]
-        add     w23, w23, w27
+        add     w27, w27, w11
         dup     v0.4s, w16
-        neg     w27, w27
+        ror     w2, w27, #29
         dup     v1.4s, w16
-        ror     w23, w23, w27
+        add     w27, w2, w19
         dup     v2.4s, w16
-        add     w28, w3, w20
+        add     w23, w23, w27
         dup     v3.4s, w16
-        add     w28, w28, w11
+        neg     w27, w27
         add     v0.4s, v0.4s, v8.4s
-        ror     w3, w28, #29
+        ror     w23, w23, w27
         add     v1.4s, v1.4s, v9.4s
-        str     w3, [x12, #324]
-        add     v2.4s, v2.4s, v10.4s
         add     w28, w3, w20
+        add     v2.4s, v2.4s, v10.4s
+        add     w28, w28, w11
         add     v3.4s, v3.4s, v11.4s
-        add     w24, w24, w28
+        ror     w3, w28, #29
         add     v0.4s, v0.4s, v12.4s
-        neg     w28, w28
+        stp     w2, w3, [x30, #-128]
         add     v1.4s, v1.4s, v15.4s
-        ror     w24, w24, w28
         add     v2.4s, v2.4s, v18.4s
-        add     w1, w4, w21
+        add     w28, w3, w20
         add     v3.4s, v3.4s, v21.4s
-        add     w1, w1, w11
+        add     w24, w24, w28
         shl     v8.4s, v0.4s, #3
-        ror     w4, w1, #29
+        neg     w28, w28
         shl     v9.4s, v1.4s, #3
-        str     w4, [x12, #328]
+        ror     w24, w24, w28
         shl     v10.4s, v2.4s, #3
         add     w1, w4, w21
         shl     v11.4s, v3.4s, #3
-        add     w25, w25, w1
+        add     w1, w1, w11
         sri     v8.4s, v0.4s, #29
-        neg     w1, w1
+        ror     w4, w1, #29
         sri     v9.4s, v1.4s, #29
-        ror     w25, w25, w1
+        add     w1, w4, w21
         sri     v10.4s, v2.4s, #29
-        add     w27, w5, w22
+        add     w25, w25, w1
         sri     v11.4s, v3.4s, #29
-        add     w27, w27, w11
+        neg     w1, w1
         stp     q8, q9, [x10, #-704]
-        ror     w5, w27, #29
+        ror     w25, w25, w1
         stp     q10, q11, [x10, #-672]
-        str     w5, [x12, #332]
-        add     v0.4s, v12.4s, v8.4s
         add     w27, w5, w22
-        add     v1.4s, v15.4s, v9.4s
-        add     w26, w26, w27
-        add     v2.4s, v18.4s, v10.4s
-        neg     w27, w27
-        ror     w26, w26, w27
-        add     v3.4s, v21.4s, v11.4s
-        mov     w11, #0x2BB9
-        add     v13.4s, v13.4s, v0.4s
-        movk    w11, #0x6D2E, lsl #16
-        add     v16.4s, v16.4s, v1.4s
-        add     w27, w2, w23
-        add     v19.4s, v19.4s, v2.4s
+        add     v0.4s, v12.4s, v8.4s
         add     w27, w27, w11
+        add     v1.4s, v15.4s, v9.4s
+        ror     w5, w27, #29
+        add     v2.4s, v18.4s, v10.4s
+        stp     w4, w5, [x30, #-120]
+        add     v3.4s, v21.4s, v11.4s
+        add     w27, w5, w22
+        add     v13.4s, v13.4s, v0.4s
+        add     v16.4s, v16.4s, v1.4s
+        add     w26, w26, w27
+        add     v19.4s, v19.4s, v2.4s
+        neg     w27, w27
         add     v22.4s, v22.4s, v3.4s
-        ror     w2, w27, #29
+        ror     w26, w26, w27
         and     v4.16b, v0.16b, v24.16b
-        str     w2, [x12, #384]
+        ldr     w11, [sp, #4056]
         and     v5.16b, v1.16b, v24.16b
         add     w27, w2, w23
         and     v6.16b, v2.16b, v24.16b
-        add     w6, w6, w27
+        add     w27, w27, w11
         and     v7.16b, v3.16b, v24.16b
-        neg     w27, w27
+        ror     w2, w27, #29
         orr     v0.16b, v0.16b, v25.16b
-        ror     w6, w6, w27
+        add     w27, w2, w23
         orr     v1.16b, v1.16b, v25.16b
-        add     w28, w3, w24
+        add     w6, w6, w27
         orr     v2.16b, v2.16b, v25.16b
-        add     w28, w28, w11
+        neg     w27, w27
         orr     v3.16b, v3.16b, v25.16b
-        ror     w3, w28, #29
+        ror     w6, w6, w27
         ushl    v4.4s, v13.4s, v4.4s
-        str     w3, [x12, #388]
-        ushl    v5.4s, v16.4s, v5.4s
         add     w28, w3, w24
+        ushl    v5.4s, v16.4s, v5.4s
+        add     w28, w28, w11
         ushl    v6.4s, v19.4s, v6.4s
-        add     w7, w7, w28
+        ror     w3, w28, #29
         ushl    v7.4s, v22.4s, v7.4s
-        neg     w28, w28
+        stp     w2, w3, [x30, #-64]
         ushl    v0.4s, v13.4s, v0.4s
-        ror     w7, w7, w28
         ushl    v1.4s, v16.4s, v1.4s
-        add     w1, w4, w25
+        add     w28, w3, w24
         ushl    v2.4s, v19.4s, v2.4s
-        add     w1, w1, w11
+        add     w7, w7, w28
         ushl    v3.4s, v22.4s, v3.4s
-        ror     w4, w1, #29
+        neg     w28, w28
         orr     v13.16b, v4.16b, v0.16b
-        str     w4, [x12, #392]
+        ror     w7, w7, w28
         orr     v16.16b, v5.16b, v1.16b
         add     w1, w4, w25
         orr     v19.16b, v6.16b, v2.16b
-        add     w8, w8, w1
+        add     w1, w1, w11
         orr     v22.16b, v7.16b, v3.16b
-        neg     w1, w1
+        ror     w4, w1, #29
         // k=29: A = (A + S[3] + B1) <<< 3; S[3] = A; B2 = (B2 + B1 + A) <<< (B1 + A)
-        ror     w8, w8, w1
+        add     w1, w4, w25
         ldp     q0, q1, [x10, #-640]
-        add     w27, w5, w26
+        add     w8, w8, w1
         ldp     q2, q3, [x10, #-608]
-        add     w27, w27, w11
+        neg     w1, w1
         add     v0.4s, v0.4s, v8.4s
-        ror     w5, w27, #29
+        ror     w8, w8, w1
         add     v1.4s, v1.4s, v9.4s
-        str     w5, [x12, #396]
-        add     v2.4s, v2.4s, v10.4s
         add     w27, w5, w26
-        add     v3.4s, v3.4s, v11.4s
-        add     w17, w17, w27
-        add     v0.4s, v0.4s, v13.4s
-        neg     w27, w27
-        ror     w17, w17, w27
-        add     v1.4s, v1.4s, v16.4s
-        mov     w11, #0xA572
-        add     v2.4s, v2.4s, v19.4s
-        movk    w11, #0x0B65, lsl #16
-        add     v3.4s, v3.4s, v22.4s
-        add     w27, w2, w6
-        shl     v8.4s, v0.4s, #3
+        add     v2.4s, v2.4s, v10.4s
         add     w27, w27, w11
+        add     v3.4s, v3.4s, v11.4s
+        ror     w5, w27, #29
+        add     v0.4s, v0.4s, v13.4s
+        stp     w4, w5, [x30, #-56]
+        add     v1.4s, v1.4s, v16.4s
+        add     w27, w5, w26
+        add     v2.4s, v2.4s, v19.4s
+        add     v3.4s, v3.4s, v22.4s
+        add     w17, w17, w27
+        shl     v8.4s, v0.4s, #3
+        neg     w27, w27
         shl     v9.4s, v1.4s, #3
-        ror     w2, w27, #29
+        ror     w17, w17, w27
         shl     v10.4s, v2.4s, #3
-        str     w2, [x12, #448]
+        ldr     w11, [sp, #4060]
         shl     v11.4s, v3.4s, #3
         add     w27, w2, w6
         sri     v8.4s, v0.4s, #29
-        add     w19, w19, w27
+        add     w27, w27, w11
         sri     v9.4s, v1.4s, #29
-        neg     w27, w27
+        ror     w2, w27, #29
         sri     v10.4s, v2.4s, #29
-        ror     w19, w19, w27
+        add     w27, w2, w6
         sri     v11.4s, v3.4s, #29
-        add     w28, w3, w7
+        add     w19, w19, w27
         stp     q8, q9, [x10, #-640]
-        add     w28, w28, w11
+        neg     w27, w27
         stp     q10, q11, [x10, #-608]
-        ror     w3, w28, #29
+        ror     w19, w19, w27
         add     v0.4s, v13.4s, v8.4s
-        str     w3, [x12, #452]
-        add     v1.4s, v16.4s, v9.4s
         add     w28, w3, w7
+        add     v1.4s, v16.4s, v9.4s
+        add     w28, w28, w11
         add     v2.4s, v19.4s, v10.4s
-        add     w20, w20, w28
+        ror     w3, w28, #29
         add     v3.4s, v22.4s, v11.4s
-        neg     w28, w28
+        stp     w2, w3, [x30, #0]
         add     v14.4s, v14.4s, v0.4s
-        ror     w20, w20, w28
+        add     w28, w3, w7
         add     v17.4s, v17.4s, v1.4s
-        add     w1, w4, w8
         add     v20.4s, v20.4s, v2.4s
-        add     w1, w1, w11
+        add     w20, w20, w28
         add     v23.4s, v23.4s, v3.4s
-        ror     w4, w1, #29
+        neg     w28, w28
         and     v4.16b, v0.16b, v24.16b
-        str     w4, [x12, #456]
+        ror     w20, w20, w28
         and     v5.16b, v1.16b, v24.16b
         add     w1, w4, w8
         and     v6.16b, v2.16b, v24.16b
-        add     w21, w21, w1
+        add     w1, w1, w11
         and     v7.16b, v3.16b, v24.16b
-        neg     w1, w1
+        ror     w4, w1, #29
         orr     v0.16b, v0.16b, v25.16b
-        ror     w21, w21, w1
+        add     w1, w4, w8
         orr     v1.16b, v1.16b, v25.16b
-        add     w27, w5, w17
+        add     w21, w21, w1
         orr     v2.16b, v2.16b, v25.16b
-        add     w27, w27, w11
+        neg     w1, w1
         orr     v3.16b, v3.16b, v25.16b
-        ror     w5, w27, #29
+        ror     w21, w21, w1
         ushl    v4.4s, v14.4s, v4.4s
-        str     w5, [x12, #460]
-        ushl    v5.4s, v17.4s, v5.4s
         add     w27, w5, w17
-        ushl    v6.4s, v20.4s, v6.4s
-        add     w22, w22, w27
-        ushl    v7.4s, v23.4s, v7.4s
-        neg     w27, w27
-        ror     w22, w22, w27
-        ushl    v0.4s, v14.4s, v0.4s
-        mov     w11, #0x1F2B
-        ushl    v1.4s, v17.4s, v1.4s
-        movk    w11, #0xA99D, lsl #16
-        ushl    v2.4s, v20.4s, v2.4s
-        add     w27, w2, w19
-        ushl    v3.4s, v23.4s, v3.4s
+        ushl    v5.4s, v17.4s, v5.4s
         add     w27, w27, w11
+        ushl    v6.4s, v20.4s, v6.4s
+        ror     w5, w27, #29
+        ushl    v7.4s, v23.4s, v7.4s
+        stp     w4, w5, [x30, #8]
+        ushl    v0.4s, v14.4s, v0.4s
+        add     w27, w5, w17
+        ushl    v1.4s, v17.4s, v1.4s
+        ushl    v2.4s, v20.4s, v2.4s
+        add     w22, w22, w27
+        ushl    v3.4s, v23.4s, v3.4s
+        neg     w27, w27
         orr     v14.16b, v4.16b, v0.16b
-        ror     w2, w27, #29
+        ror     w22, w22, w27
         orr     v17.16b, v5.16b, v1.16b
-        str     w2, [x12, #512]
+        ldr     w11, [sp, #4064]
         orr     v20.16b, v6.16b, v2.16b
         add     w27, w2, w19
         orr     v23.16b, v7.16b, v3.16b
-        add     w23, w23, w27
+        add     w27, w27, w11
         // k=30: A = (A + S[4] + B2) <<< 3; S[4] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
-        neg     w27, w27
+        ror     w2, w27, #29
         ldp     q0, q1, [x10, #-576]
-        ror     w23, w23, w27
+        add     w27, w2, w19
         ldp     q2, q3, [x10, #-544]
-        add     w28, w3, w20
+        add     w23, w23, w27
         add     v0.4s, v0.4s, v8.4s
-        add     w28, w28, w11
+        neg     w27, w27
         add     v1.4s, v1.4s, v9.4s
-        ror     w3, w28, #29
+        ror     w23, w23, w27
         add     v2.4s, v2.4s, v10.4s
-        str     w3, [x12, #516]
-        add     v3.4s, v3.4s, v11.4s
         add     w28, w3, w20
+        add     v3.4s, v3.4s, v11.4s
+        add     w28, w28, w11
         add     v0.4s, v0.4s, v14.4s
-        add     w24, w24, w28
+        ror     w3, w28, #29
         add     v1.4s, v1.4s, v17.4s
-        neg     w28, w28
+        stp     w2, w3, [x30, #64]
         add     v2.4s, v2.4s, v20.4s
-        ror     w24, w24, w28
+        add     w28, w3, w20
         add     v3.4s, v3.4s, v23.4s
-        add     w1, w4, w21
         shl     v8.4s, v0.4s, #3
-        add     w1, w1, w11
+        add     w24, w24, w28
         shl     v9.4s, v1.4s, #3
-        ror     w4, w1, #29
+        neg     w28, w28
         shl     v10.4s, v2.4s, #3
-        str     w4, [x12, #520]
+        ror     w24, w24, w28
         shl     v11.4s, v3.4s, #3
         add     w1, w4, w21
         sri     v8.4s, v0.4s, #29
-        add     w25, w25, w1
+        add     w1, w1, w11
         sri     v9.4s, v1.4s, #29
-        neg     w1, w1
+        ror     w4, w1, #29
         sri     v10.4s, v2.4s, #29
-        ror     w25, w25, w1
+        add     w1, w4, w21
         sri     v11.4s, v3.4s, #29
-        add     w27, w5, w22
+        add     w25, w25, w1
         stp     q8, q9, [x10, #-576]
-        add     w27, w27, w11
+        neg     w1, w1
         stp     q10, q11, [x10, #-544]
-        ror     w5, w27, #29
+        ror     w25, w25, w1
         add     v0.4s, v14.4s, v8.4s
-        str     w5, [x12, #524]
-        add     v1.4s, v17.4s, v9.4s
         add     w27, w5, w22
-        add     v2.4s, v20.4s, v10.4s
-        add     w26, w26, w27
-        add     v3.4s, v23.4s, v11.4s
-        neg     w27, w27
-        ror     w26, w26, w27
-        add     v12.4s, v12.4s, v0.4s
-        mov     w11, #0x98E4
-        add     v15.4s, v15.4s, v1.4s
-        movk    w11, #0x47D4, lsl #16
-        add     v18.4s, v18.4s, v2.4s
-        add     w27, w2, w23
-        add     v21.4s, v21.4s, v3.4s
+        add     v1.4s, v17.4s, v9.4s
         add     w27, w27, w11
+        add     v2.4s, v20.4s, v10.4s
+        ror     w5, w27, #29
+        add     v3.4s, v23.4s, v11.4s
+        stp     w4, w5, [x30, #72]
+        add     v12.4s, v12.4s, v0.4s
+        add     w27, w5, w22
+        add     v15.4s, v15.4s, v1.4s
+        add     v18.4s, v18.4s, v2.4s
+        add     w26, w26, w27
+        add     v21.4s, v21.4s, v3.4s
+        neg     w27, w27
         and     v4.16b, v0.16b, v24.16b
-        ror     w2, w27, #29
+        ror     w26, w26, w27
         and     v5.16b, v1.16b, v24.16b
-        str     w2, [x12, #576]
+        ldr     w11, [sp, #4068]
         and     v6.16b, v2.16b, v24.16b
         add     w27, w2, w23
         and     v7.16b, v3.16b, v24.16b
-        add     w6, w6, w27
+        add     w27, w27, w11
         orr     v0.16b, v0.16b, v25.16b
-        neg     w27, w27
+        ror     w2, w27, #29
         orr     v1.16b, v1.16b, v25.16b
-        ror     w6, w6, w27
+        add     w27, w2, w23
         orr     v2.16b, v2.16b, v25.16b
-        add     w28, w3, w24
+        add     w6, w6, w27
         orr     v3.16b, v3.16b, v25.16b
-        add     w28, w28, w11
+        neg     w27, w27
         ushl    v4.4s, v12.4s, v4.4s
-        ror     w3, w28, #29
+        ror     w6, w6, w27
         ushl    v5.4s, v15.4s, v5.4s
-        str     w3, [x12, #580]
-        ushl    v6.4s, v18.4s, v6.4s
         add     w28, w3, w24
+        ushl    v6.4s, v18.4s, v6.4s
+        add     w28, w28, w11
         ushl    v7.4s, v21.4s, v7.4s
-        add     w7, w7, w28
+        ror     w3, w28, #29
         ushl    v0.4s, v12.4s, v0.4s
-        neg     w28, w28
+        stp     w2, w3, [x30, #128]
         ushl    v1.4s, v15.4s, v1.4s
-        ror     w7, w7, w28
+        add     w28, w3, w24
         ushl    v2.4s, v18.4s, v2.4s
-        add     w1, w4, w25
         ushl    v3.4s, v21.4s, v3.4s
-        add     w1, w1, w11
+        add     w7, w7, w28
         orr     v12.16b, v4.16b, v0.16b
-        ror     w4, w1, #29
+        neg     w28, w28
         orr     v15.16b, v5.16b, v1.16b
-        str     w4, [x12, #584]
+        ror     w7, w7, w28
         orr     v18.16b, v6.16b, v2.16b
         add     w1, w4, w25
         orr     v21.16b, v7.16b, v3.16b
-        add     w8, w8, w1
+        add     w1, w1, w11
         // k=31: A = (A + S[5] + B0) <<< 3; S[5] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
-        neg     w1, w1
+        ror     w4, w1, #29
         ldp     q0, q1, [x10, #-512]
-        ror     w8, w8, w1
+        add     w1, w4, w25
         ldp     q2, q3, [x10, #-480]
-        add     w27, w5, w26
+        add     w8, w8, w1
         add     v0.4s, v0.4s, v8.4s
-        add     w27, w27, w11
+        neg     w1, w1
         add     v1.4s, v1.4s, v9.4s
-        ror     w5, w27, #29
+        ror     w8, w8, w1
         add     v2.4s, v2.4s, v10.4s
-        str     w5, [x12, #588]
-        add     v3.4s, v3.4s, v11.4s
         add     w27, w5, w26
-        add     v0.4s, v0.4s, v12.4s
-        add     w17, w17, w27
-        add     v1.4s, v1.4s, v15.4s
-        neg     w27, w27
-        ror     w17, w17, w27
-        add     v2.4s, v2.4s, v18.4s
-        mov     w11, #0x129D
-        add     v3.4s, v3.4s, v21.4s
-        movk    w11, #0xE60C, lsl #16
-        shl     v8.4s, v0.4s, #3
-        add     w27, w2, w6
-        shl     v9.4s, v1.4s, #3
+        add     v3.4s, v3.4s, v11.4s
         add     w27, w27, w11
+        add     v0.4s, v0.4s, v12.4s
+        ror     w5, w27, #29
+        add     v1.4s, v1.4s, v15.4s
+        stp     w4, w5, [x30, #136]
+        add     v2.4s, v2.4s, v18.4s
+        add     w27, w5, w26
+        add     v3.4s, v3.4s, v21.4s
+        add     w17, w17, w27
+        shl     v8.4s, v0.4s, #3
+        shl     v9.4s, v1.4s, #3
+        neg     w27, w27
         shl     v10.4s, v2.4s, #3
-        ror     w2, w27, #29
+        ror     w17, w17, w27
         shl     v11.4s, v3.4s, #3
-        str     w2, [x12, #640]
+        ldr     w11, [sp, #4072]
         sri     v8.4s, v0.4s, #29
         add     w27, w2, w6
         sri     v9.4s, v1.4s, #29
-        add     w19, w19, w27
+        add     w27, w27, w11
         sri     v10.4s, v2.4s, #29
-        neg     w27, w27
+        ror     w2, w27, #29
         sri     v11.4s, v3.4s, #29
-        ror     w19, w19, w27
+        add     w27, w2, w6
         stp     q8, q9, [x10, #-512]
-        add     w28, w3, w7
+        add     w19, w19, w27
         stp     q10, q11, [x10, #-480]
-        add     w28, w28, w11
+        neg     w27, w27
         add     v0.4s, v12.4s, v8.4s
-        ror     w3, w28, #29
+        ror     w19, w19, w27
         add     v1.4s, v15.4s, v9.4s
-        str     w3, [x12, #644]
-        add     v2.4s, v18.4s, v10.4s
         add     w28, w3, w7
+        add     v2.4s, v18.4s, v10.4s
+        add     w28, w28, w11
         add     v3.4s, v21.4s, v11.4s
-        add     w20, w20, w28
+        ror     w3, w28, #29
         add     v13.4s, v13.4s, v0.4s
-        neg     w28, w28
+        stp     w2, w3, [x30, #192]
         add     v16.4s, v16.4s, v1.4s
-        ror     w20, w20, w28
+        add     w28, w3, w7
         add     v19.4s, v19.4s, v2.4s
-        add     w1, w4, w8
         add     v22.4s, v22.4s, v3.4s
-        add     w1, w1, w11
+        add     w20, w20, w28
         and     v4.16b, v0.16b, v24.16b
-        ror     w4, w1, #29
+        neg     w28, w28
         and     v5.16b, v1.16b, v24.16b
-        str     w4, [x12, #648]
+        ror     w20, w20, w28
         and     v6.16b, v2.16b, v24.16b
         add     w1, w4, w8
         and     v7.16b, v3.16b, v24.16b
-        add     w21, w21, w1
+        add     w1, w1, w11
         orr     v0.16b, v0.16b, v25.16b
-        neg     w1, w1
+        ror     w4, w1, #29
         orr     v1.16b, v1.16b, v25.16b
-        ror     w21, w21, w1
+        add     w1, w4, w8
         orr     v2.16b, v2.16b, v25.16b
-        add     w27, w5, w17
+        add     w21, w21, w1
         orr     v3.16b, v3.16b, v25.16b
-        add     w27, w27, w11
+        neg     w1, w1
         ushl    v4.4s, v13.4s, v4.4s
-        ror     w5, w27, #29
+        ror     w21, w21, w1
         ushl    v5.4s, v16.4s, v5.4s
-        str     w5, [x12, #652]
-        ushl    v6.4s, v19.4s, v6.4s
         add     w27, w5, w17
-        ushl    v7.4s, v22.4s, v7.4s
-        add     w22, w22, w27
-        ushl    v0.4s, v13.4s, v0.4s
-        neg     w27, w27
-        ror     w22, w22, w27
-        ushl    v1.4s, v16.4s, v1.4s
-        mov     w11, #0x8C56
-        ushl    v2.4s, v19.4s, v2.4s
-        movk    w11, #0x8443, lsl #16
-        ushl    v3.4s, v22.4s, v3.4s
-        add     w27, w2, w19
-        orr     v13.16b, v4.16b, v0.16b
+        ushl    v6.4s, v19.4s, v6.4s
         add     w27, w27, w11
+        ushl    v7.4s, v22.4s, v7.4s
+        ror     w5, w27, #29
+        ushl    v0.4s, v13.4s, v0.4s
+        stp     w4, w5, [x30, #200]
+        ushl    v1.4s, v16.4s, v1.4s
+        add     w27, w5, w17
+        ushl    v2.4s, v19.4s, v2.4s
+        add     w22, w22, w27
+        ushl    v3.4s, v22.4s, v3.4s
+        orr     v13.16b, v4.16b, v0.16b
+        neg     w27, w27
         orr     v16.16b, v5.16b, v1.16b
-        ror     w2, w27, #29
+        ror     w22, w22, w27
         orr     v19.16b, v6.16b, v2.16b
-        str     w2, [x12, #704]
+        ldr     w11, [sp, #4076]
         orr     v22.16b, v7.16b, v3.16b
         add     w27, w2, w19
         // k=32: A = (A + S[6] + B1) <<< 3; S[6] = A; B2 = (B2 + B1 + A) <<< (B1 + A)
-        add     w23, w23, w27
+        add     w27, w27, w11
         ldp     q0, q1, [x10, #-448]
-        neg     w27, w27
+        ror     w2, w27, #29
         ldp     q2, q3, [x10, #-416]
-        ror     w23, w23, w27
+        add     w27, w2, w19
         add     v0.4s, v0.4s, v8.4s
-        add     w28, w3, w20
+        add     w23, w23, w27
         add     v1.4s, v1.4s, v9.4s
-        add     w28, w28, w11
+        neg     w27, w27
         add     v2.4s, v2.4s, v10.4s
-        ror     w3, w28, #29
+        ror     w23, w23, w27
         add     v3.4s, v3.4s, v11.4s
-        str     w3, [x12, #708]
-        add     v0.4s, v0.4s, v13.4s
         add     w28, w3, w20
+        add     v0.4s, v0.4s, v13.4s
+        add     w28, w28, w11
         add     v1.4s, v1.4s, v16.4s
-        add     w24, w24, w28
+        ror     w3, w28, #29
         add     v2.4s, v2.4s, v19.4s
-        neg     w28, w28
+        add     x30, x12, #960
         add     v3.4s, v3.4s, v22.4s
-        ror     w24, w24, w28
+        stp     w2, w3, [x30, #-256]
         shl     v8.4s, v0.4s, #3
-        add     w1, w4, w21
+        add     w28, w3, w20
         shl     v9.4s, v1.4s, #3
-        add     w1, w1, w11
         shl     v10.4s, v2.4s, #3
-        ror     w4, w1, #29
+        add     w24, w24, w28
         shl     v11.4s, v3.4s, #3
-        str     w4, [x12, #712]
+        neg     w28, w28
         sri     v8.4s, v0.4s, #29
-        add     w1, w4, w21
+        ror     w24, w24, w28
         sri     v9.4s, v1.4s, #29
-        add     w25, w25, w1
+        add     w1, w4, w21
         sri     v10.4s, v2.4s, #29
-        neg     w1, w1
+        add     w1, w1, w11
         sri     v11.4s, v3.4s, #29
-        ror     w25, w25, w1
+        ror     w4, w1, #29
         stp     q8, q9, [x10, #-448]
-        add     w27, w5, w22
+        add     w1, w4, w21
         stp     q10, q11, [x10, #-416]
-        add     w27, w27, w11
+        add     w25, w25, w1
         add     v0.4s, v13.4s, v8.4s
-        ror     w5, w27, #29
+        neg     w1, w1
         add     v1.4s, v16.4s, v9.4s
-        str     w5, [x12, #716]
+        ror     w25, w25, w1
         add     v2.4s, v19.4s, v10.4s
         add     w27, w5, w22
         add     v3.4s, v22.4s, v11.4s
-        add     w26, w26, w27
-        add     v14.4s, v14.4s, v0.4s
-        neg     w27, w27
-        ror     w26, w26, w27
-        add     v17.4s, v17.4s, v1.4s
-        mov     w11, #0x060F
-        add     v20.4s, v20.4s, v2.4s
-        movk    w11, #0x227B, lsl #16
-        add     v23.4s, v23.4s, v3.4s
-        add     w27, w2, w23
-        and     v4.16b, v0.16b, v24.16b
         add     w27, w27, w11
+        add     v14.4s, v14.4s, v0.4s
+        ror     w5, w27, #29
+        add     v17.4s, v17.4s, v1.4s
+        stp     w4, w5, [x30, #-248]
+        add     v20.4s, v20.4s, v2.4s
+        add     w27, w5, w22
+        add     v23.4s, v23.4s, v3.4s
+        and     v4.16b, v0.16b, v24.16b
+        add     w26, w26, w27
         and     v5.16b, v1.16b, v24.16b
-        ror     w2, w27, #29
-        and     v6.16b, v2.16b, v24.16b
-        str     w2, [x12, #768]
-        and     v7.16b, v3.16b, v24.16b
-        add     w27, w2, w23
-        orr     v0.16b, v0.16b, v25.16b
-        add     w6, w6, w27
-        orr     v1.16b, v1.16b, v25.16b
         neg     w27, w27
+        and     v6.16b, v2.16b, v24.16b
+        ror     w26, w26, w27
+        and     v7.16b, v3.16b, v24.16b
+        ldr     w11, [sp, #4080]
+        orr     v0.16b, v0.16b, v25.16b
+        add     w27, w2, w23
+        orr     v1.16b, v1.16b, v25.16b
+        add     w27, w27, w11
         orr     v2.16b, v2.16b, v25.16b
-        ror     w6, w6, w27
+        ror     w2, w27, #29
         orr     v3.16b, v3.16b, v25.16b
-        add     w28, w3, w24
+        add     w27, w2, w23
         ushl    v4.4s, v14.4s, v4.4s
-        add     w28, w28, w11
+        add     w6, w6, w27
         ushl    v5.4s, v17.4s, v5.4s
-        ror     w3, w28, #29
+        neg     w27, w27
         ushl    v6.4s, v20.4s, v6.4s
-        str     w3, [x12, #772]
+        ror     w6, w6, w27
         ushl    v7.4s, v23.4s, v7.4s
         add     w28, w3, w24
         ushl    v0.4s, v14.4s, v0.4s
-        add     w7, w7, w28
+        add     w28, w28, w11
         ushl    v1.4s, v17.4s, v1.4s
-        neg     w28, w28
+        ror     w3, w28, #29
         ushl    v2.4s, v20.4s, v2.4s
-        ror     w7, w7, w28
+        stp     w2, w3, [x30, #-192]
         ushl    v3.4s, v23.4s, v3.4s
-        add     w1, w4, w25
+        add     w28, w3, w24
         orr     v14.16b, v4.16b, v0.16b
-        add     w1, w1, w11
         orr     v17.16b, v5.16b, v1.16b
-        ror     w4, w1, #29
+        add     w7, w7, w28
         orr     v20.16b, v6.16b, v2.16b
-        str     w4, [x12, #776]
+        neg     w28, w28
         orr     v23.16b, v7.16b, v3.16b
-        add     w1, w4, w25
+        ror     w7, w7, w28
         // k=33: A = (A + S[7] + B2) <<< 3; S[7] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
-        add     w8, w8, w1
+        add     w1, w4, w25
         ldp     q0, q1, [x10, #-384]
-        neg     w1, w1
+        add     w1, w1, w11
         ldp     q2, q3, [x10, #-352]
-        ror     w8, w8, w1
+        ror     w4, w1, #29
         add     v0.4s, v0.4s, v8.4s
-        add     w27, w5, w26
+        add     w1, w4, w25
         add     v1.4s, v1.4s, v9.4s
-        add     w27, w27, w11
+        add     w8, w8, w1
         add     v2.4s, v2.4s, v10.4s
-        ror     w5, w27, #29
+        neg     w1, w1
         add     v3.4s, v3.4s, v11.4s
-        str     w5, [x12, #780]
+        ror     w8, w8, w1
         add     v0.4s, v0.4s, v14.4s
         add     w27, w5, w26
         add     v1.4s, v1.4s, v17.4s
-        add     w17, w17, w27
-        add     v2.4s, v2.4s, v20.4s
-        neg     w27, w27
-        ror     w17, w17, w27
-        add     v3.4s, v3.4s, v23.4s
-        mov     w11, #0x7FC8
-        shl     v8.4s, v0.4s, #3
-        movk    w11, #0xC0B2, lsl #16
-        shl     v9.4s, v1.4s, #3
-        add     w27, w2, w6
-        shl     v10.4s, v2.4s, #3
         add     w27, w27, w11
+        add     v2.4s, v2.4s, v20.4s
+        ror     w5, w27, #29
+        add     v3.4s, v3.4s, v23.4s
+        stp     w4, w5, [x30, #-184]
+        shl     v8.4s, v0.4s, #3
+        add     w27, w5, w26
+        shl     v9.4s, v1.4s, #3
+        add     w17, w17, w27
+        shl     v10.4s, v2.4s, #3
         shl     v11.4s, v3.4s, #3
-        ror     w2, w27, #29
-        sri     v8.4s, v0.4s, #29
-        str     w2, [x12, #832]
-        sri     v9.4s, v1.4s, #29
-        add     w27, w2, w6
-        sri     v10.4s, v2.4s, #29
-        add     w19, w19, w27
-        sri     v11.4s, v3.4s, #29
         neg     w27, w27
+        sri     v8.4s, v0.4s, #29
+        ror     w17, w17, w27
+        sri     v9.4s, v1.4s, #29
+        ldr     w11, [sp, #4084]
+        sri     v10.4s, v2.4s, #29
+        add     w27, w2, w6
+        sri     v11.4s, v3.4s, #29
+        add     w27, w27, w11
         stp     q8, q9, [x10, #-384]
-        ror     w19, w19, w27
+        ror     w2, w27, #29
         stp     q10, q11, [x10, #-352]
-        add     w28, w3, w7
+        add     w27, w2, w6
         add     v0.4s, v14.4s, v8.4s
-        add     w28, w28, w11
+        add     w19, w19, w27
         add     v1.4s, v17.4s, v9.4s
-        ror     w3, w28, #29
+        neg     w27, w27
         add     v2.4s, v20.4s, v10.4s
-        str     w3, [x12, #836]
+        ror     w19, w19, w27
         add     v3.4s, v23.4s, v11.4s
         add     w28, w3, w7
         add     v12.4s, v12.4s, v0.4s
-        add     w20, w20, w28
+        add     w28, w28, w11
         add     v15.4s, v15.4s, v1.4s
-        neg     w28, w28
+        ror     w3, w28, #29
         add     v18.4s, v18.4s, v2.4s
-        ror     w20, w20, w28
+        stp     w2, w3, [x30, #-128]
         add     v21.4s, v21.4s, v3.4s
-        add     w1, w4, w8
+        add     w28, w3, w7
         and     v4.16b, v0.16b, v24.16b
-        add     w1, w1, w11
         and     v5.16b, v1.16b, v24.16b
-        ror     w4, w1, #29
+        add     w20, w20, w28
         and     v6.16b, v2.16b, v24.16b
-        str     w4, [x12, #840]
+        neg     w28, w28
         and     v7.16b, v3.16b, v24.16b
-        add     w1, w4, w8
+        ror     w20, w20, w28
         orr     v0.16b, v0.16b, v25.16b
-        add     w21, w21, w1
+        add     w1, w4, w8
         orr     v1.16b, v1.16b, v25.16b
-        neg     w1, w1
+        add     w1, w1, w11
         orr     v2.16b, v2.16b, v25.16b
-        ror     w21, w21, w1
+        ror     w4, w1, #29
         orr     v3.16b, v3.16b, v25.16b
-        add     w27, w5, w17
+        add     w1, w4, w8
         ushl    v4.4s, v12.4s, v4.4s
-        add     w27, w27, w11
+        add     w21, w21, w1
         ushl    v5.4s, v15.4s, v5.4s
-        ror     w5, w27, #29
+        neg     w1, w1
         ushl    v6.4s, v18.4s, v6.4s
-        str     w5, [x12, #844]
+        ror     w21, w21, w1
         ushl    v7.4s, v21.4s, v7.4s
         add     w27, w5, w17
         ushl    v0.4s, v12.4s, v0.4s
-        add     w22, w22, w27
-        ushl    v1.4s, v15.4s, v1.4s
-        neg     w27, w27
-        ror     w22, w22, w27
-        ushl    v2.4s, v18.4s, v2.4s
-        mov     w11, #0xF981
-        ushl    v3.4s, v21.4s, v3.4s
-        movk    w11, #0x5EE9, lsl #16
-        orr     v12.16b, v4.16b, v0.16b
-        add     w27, w2, w19
-        orr     v15.16b, v5.16b, v1.16b
         add     w27, w27, w11
+        ushl    v1.4s, v15.4s, v1.4s
+        ror     w5, w27, #29
+        ushl    v2.4s, v18.4s, v2.4s
+        stp     w4, w5, [x30, #-120]
+        ushl    v3.4s, v21.4s, v3.4s
+        add     w27, w5, w17
+        orr     v12.16b, v4.16b, v0.16b
+        add     w22, w22, w27
+        orr     v15.16b, v5.16b, v1.16b
         orr     v18.16b, v6.16b, v2.16b
-        ror     w2, w27, #29
+        neg     w27, w27
         orr     v21.16b, v7.16b, v3.16b
-        str     w2, [x12, #896]
+        ror     w22, w22, w27
         // k=34: A = (A + S[8] + B0) <<< 3; S[8] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
-        add     w27, w2, w19
+        ldr     w11, [sp, #4088]
         ldp     q0, q1, [x10, #-320]
-        add     w23, w23, w27
+        add     w27, w2, w19
         ldp     q2, q3, [x10, #-288]
-        neg     w27, w27
+        add     w27, w27, w11
         add     v0.4s, v0.4s, v8.4s
-        ror     w23, w23, w27
+        ror     w2, w27, #29
         add     v1.4s, v1.4s, v9.4s
-        add     w28, w3, w20
+        add     w27, w2, w19
         add     v2.4s, v2.4s, v10.4s
-        add     w28, w28, w11
+        add     w23, w23, w27
         add     v3.4s, v3.4s, v11.4s
-        ror     w3, w28, #29
+        neg     w27, w27
         add     v0.4s, v0.4s, v12.4s
-        str     w3, [x12, #900]
+        ror     w23, w23, w27
         add     v1.4s, v1.4s, v15.4s
         add     w28, w3, w20
         add     v2.4s, v2.4s, v18.4s
-        add     w24, w24, w28
+        add     w28, w28, w11
         add     v3.4s, v3.4s, v21.4s
-        neg     w28, w28
+        ror     w3, w28, #29
         shl     v8.4s, v0.4s, #3
-        ror     w24, w24, w28
+        stp     w2, w3, [x30, #-64]
         shl     v9.4s, v1.4s, #3
-        add     w1, w4, w21
+        add     w28, w3, w20
         shl     v10.4s, v2.4s, #3
-        add     w1, w1, w11
         shl     v11.4s, v3.4s, #3
-        ror     w4, w1, #29
+        add     w24, w24, w28
         sri     v8.4s, v0.4s, #29
-        str     w4, [x12, #904]
+        neg     w28, w28
         sri     v9.4s, v1.4s, #29
-        add     w1, w4, w21
+        ror     w24, w24, w28
         sri     v10.4s, v2.4s, #29
-        add     w25, w25, w1
+        add     w1, w4, w21
         sri     v11.4s, v3.4s, #29
-        neg     w1, w1
+        add     w1, w1, w11
         stp     q8, q9, [x10, #-320]
-        ror     w25, w25, w1
+        ror     w4, w1, #29
         stp     q10, q11, [x10, #-288]
-        add     w27, w5, w22
+        add     w1, w4, w21
         add     v0.4s, v12.4s, v8.4s
-        add     w27, w27, w11
+        add     w25, w25, w1
         add     v1.4s, v15.4s, v9.4s
-        ror     w5, w27, #29
+        neg     w1, w1
         add     v2.4s, v18.4s, v10.4s
-        str     w5, [x12, #908]
+        ror     w25, w25, w1
         add     v3.4s, v21.4s, v11.4s
         add     w27, w5, w22
         add     v13.4s, v13.4s, v0.4s
-        add     w26, w26, w27
-        add     v16.4s, v16.4s, v1.4s
-        neg     w27, w27
-        ror     w26, w26, w27
-        add     v19.4s, v19.4s, v2.4s
-        mov     w11, #0x733A
-        add     v22.4s, v22.4s, v3.4s
-        movk    w11, #0xFD21, lsl #16
-        and     v4.16b, v0.16b, v24.16b
-        add     w27, w2, w23
-        and     v5.16b, v1.16b, v24.16b
         add     w27, w27, w11
+        add     v16.4s, v16.4s, v1.4s
+        ror     w5, w27, #29
+        add     v19.4s, v19.4s, v2.4s
+        stp     w4, w5, [x30, #-56]
+        add     v22.4s, v22.4s, v3.4s
+        add     w27, w5, w22
+        and     v4.16b, v0.16b, v24.16b
+        add     w26, w26, w27
+        and     v5.16b, v1.16b, v24.16b
         and     v6.16b, v2.16b, v24.16b
-        ror     w2, w27, #29
-        and     v7.16b, v3.16b, v24.16b
-        str     w2, [x12, #960]
-        orr     v0.16b, v0.16b, v25.16b
-        add     w27, w2, w23
-        orr     v1.16b, v1.16b, v25.16b
-        add     w6, w6, w27
-        orr     v2.16b, v2.16b, v25.16b
         neg     w27, w27
+        and     v7.16b, v3.16b, v24.16b
+        ror     w26, w26, w27
+        orr     v0.16b, v0.16b, v25.16b
+        ldr     w11, [sp, #4092]
+        orr     v1.16b, v1.16b, v25.16b
+        add     w27, w2, w23
+        orr     v2.16b, v2.16b, v25.16b
+        add     w27, w27, w11
         orr     v3.16b, v3.16b, v25.16b
-        ror     w6, w6, w27
+        ror     w2, w27, #29
         ushl    v4.4s, v13.4s, v4.4s
-        add     w28, w3, w24
+        add     w27, w2, w23
         ushl    v5.4s, v16.4s, v5.4s
-        add     w28, w28, w11
+        add     w6, w6, w27
         ushl    v6.4s, v19.4s, v6.4s
-        ror     w3, w28, #29
+        neg     w27, w27
         ushl    v7.4s, v22.4s, v7.4s
-        str     w3, [x12, #964]
+        ror     w6, w6, w27
         ushl    v0.4s, v13.4s, v0.4s
         add     w28, w3, w24
         ushl    v1.4s, v16.4s, v1.4s
-        add     w7, w7, w28
+        add     w28, w28, w11
         ushl    v2.4s, v19.4s, v2.4s
-        neg     w28, w28
+        ror     w3, w28, #29
         ushl    v3.4s, v22.4s, v3.4s
-        ror     w7, w7, w28
+        stp     w2, w3, [x30, #0]
         orr     v13.16b, v4.16b, v0.16b
-        add     w1, w4, w25
+        add     w28, w3, w24
         orr     v16.16b, v5.16b, v1.16b
-        add     w1, w1, w11
+        add     w7, w7, w28
         orr     v19.16b, v6.16b, v2.16b
-        ror     w4, w1, #29
         orr     v22.16b, v7.16b, v3.16b
-        str     w4, [x12, #968]
+        neg     w28, w28
         // k=35: A = (A + S[9] + B1) <<< 3; S[9] = A; B2 = (B2 + B1 + A) <<< (B1 + A)
-        add     w1, w4, w25
+        ror     w7, w7, w28
         ldp     q0, q1, [x10, #-256]
-        add     w8, w8, w1
+        add     w1, w4, w25
         ldp     q2, q3, [x10, #-224]
-        neg     w1, w1
+        add     w1, w1, w11
         add     v0.4s, v0.4s, v8.4s
-        ror     w8, w8, w1
+        ror     w4, w1, #29
         add     v1.4s, v1.4s, v9.4s
-        add     w27, w5, w26
+        add     w1, w4, w25
         add     v2.4s, v2.4s, v10.4s
-        add     w27, w27, w11
+        add     w8, w8, w1
         add     v3.4s, v3.4s, v11.4s
-        ror     w5, w27, #29
+        neg     w1, w1
         add     v0.4s, v0.4s, v13.4s
-        str     w5, [x12, #972]
+        ror     w8, w8, w1
         add     v1.4s, v1.4s, v16.4s
         add     w27, w5, w26
         add     v2.4s, v2.4s, v19.4s
-        add     w17, w17, w27
-        add     v3.4s, v3.4s, v22.4s
-        neg     w27, w27
-        ror     w17, w17, w27
-        shl     v8.4s, v0.4s, #3
-        mov     w11, #0xECF3
-        shl     v9.4s, v1.4s, #3
-        movk    w11, #0x9B58, lsl #16
-        shl     v10.4s, v2.4s, #3
-        add     w27, w2, w6
-        shl     v11.4s, v3.4s, #3
         add     w27, w27, w11
+        add     v3.4s, v3.4s, v22.4s
+        ror     w5, w27, #29
+        shl     v8.4s, v0.4s, #3
+        stp     w4, w5, [x30, #8]
+        shl     v9.4s, v1.4s, #3
+        add     w27, w5, w26
+        shl     v10.4s, v2.4s, #3
+        add     w17, w17, w27
+        shl     v11.4s, v3.4s, #3
         sri     v8.4s, v0.4s, #29
-        ror     w2, w27, #29
+        neg     w27, w27
         sri     v9.4s, v1.4s, #29
-        str     w2, [x12, #1024]
+        ror     w17, w17, w27
         sri     v10.4s, v2.4s, #29
-        add     w27, w2, w6
+        ldr     w11, [sp, #4096]
         sri     v11.4s, v3.4s, #29
-        add     w19, w19, w27
+        add     w27, w2, w6
         stp     q8, q9, [x10, #-256]
-        neg     w27, w27
+        add     w27, w27, w11
         stp     q10, q11, [x10, #-224]
-        ror     w19, w19, w27
+        ror     w2, w27, #29
         add     v0.4s, v13.4s, v8.4s
-        add     w28, w3, w7
+        add     w27, w2, w6
         add     v1.4s, v16.4s, v9.4s
-        add     w28, w28, w11
+        add     w19, w19, w27
         add     v2.4s, v19.4s, v10.4s
-        ror     w3, w28, #29
+        neg     w27, w27
         add     v3.4s, v22.4s, v11.4s
-        str     w3, [x12, #1028]
+        ror     w19, w19, w27
         add     v14.4s, v14.4s, v0.4s
         add     w28, w3, w7
         add     v17.4s, v17.4s, v1.4s
-        add     w20, w20, w28
+        add     w28, w28, w11
         add     v20.4s, v20.4s, v2.4s
-        neg     w28, w28
+        ror     w3, w28, #29
         add     v23.4s, v23.4s, v3.4s
-        ror     w20, w20, w28
+        stp     w2, w3, [x30, #64]
         and     v4.16b, v0.16b, v24.16b
-        add     w1, w4, w8
+        add     w28, w3, w7
         and     v5.16b, v1.16b, v24.16b
-        add     w1, w1, w11
+        add     w20, w20, w28
         and     v6.16b, v2.16b, v24.16b
-        ror     w4, w1, #29
         and     v7.16b, v3.16b, v24.16b
-        str     w4, [x12, #1032]
+        neg     w28, w28
         orr     v0.16b, v0.16b, v25.16b
-        add     w1, w4, w8
+        ror     w20, w20, w28
         orr     v1.16b, v1.16b, v25.16b
-        add     w21, w21, w1
+        add     w1, w4, w8
         orr     v2.16b, v2.16b, v25.16b
-        neg     w1, w1
+        add     w1, w1, w11
         orr     v3.16b, v3.16b, v25.16b
-        ror     w21, w21, w1
+        ror     w4, w1, #29
         ushl    v4.4s, v14.4s, v4.4s
-        add     w27, w5, w17
+        add     w1, w4, w8
         ushl    v5.4s, v17.4s, v5.4s
-        add     w27, w27, w11
+        add     w21, w21, w1
         ushl    v6.4s, v20.4s, v6.4s
-        ror     w5, w27, #29
+        neg     w1, w1
         ushl    v7.4s, v23.4s, v7.4s
-        str     w5, [x12, #1036]
+        ror     w21, w21, w1
         ushl    v0.4s, v14.4s, v0.4s
         add     w27, w5, w17
         ushl    v1.4s, v17.4s, v1.4s
-        add     w22, w22, w27
-        ushl    v2.4s, v20.4s, v2.4s
-        neg     w27, w27
-        ror     w22, w22, w27
-        ushl    v3.4s, v23.4s, v3.4s
-        mov     w11, #0x66AC
-        orr     v14.16b, v4.16b, v0.16b
-        movk    w11, #0x3990, lsl #16
-        orr     v17.16b, v5.16b, v1.16b
-        add     w27, w2, w19
-        orr     v20.16b, v6.16b, v2.16b
         add     w27, w27, w11
+        ushl    v2.4s, v20.4s, v2.4s
+        ror     w5, w27, #29
+        ushl    v3.4s, v23.4s, v3.4s
+        stp     w4, w5, [x30, #72]
+        orr     v14.16b, v4.16b, v0.16b
+        add     w27, w5, w17
+        orr     v17.16b, v5.16b, v1.16b
+        add     w22, w22, w27
+        orr     v20.16b, v6.16b, v2.16b
+        neg     w27, w27
         orr     v23.16b, v7.16b, v3.16b
-        ror     w2, w27, #29
         // k=36: A = (A + S[10] + B2) <<< 3; S[10] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
-        str     w2, [x12, #1088]
+        ror     w22, w22, w27
         ldp     q0, q1, [x10, #-192]
-        add     w27, w2, w19
+        ldr     w11, [sp, #4100]
         ldp     q2, q3, [x10, #-160]
-        add     w23, w23, w27
+        add     w27, w2, w19
         add     v0.4s, v0.4s, v8.4s
-        neg     w27, w27
+        add     w27, w27, w11
         add     v1.4s, v1.4s, v9.4s
-        ror     w23, w23, w27
+        ror     w2, w27, #29
         add     v2.4s, v2.4s, v10.4s
-        add     w28, w3, w20
+        add     w27, w2, w19
         add     v3.4s, v3.4s, v11.4s
-        add     w28, w28, w11
+        add     w23, w23, w27
         add     v0.4s, v0.4s, v14.4s
-        ror     w3, w28, #29
+        neg     w27, w27
         add     v1.4s, v1.4s, v17.4s
-        str     w3, [x12, #1092]
+        ror     w23, w23, w27
         add     v2.4s, v2.4s, v20.4s
         add     w28, w3, w20
         add     v3.4s, v3.4s, v23.4s
-        add     w24, w24, w28
+        add     w28, w28, w11
         shl     v8.4s, v0.4s, #3
-        neg     w28, w28
+        ror     w3, w28, #29
         shl     v9.4s, v1.4s, #3
-        ror     w24, w24, w28
+        stp     w2, w3, [x30, #128]
         shl     v10.4s, v2.4s, #3
-        add     w1, w4, w21
+        add     w28, w3, w20
         shl     v11.4s, v3.4s, #3
-        add     w1, w1, w11
+        add     w24, w24, w28
         sri     v8.4s, v0.4s, #29
-        ror     w4, w1, #29
         sri     v9.4s, v1.4s, #29
-        str     w4, [x12, #1096]
+        neg     w28, w28
         sri     v10.4s, v2.4s, #29
-        add     w1, w4, w21
+        ror     w24, w24, w28
         sri     v11.4s, v3.4s, #29
-        add     w25, w25, w1
+        add     w1, w4, w21
         stp     q8, q9, [x10, #-192]
-        neg     w1, w1
+        add     w1, w1, w11
         stp     q10, q11, [x10, #-160]
-        ror     w25, w25, w1
+        ror     w4, w1, #29
         add     v0.4s, v14.4s, v8.4s
-        add     w27, w5, w22
+        add     w1, w4, w21
         add     v1.4s, v17.4s, v9.4s
-        add     w27, w27, w11
+        add     w25, w25, w1
         add     v2.4s, v20.4s, v10.4s
-        ror     w5, w27, #29
+        neg     w1, w1
         add     v3.4s, v23.4s, v11.4s
-        str     w5, [x12, #1100]
+        ror     w25, w25, w1
         add     v12.4s, v12.4s, v0.4s
         add     w27, w5, w22
         add     v15.4s, v15.4s, v1.4s
-        add     w26, w26, w27
-        add     v18.4s, v18.4s, v2.4s
-        neg     w27, w27
-        ror     w26, w26, w27
-        add     v21.4s, v21.4s, v3.4s
-        mov     w11, #0xE065
-        and     v4.16b, v0.16b, v24.16b
-        movk    w11, #0xD7C7, lsl #16
-        and     v5.16b, v1.16b, v24.16b
-        add     w27, w2, w23
-        and     v6.16b, v2.16b, v24.16b
         add     w27, w27, w11
-        and     v7.16b, v3.16b, v24.16b
-        ror     w2, w27, #29
-        orr     v0.16b, v0.16b, v25.16b
-        str     w2, [x12, #1152]
-        orr     v1.16b, v1.16b, v25.16b
-        add     w27, w2, w23
-        orr     v2.16b, v2.16b, v25.16b
-        add     w6, w6, w27
-        orr     v3.16b, v3.16b, v25.16b
+        add     v18.4s, v18.4s, v2.4s
+        ror     w5, w27, #29
+        add     v21.4s, v21.4s, v3.4s
+        stp     w4, w5, [x30, #136]
+        and     v4.16b, v0.16b, v24.16b
+        add     w27, w5, w22
+        and     v5.16b, v1.16b, v24.16b
+        add     w26, w26, w27
+        and     v6.16b, v2.16b, v24.16b
         neg     w27, w27
+        and     v7.16b, v3.16b, v24.16b
+        orr     v0.16b, v0.16b, v25.16b
+        ror     w26, w26, w27
+        orr     v1.16b, v1.16b, v25.16b
+        ldr     w11, [sp, #4104]
+        orr     v2.16b, v2.16b, v25.16b
+        add     w27, w2, w23
+        orr     v3.16b, v3.16b, v25.16b
+        add     w27, w27, w11
         ushl    v4.4s, v12.4s, v4.4s
-        ror     w6, w6, w27
+        ror     w2, w27, #29
         ushl    v5.4s, v15.4s, v5.4s
-        add     w28, w3, w24
+        add     w27, w2, w23
         ushl    v6.4s, v18.4s, v6.4s
-        add     w28, w28, w11
+        add     w6, w6, w27
         ushl    v7.4s, v21.4s, v7.4s
-        ror     w3, w28, #29
+        neg     w27, w27
         ushl    v0.4s, v12.4s, v0.4s
-        str     w3, [x12, #1156]
+        ror     w6, w6, w27
         ushl    v1.4s, v15.4s, v1.4s
         add     w28, w3, w24
         ushl    v2.4s, v18.4s, v2.4s
-        add     w7, w7, w28
+        add     w28, w28, w11
         ushl    v3.4s, v21.4s, v3.4s
-        neg     w28, w28
+        ror     w3, w28, #29
         orr     v12.16b, v4.16b, v0.16b
-        ror     w7, w7, w28
+        stp     w2, w3, [x30, #192]
         orr     v15.16b, v5.16b, v1.16b
-        add     w1, w4, w25
+        add     w28, w3, w24
         orr     v18.16b, v6.16b, v2.16b
-        add     w1, w1, w11
+        add     w7, w7, w28
         orr     v21.16b, v7.16b, v3.16b
-        ror     w4, w1, #29
+        neg     w28, w28
         // k=37: A = (A + S[11] + B0) <<< 3; S[11] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
-        str     w4, [x12, #1160]
         ldp     q0, q1, [x10, #-128]
-        add     w1, w4, w25
+        ror     w7, w7, w28
         ldp     q2, q3, [x10, #-96]
-        add     w8, w8, w1
+        add     w1, w4, w25
         add     v0.4s, v0.4s, v8.4s
-        neg     w1, w1
+        add     w1, w1, w11
         add     v1.4s, v1.4s, v9.4s
-        ror     w8, w8, w1
+        ror     w4, w1, #29
         add     v2.4s, v2.4s, v10.4s
-        add     w27, w5, w26
+        add     w1, w4, w25
         add     v3.4s, v3.4s, v11.4s
-        add     w27, w27, w11
+        add     w8, w8, w1
         add     v0.4s, v0.4s, v12.4s
-        ror     w5, w27, #29
+        neg     w1, w1
         add     v1.4s, v1.4s, v15.4s
-        str     w5, [x12, #1164]
+        ror     w8, w8, w1
         add     v2.4s, v2.4s, v18.4s
         add     w27, w5, w26
         add     v3.4s, v3.4s, v21.4s
-        add     w17, w17, w27
-        neg     w27, w27
-        shl     v8.4s, v0.4s, #3
-        ror     w17, w17, w27
-        shl     v9.4s, v1.4s, #3
-        mov     w11, #0x5A1E
-        shl     v10.4s, v2.4s, #3
-        movk    w11, #0x75FF, lsl #16
-        shl     v11.4s, v3.4s, #3
-        add     w27, w2, w6
-        sri     v8.4s, v0.4s, #29
         add     w27, w27, w11
+        shl     v8.4s, v0.4s, #3
+        ror     w5, w27, #29
+        shl     v9.4s, v1.4s, #3
+        stp     w4, w5, [x30, #200]
+        shl     v10.4s, v2.4s, #3
+        add     w27, w5, w26
+        shl     v11.4s, v3.4s, #3
+        add     w17, w17, w27
+        sri     v8.4s, v0.4s, #29
+        neg     w27, w27
         sri     v9.4s, v1.4s, #29
-        ror     w2, w27, #29
         sri     v10.4s, v2.4s, #29
-        str     w2, [x12, #1216]
+        ror     w17, w17, w27
         sri     v11.4s, v3.4s, #29
-        add     w27, w2, w6
+        ldr     w11, [sp, #4108]
         stp     q8, q9, [x10, #-128]
-        add     w19, w19, w27
+        add     w27, w2, w6
         stp     q10, q11, [x10, #-96]
-        neg     w27, w27
+        add     w27, w27, w11
         add     v0.4s, v12.4s, v8.4s
-        ror     w19, w19, w27
+        ror     w2, w27, #29
         add     v1.4s, v15.4s, v9.4s
-        add     w28, w3, w7
+        add     w27, w2, w6
         add     v2.4s, v18.4s, v10.4s
-        add     w28, w28, w11
+        add     w19, w19, w27
         add     v3.4s, v21.4s, v11.4s
-        ror     w3, w28, #29
+        neg     w27, w27
         add     v13.4s, v13.4s, v0.4s
-        str     w3, [x12, #1220]
+        ror     w19, w19, w27
         add     v16.4s, v16.4s, v1.4s
         add     w28, w3, w7
         add     v19.4s, v19.4s, v2.4s
-        add     w20, w20, w28
+        add     w28, w28, w11
         add     v22.4s, v22.4s, v3.4s
-        neg     w28, w28
+        ror     w3, w28, #29
         and     v4.16b, v0.16b, v24.16b
-        ror     w20, w20, w28
+        add     x30, x12, #1472
         and     v5.16b, v1.16b, v24.16b
-        add     w1, w4, w8
+        stp     w2, w3, [x30, #-256]
         and     v6.16b, v2.16b, v24.16b
-        add     w1, w1, w11
+        add     w28, w3, w7
         and     v7.16b, v3.16b, v24.16b
-        ror     w4, w1, #29
+        add     w20, w20, w28
         orr     v0.16b, v0.16b, v25.16b
-        str     w4, [x12, #1224]
         orr     v1.16b, v1.16b, v25.16b
-        add     w1, w4, w8
+        neg     w28, w28
         orr     v2.16b, v2.16b, v25.16b
-        add     w21, w21, w1
+        ror     w20, w20, w28
         orr     v3.16b, v3.16b, v25.16b
-        neg     w1, w1
+        add     w1, w4, w8
         ushl    v4.4s, v13.4s, v4.4s
-        ror     w21, w21, w1
+        add     w1, w1, w11
         ushl    v5.4s, v16.4s, v5.4s
-        add     w27, w5, w17
+        ror     w4, w1, #29
         ushl    v6.4s, v19.4s, v6.4s
-        add     w27, w27, w11
+        add     w1, w4, w8
         ushl    v7.4s, v22.4s, v7.4s
-        ror     w5, w27, #29
+        add     w21, w21, w1
         ushl    v0.4s, v13.4s, v0.4s
-        str     w5, [x12, #1228]
+        neg     w1, w1
         ushl    v1.4s, v16.4s, v1.4s
-        add     w27, w5, w17
+        ror     w21, w21, w1
         ushl    v2.4s, v19.4s, v2.4s
-        add     w22, w22, w27
-        neg     w27, w27
+        add     w27, w5, w17
         ushl    v3.4s, v22.4s, v3.4s
-        ror     w22, w22, w27
-        orr     v13.16b, v4.16b, v0.16b
-        mov     w11, #0xD3D7
-        orr     v16.16b, v5.16b, v1.16b
-        movk    w11, #0x1436, lsl #16
-        orr     v19.16b, v6.16b, v2.16b
-        add     w27, w2, w19
-        orr     v22.16b, v7.16b, v3.16b
         add     w27, w27, w11
+        orr     v13.16b, v4.16b, v0.16b
+        ror     w5, w27, #29
+        orr     v16.16b, v5.16b, v1.16b
+        stp     w4, w5, [x30, #-248]
+        orr     v19.16b, v6.16b, v2.16b
+        add     w27, w5, w17
+        orr     v22.16b, v7.16b, v3.16b
+        add     w22, w22, w27
         // k=38: A = (A + S[12] + B1) <<< 3; S[12] = A; B2 = (B2 + B1 + A) <<< (B1 + A)
-        ror     w2, w27, #29
+        neg     w27, w27
         ldp     q0, q1, [x10, #-64]
-        str     w2, [x12, #1280]
         ldp     q2, q3, [x10, #-32]
-        add     w27, w2, w19
+        ror     w22, w22, w27
         add     v0.4s, v0.4s, v8.4s
-        add     w23, w23, w27
+        ldr     w11, [sp, #4112]
         add     v1.4s, v1.4s, v9.4s
-        neg     w27, w27
+        add     w27, w2, w19
         add     v2.4s, v2.4s, v10.4s
-        ror     w23, w23, w27
+        add     w27, w27, w11
         add     v3.4s, v3.4s, v11.4s
-        add     w28, w3, w20
+        ror     w2, w27, #29
         add     v0.4s, v0.4s, v13.4s
-        add     w28, w28, w11
+        add     w27, w2, w19
         add     v1.4s, v1.4s, v16.4s
-        ror     w3, w28, #29
+        add     w23, w23, w27
         add     v2.4s, v2.4s, v19.4s
-        str     w3, [x12, #1284]
+        neg     w27, w27
         add     v3.4s, v3.4s, v22.4s
-        add     w28, w3, w20
+        ror     w23, w23, w27
         shl     v8.4s, v0.4s, #3
-        add     w24, w24, w28
+        add     w28, w3, w20
         shl     v9.4s, v1.4s, #3
-        neg     w28, w28
+        add     w28, w28, w11
         shl     v10.4s, v2.4s, #3
-        ror     w24, w24, w28
+        ror     w3, w28, #29
         shl     v11.4s, v3.4s, #3
-        add     w1, w4, w21
+        stp     w2, w3, [x30, #-192]
         sri     v8.4s, v0.4s, #29
-        add     w1, w1, w11
+        add     w28, w3, w20
         sri     v9.4s, v1.4s, #29
-        ror     w4, w1, #29
+        add     w24, w24, w28
         sri     v10.4s, v2.4s, #29
-        str     w4, [x12, #1288]
         sri     v11.4s, v3.4s, #29
-        add     w1, w4, w21
+        neg     w28, w28
         stp     q8, q9, [x10, #-64]
-        add     w25, w25, w1
-        stp     q10, q11, [x10, #-32]
-        neg     w1, w1
-        add     v0.4s, v13.4s, v8.4s
-        ror     w25, w25, w1
-        add     v1.4s, v16.4s, v9.4s
-        add     w27, w5, w22
-        add     v2.4s, v19.4s, v10.4s
-        add     w27, w27, w11
-        add     v3.4s, v22.4s, v11.4s
-        ror     w5, w27, #29
-        add     v14.4s, v14.4s, v0.4s
-        str     w5, [x12, #1292]
-        add     v17.4s, v17.4s, v1.4s
-        add     w27, w5, w22
-        add     v20.4s, v20.4s, v2.4s
-        add     w26, w26, w27
-        neg     w27, w27
-        add     v23.4s, v23.4s, v3.4s
-        ror     w26, w26, w27
-        and     v4.16b, v0.16b, v24.16b
-        mov     w11, #0x4D90
-        and     v5.16b, v1.16b, v24.16b
-        movk    w11, #0xB26E, lsl #16
-        and     v6.16b, v2.16b, v24.16b
-        add     w27, w2, w23
-        and     v7.16b, v3.16b, v24.16b
-        add     w27, w27, w11
-        orr     v0.16b, v0.16b, v25.16b
-        ror     w2, w27, #29
-        orr     v1.16b, v1.16b, v25.16b
-        str     w2, [x12, #1344]
-        orr     v2.16b, v2.16b, v25.16b
-        add     w27, w2, w23
-        orr     v3.16b, v3.16b, v25.16b
-        add     w6, w6, w27
-        ushl    v4.4s, v14.4s, v4.4s
-        neg     w27, w27
-        ushl    v5.4s, v17.4s, v5.4s
-        ror     w6, w6, w27
-        ushl    v6.4s, v20.4s, v6.4s
-        add     w28, w3, w24
-        ushl    v7.4s, v23.4s, v7.4s
-        add     w28, w28, w11
-        ushl    v0.4s, v14.4s, v0.4s
-        ror     w3, w28, #29
-        ushl    v1.4s, v17.4s, v1.4s
-        str     w3, [x12, #1348]
-        ushl    v2.4s, v20.4s, v2.4s
-        add     w28, w3, w24
-        ushl    v3.4s, v23.4s, v3.4s
-        add     w7, w7, w28
-        orr     v14.16b, v4.16b, v0.16b
-        neg     w28, w28
-        orr     v17.16b, v5.16b, v1.16b
-        ror     w7, w7, w28
-        orr     v20.16b, v6.16b, v2.16b
-        add     w1, w4, w25
-        orr     v23.16b, v7.16b, v3.16b
-        add     w1, w1, w11
-        // k=39: A = (A + S[13] + B2) <<< 3; S[13] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
-        ror     w4, w1, #29
-        ldp     q0, q1, [x10, #0]
-        str     w4, [x12, #1352]
-        ldp     q2, q3, [x10, #32]
-        add     w1, w4, w25
-        add     v0.4s, v0.4s, v8.4s
-        add     w8, w8, w1
-        add     v1.4s, v1.4s, v9.4s
-        neg     w1, w1
-        add     v2.4s, v2.4s, v10.4s
-        ror     w8, w8, w1
-        add     v3.4s, v3.4s, v11.4s
-        add     w27, w5, w26
-        add     v0.4s, v0.4s, v14.4s
-        add     w27, w27, w11
-        add     v1.4s, v1.4s, v17.4s
-        ror     w5, w27, #29
-        add     v2.4s, v2.4s, v20.4s
-        str     w5, [x12, #1356]
-        add     v3.4s, v3.4s, v23.4s
-        add     w27, w5, w26
-        shl     v8.4s, v0.4s, #3
-        add     w17, w17, w27
-        neg     w27, w27
-        shl     v9.4s, v1.4s, #3
-        ror     w17, w17, w27
-        shl     v10.4s, v2.4s, #3
-        mov     w11, #0xC749
-        shl     v11.4s, v3.4s, #3
-        movk    w11, #0x50A5, lsl #16
-        sri     v8.4s, v0.4s, #29
-        add     w27, w2, w6
-        sri     v9.4s, v1.4s, #29
-        add     w27, w27, w11
-        sri     v10.4s, v2.4s, #29
-        ror     w2, w27, #29
-        sri     v11.4s, v3.4s, #29
-        str     w2, [x12, #1408]
-        stp     q8, q9, [x10, #0]
-        add     w27, w2, w6
-        stp     q10, q11, [x10, #32]
-        add     w19, w19, w27
-        add     v0.4s, v14.4s, v8.4s
-        neg     w27, w27
-        add     v1.4s, v17.4s, v9.4s
-        ror     w19, w19, w27
-        add     v2.4s, v20.4s, v10.4s
-        add     w28, w3, w7
-        add     v3.4s, v23.4s, v11.4s
-        add     w28, w28, w11
-        add     v12.4s, v12.4s, v0.4s
-        ror     w3, w28, #29
-        add     v15.4s, v15.4s, v1.4s
-        str     w3, [x12, #1412]
-        add     v18.4s, v18.4s, v2.4s
-        add     w28, w3, w7
-        add     v21.4s, v21.4s, v3.4s
-        add     w20, w20, w28
-        and     v4.16b, v0.16b, v24.16b
-        neg     w28, w28
-        and     v5.16b, v1.16b, v24.16b
-        ror     w20, w20, w28
-        and     v6.16b, v2.16b, v24.16b
-        add     w1, w4, w8
-        and     v7.16b, v3.16b, v24.16b
-        add     w1, w1, w11
-        orr     v0.16b, v0.16b, v25.16b
-        ror     w4, w1, #29
-        orr     v1.16b, v1.16b, v25.16b
-        str     w4, [x12, #1416]
-        orr     v2.16b, v2.16b, v25.16b
-        add     w1, w4, w8
-        orr     v3.16b, v3.16b, v25.16b
-        add     w21, w21, w1
-        ushl    v4.4s, v12.4s, v4.4s
-        neg     w1, w1
-        ushl    v5.4s, v15.4s, v5.4s
-        ror     w21, w21, w1
-        ushl    v6.4s, v18.4s, v6.4s
-        add     w27, w5, w17
-        ushl    v7.4s, v21.4s, v7.4s
-        add     w27, w27, w11
-        ushl    v0.4s, v12.4s, v0.4s
-        ror     w5, w27, #29
-        ushl    v1.4s, v15.4s, v1.4s
-        str     w5, [x12, #1420]
-        ushl    v2.4s, v18.4s, v2.4s
-        add     w27, w5, w17
-        ushl    v3.4s, v21.4s, v3.4s
-        add     w22, w22, w27
-        neg     w27, w27
-        orr     v12.16b, v4.16b, v0.16b
-        ror     w22, w22, w27
-        orr     v15.16b, v5.16b, v1.16b
-        mov     w11, #0x4102
-        orr     v18.16b, v6.16b, v2.16b
-        movk    w11, #0xEEDD, lsl #16
-        orr     v21.16b, v7.16b, v3.16b
-        add     w27, w2, w19
-        // k=40: A = (A + S[14] + B0) <<< 3; S[14] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
-        add     w27, w27, w11
-        ldp     q0, q1, [x10, #64]
-        ror     w2, w27, #29
-        ldp     q2, q3, [x10, #96]
-        str     w2, [x12, #1472]
-        add     v0.4s, v0.4s, v8.4s
-        add     w27, w2, w19
-        add     v1.4s, v1.4s, v9.4s
-        add     w23, w23, w27
-        add     v2.4s, v2.4s, v10.4s
-        neg     w27, w27
-        add     v3.4s, v3.4s, v11.4s
-        ror     w23, w23, w27
-        add     v0.4s, v0.4s, v12.4s
-        add     w28, w3, w20
-        add     v1.4s, v1.4s, v15.4s
-        add     w28, w28, w11
-        add     v2.4s, v2.4s, v18.4s
-        ror     w3, w28, #29
-        add     v3.4s, v3.4s, v21.4s
-        str     w3, [x12, #1476]
-        shl     v8.4s, v0.4s, #3
-        add     w28, w3, w20
-        shl     v9.4s, v1.4s, #3
-        add     w24, w24, w28
-        shl     v10.4s, v2.4s, #3
-        neg     w28, w28
-        shl     v11.4s, v3.4s, #3
         ror     w24, w24, w28
-        sri     v8.4s, v0.4s, #29
+        stp     q10, q11, [x10, #-32]
         add     w1, w4, w21
-        sri     v9.4s, v1.4s, #29
-        add     w1, w1, w11
-        sri     v10.4s, v2.4s, #29
-        ror     w4, w1, #29
-        sri     v11.4s, v3.4s, #29
-        str     w4, [x12, #1480]
-        stp     q8, q9, [x10, #64]
-        add     w1, w4, w21
-        stp     q10, q11, [x10, #96]
-        add     w25, w25, w1
-        add     v0.4s, v12.4s, v8.4s
-        neg     w1, w1
-        add     v1.4s, v15.4s, v9.4s
-        ror     w25, w25, w1
-        add     v2.4s, v18.4s, v10.4s
-        add     w27, w5, w22
-        add     v3.4s, v21.4s, v11.4s
-        add     w27, w27, w11
-        add     v13.4s, v13.4s, v0.4s
-        ror     w5, w27, #29
-        add     v16.4s, v16.4s, v1.4s
-        str     w5, [x12, #1484]
-        add     v19.4s, v19.4s, v2.4s
-        add     w27, w5, w22
-        add     v22.4s, v22.4s, v3.4s
-        add     w26, w26, w27
-        neg     w27, w27
-        and     v4.16b, v0.16b, v24.16b
-        ror     w26, w26, w27
-        and     v5.16b, v1.16b, v24.16b
-        mov     w11, #0xBABB
-        and     v6.16b, v2.16b, v24.16b
-        movk    w11, #0x8D14, lsl #16
-        and     v7.16b, v3.16b, v24.16b
-        add     w27, w2, w23
-        orr     v0.16b, v0.16b, v25.16b
-        add     w27, w27, w11
-        orr     v1.16b, v1.16b, v25.16b
-        ror     w2, w27, #29
-        orr     v2.16b, v2.16b, v25.16b
-        str     w2, [x12, #1536]
-        orr     v3.16b, v3.16b, v25.16b
-        add     w27, w2, w23
-        ushl    v4.4s, v13.4s, v4.4s
-        add     w6, w6, w27
-        ushl    v5.4s, v16.4s, v5.4s
-        neg     w27, w27
-        ushl    v6.4s, v19.4s, v6.4s
-        ror     w6, w6, w27
-        ushl    v7.4s, v22.4s, v7.4s
-        add     w28, w3, w24
-        ushl    v0.4s, v13.4s, v0.4s
-        add     w28, w28, w11
-        ushl    v1.4s, v16.4s, v1.4s
-        ror     w3, w28, #29
-        ushl    v2.4s, v19.4s, v2.4s
-        str     w3, [x12, #1540]
-        ushl    v3.4s, v22.4s, v3.4s
-        add     w28, w3, w24
-        orr     v13.16b, v4.16b, v0.16b
-        add     w7, w7, w28
-        orr     v16.16b, v5.16b, v1.16b
-        neg     w28, w28
-        orr     v19.16b, v6.16b, v2.16b
-        ror     w7, w7, w28
-        orr     v22.16b, v7.16b, v3.16b
-        add     w1, w4, w25
-        // k=41: A = (A + S[15] + B1) <<< 3; S[15] = A; B2 = (B2 + B1 + A) <<< (B1 + A)
-        add     w1, w1, w11
-        ldp     q0, q1, [x10, #128]
-        ror     w4, w1, #29
-        ldp     q2, q3, [x10, #160]
-        str     w4, [x12, #1544]
-        add     v0.4s, v0.4s, v8.4s
-        add     w1, w4, w25
-        add     v1.4s, v1.4s, v9.4s
-        add     w8, w8, w1
-        add     v2.4s, v2.4s, v10.4s
-        neg     w1, w1
-        add     v3.4s, v3.4s, v11.4s
-        ror     w8, w8, w1
-        add     v0.4s, v0.4s, v13.4s
-        add     w27, w5, w26
-        add     v1.4s, v1.4s, v16.4s
-        add     w27, w27, w11
-        add     v2.4s, v2.4s, v19.4s
-        ror     w5, w27, #29
-        add     v3.4s, v3.4s, v22.4s
-        str     w5, [x12, #1548]
-        shl     v8.4s, v0.4s, #3
-        add     w27, w5, w26
-        shl     v9.4s, v1.4s, #3
-        add     w17, w17, w27
-        neg     w27, w27
-        shl     v10.4s, v2.4s, #3
-        ror     w17, w17, w27
-        shl     v11.4s, v3.4s, #3
-        mov     w11, #0x3474
-        sri     v8.4s, v0.4s, #29
-        movk    w11, #0x2B4C, lsl #16
-        sri     v9.4s, v1.4s, #29
-        add     w27, w2, w6
-        sri     v10.4s, v2.4s, #29
-        add     w27, w27, w11
-        sri     v11.4s, v3.4s, #29
-        ror     w2, w27, #29
-        stp     q8, q9, [x10, #128]
-        str     w2, [x12, #1600]
-        stp     q10, q11, [x10, #160]
-        add     w27, w2, w6
         add     v0.4s, v13.4s, v8.4s
-        add     w19, w19, w27
+        add     w1, w1, w11
         add     v1.4s, v16.4s, v9.4s
-        neg     w27, w27
+        ror     w4, w1, #29
         add     v2.4s, v19.4s, v10.4s
-        ror     w19, w19, w27
+        add     w1, w4, w21
         add     v3.4s, v22.4s, v11.4s
-        add     w28, w3, w7
+        add     w25, w25, w1
         add     v14.4s, v14.4s, v0.4s
-        add     w28, w28, w11
+        neg     w1, w1
         add     v17.4s, v17.4s, v1.4s
-        ror     w3, w28, #29
+        ror     w25, w25, w1
         add     v20.4s, v20.4s, v2.4s
-        str     w3, [x12, #1604]
+        add     w27, w5, w22
         add     v23.4s, v23.4s, v3.4s
+        add     w27, w27, w11
+        and     v4.16b, v0.16b, v24.16b
+        ror     w5, w27, #29
+        and     v5.16b, v1.16b, v24.16b
+        stp     w4, w5, [x30, #-184]
+        and     v6.16b, v2.16b, v24.16b
+        add     w27, w5, w22
+        and     v7.16b, v3.16b, v24.16b
+        add     w26, w26, w27
+        orr     v0.16b, v0.16b, v25.16b
+        neg     w27, w27
+        orr     v1.16b, v1.16b, v25.16b
+        orr     v2.16b, v2.16b, v25.16b
+        ror     w26, w26, w27
+        orr     v3.16b, v3.16b, v25.16b
+        ldr     w11, [sp, #4116]
+        ushl    v4.4s, v14.4s, v4.4s
+        add     w27, w2, w23
+        ushl    v5.4s, v17.4s, v5.4s
+        add     w27, w27, w11
+        ushl    v6.4s, v20.4s, v6.4s
+        ror     w2, w27, #29
+        ushl    v7.4s, v23.4s, v7.4s
+        add     w27, w2, w23
+        ushl    v0.4s, v14.4s, v0.4s
+        add     w6, w6, w27
+        ushl    v1.4s, v17.4s, v1.4s
+        neg     w27, w27
+        ushl    v2.4s, v20.4s, v2.4s
+        ror     w6, w6, w27
+        ushl    v3.4s, v23.4s, v3.4s
+        add     w28, w3, w24
+        orr     v14.16b, v4.16b, v0.16b
+        add     w28, w28, w11
+        orr     v17.16b, v5.16b, v1.16b
+        ror     w3, w28, #29
+        orr     v20.16b, v6.16b, v2.16b
+        stp     w2, w3, [x30, #-128]
+        orr     v23.16b, v7.16b, v3.16b
+        add     w28, w3, w24
+        // k=39: A = (A + S[13] + B2) <<< 3; S[13] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
+        add     w7, w7, w28
+        ldp     q0, q1, [x10, #0]
+        ldp     q2, q3, [x10, #32]
+        neg     w28, w28
+        add     v0.4s, v0.4s, v8.4s
+        ror     w7, w7, w28
+        add     v1.4s, v1.4s, v9.4s
+        add     w1, w4, w25
+        add     v2.4s, v2.4s, v10.4s
+        add     w1, w1, w11
+        add     v3.4s, v3.4s, v11.4s
+        ror     w4, w1, #29
+        add     v0.4s, v0.4s, v14.4s
+        add     w1, w4, w25
+        add     v1.4s, v1.4s, v17.4s
+        add     w8, w8, w1
+        add     v2.4s, v2.4s, v20.4s
+        neg     w1, w1
+        add     v3.4s, v3.4s, v23.4s
+        ror     w8, w8, w1
+        shl     v8.4s, v0.4s, #3
+        add     w27, w5, w26
+        shl     v9.4s, v1.4s, #3
+        add     w27, w27, w11
+        shl     v10.4s, v2.4s, #3
+        ror     w5, w27, #29
+        shl     v11.4s, v3.4s, #3
+        stp     w4, w5, [x30, #-120]
+        sri     v8.4s, v0.4s, #29
+        add     w27, w5, w26
+        sri     v9.4s, v1.4s, #29
+        add     w17, w17, w27
+        sri     v10.4s, v2.4s, #29
+        neg     w27, w27
+        sri     v11.4s, v3.4s, #29
+        stp     q8, q9, [x10, #0]
+        ror     w17, w17, w27
+        stp     q10, q11, [x10, #32]
+        ldr     w11, [sp, #4120]
+        add     v0.4s, v14.4s, v8.4s
+        add     w27, w2, w6
+        add     v1.4s, v17.4s, v9.4s
+        add     w27, w27, w11
+        add     v2.4s, v20.4s, v10.4s
+        ror     w2, w27, #29
+        add     v3.4s, v23.4s, v11.4s
+        add     w27, w2, w6
+        add     v12.4s, v12.4s, v0.4s
+        add     w19, w19, w27
+        add     v15.4s, v15.4s, v1.4s
+        neg     w27, w27
+        add     v18.4s, v18.4s, v2.4s
+        ror     w19, w19, w27
+        add     v21.4s, v21.4s, v3.4s
         add     w28, w3, w7
         and     v4.16b, v0.16b, v24.16b
-        add     w20, w20, w28
+        add     w28, w28, w11
         and     v5.16b, v1.16b, v24.16b
-        neg     w28, w28
+        ror     w3, w28, #29
         and     v6.16b, v2.16b, v24.16b
-        ror     w20, w20, w28
+        stp     w2, w3, [x30, #-64]
         and     v7.16b, v3.16b, v24.16b
-        add     w1, w4, w8
+        add     w28, w3, w7
         orr     v0.16b, v0.16b, v25.16b
-        add     w1, w1, w11
+        add     w20, w20, w28
         orr     v1.16b, v1.16b, v25.16b
-        ror     w4, w1, #29
+        neg     w28, w28
         orr     v2.16b, v2.16b, v25.16b
-        str     w4, [x12, #1608]
         orr     v3.16b, v3.16b, v25.16b
+        ror     w20, w20, w28
+        ushl    v4.4s, v12.4s, v4.4s
         add     w1, w4, w8
-        ushl    v4.4s, v14.4s, v4.4s
+        ushl    v5.4s, v15.4s, v5.4s
+        add     w1, w1, w11
+        ushl    v6.4s, v18.4s, v6.4s
+        ror     w4, w1, #29
+        ushl    v7.4s, v21.4s, v7.4s
+        add     w1, w4, w8
+        ushl    v0.4s, v12.4s, v0.4s
         add     w21, w21, w1
-        ushl    v5.4s, v17.4s, v5.4s
+        ushl    v1.4s, v15.4s, v1.4s
         neg     w1, w1
-        ushl    v6.4s, v20.4s, v6.4s
+        ushl    v2.4s, v18.4s, v2.4s
         ror     w21, w21, w1
-        ushl    v7.4s, v23.4s, v7.4s
+        ushl    v3.4s, v21.4s, v3.4s
         add     w27, w5, w17
-        ushl    v0.4s, v14.4s, v0.4s
+        orr     v12.16b, v4.16b, v0.16b
         add     w27, w27, w11
-        ushl    v1.4s, v17.4s, v1.4s
+        orr     v15.16b, v5.16b, v1.16b
         ror     w5, w27, #29
-        ushl    v2.4s, v20.4s, v2.4s
-        str     w5, [x12, #1612]
-        ushl    v3.4s, v23.4s, v3.4s
+        orr     v18.16b, v6.16b, v2.16b
+        stp     w4, w5, [x30, #-56]
+        orr     v21.16b, v7.16b, v3.16b
         add     w27, w5, w17
-        orr     v14.16b, v4.16b, v0.16b
+        // k=40: A = (A + S[14] + B0) <<< 3; S[14] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
         add     w22, w22, w27
+        ldp     q0, q1, [x10, #64]
         neg     w27, w27
-        orr     v17.16b, v5.16b, v1.16b
-        ror     w22, w22, w27
-        orr     v20.16b, v6.16b, v2.16b
-        // handoff: A and L0..L2, transposed
-        orr     v23.16b, v7.16b, v3.16b
-        str     w2, [x12, #1664]
-        // k=42: A = (A + S[16] + B2) <<< 3; S[16] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
-        str     w3, [x12, #1668]
-        ldp     q0, q1, [x10, #192]
-        str     w4, [x12, #1672]
-        ldp     q2, q3, [x10, #224]
-        str     w5, [x12, #1676]
+        ldp     q2, q3, [x10, #96]
         add     v0.4s, v0.4s, v8.4s
-        str     w6, [x12, #1728]
+        ror     w22, w22, w27
         add     v1.4s, v1.4s, v9.4s
-        str     w7, [x12, #1732]
+        ldr     w11, [sp, #4124]
         add     v2.4s, v2.4s, v10.4s
-        str     w8, [x12, #1736]
+        add     w27, w2, w19
         add     v3.4s, v3.4s, v11.4s
-        str     w17, [x12, #1740]
-        add     v0.4s, v0.4s, v14.4s
-        str     w19, [x12, #1792]
-        add     v1.4s, v1.4s, v17.4s
-        str     w20, [x12, #1796]
-        add     v2.4s, v2.4s, v20.4s
-        str     w21, [x12, #1800]
-        add     v3.4s, v3.4s, v23.4s
-        str     w22, [x12, #1804]
+        add     w27, w27, w11
+        add     v0.4s, v0.4s, v12.4s
+        ror     w2, w27, #29
+        add     v1.4s, v1.4s, v15.4s
+        add     w27, w2, w19
+        add     v2.4s, v2.4s, v18.4s
+        add     w23, w23, w27
+        add     v3.4s, v3.4s, v21.4s
+        neg     w27, w27
         shl     v8.4s, v0.4s, #3
-        str     w23, [x12, #1856]
+        ror     w23, w23, w27
         shl     v9.4s, v1.4s, #3
-        str     w24, [x12, #1860]
+        add     w28, w3, w20
         shl     v10.4s, v2.4s, #3
-        str     w25, [x12, #1864]
+        add     w28, w28, w11
         shl     v11.4s, v3.4s, #3
-        str     w26, [x12, #1868]
+        ror     w3, w28, #29
+        sri     v8.4s, v0.4s, #29
+        stp     w2, w3, [x30, #0]
+        sri     v9.4s, v1.4s, #29
+        add     w28, w3, w20
+        sri     v10.4s, v2.4s, #29
+        add     w24, w24, w28
+        sri     v11.4s, v3.4s, #29
+        neg     w28, w28
+        stp     q8, q9, [x10, #64]
+        stp     q10, q11, [x10, #96]
+        ror     w24, w24, w28
+        add     v0.4s, v12.4s, v8.4s
+        add     w1, w4, w21
+        add     v1.4s, v15.4s, v9.4s
+        add     w1, w1, w11
+        add     v2.4s, v18.4s, v10.4s
+        ror     w4, w1, #29
+        add     v3.4s, v21.4s, v11.4s
+        add     w1, w4, w21
+        add     v13.4s, v13.4s, v0.4s
+        add     w25, w25, w1
+        add     v16.4s, v16.4s, v1.4s
+        neg     w1, w1
+        add     v19.4s, v19.4s, v2.4s
+        ror     w25, w25, w1
+        add     v22.4s, v22.4s, v3.4s
+        add     w27, w5, w22
+        and     v4.16b, v0.16b, v24.16b
+        add     w27, w27, w11
+        and     v5.16b, v1.16b, v24.16b
+        ror     w5, w27, #29
+        and     v6.16b, v2.16b, v24.16b
+        stp     w4, w5, [x30, #8]
+        and     v7.16b, v3.16b, v24.16b
+        add     w27, w5, w22
+        orr     v0.16b, v0.16b, v25.16b
+        add     w26, w26, w27
+        orr     v1.16b, v1.16b, v25.16b
+        neg     w27, w27
+        orr     v2.16b, v2.16b, v25.16b
+        ror     w26, w26, w27
+        orr     v3.16b, v3.16b, v25.16b
+        ushl    v4.4s, v13.4s, v4.4s
+        ldr     w11, [sp, #4128]
+        ushl    v5.4s, v16.4s, v5.4s
+        add     w27, w2, w23
+        ushl    v6.4s, v19.4s, v6.4s
+        add     w27, w27, w11
+        ushl    v7.4s, v22.4s, v7.4s
+        ror     w2, w27, #29
+        ushl    v0.4s, v13.4s, v0.4s
+        add     w27, w2, w23
+        ushl    v1.4s, v16.4s, v1.4s
+        add     w6, w6, w27
+        ushl    v2.4s, v19.4s, v2.4s
+        neg     w27, w27
+        ushl    v3.4s, v22.4s, v3.4s
+        ror     w6, w6, w27
+        orr     v13.16b, v4.16b, v0.16b
+        add     w28, w3, w24
+        orr     v16.16b, v5.16b, v1.16b
+        add     w28, w28, w11
+        orr     v19.16b, v6.16b, v2.16b
+        ror     w3, w28, #29
+        orr     v22.16b, v7.16b, v3.16b
+        stp     w2, w3, [x30, #64]
+        // k=41: A = (A + S[15] + B1) <<< 3; S[15] = A; B2 = (B2 + B1 + A) <<< (B1 + A)
+        add     w28, w3, w24
+        ldp     q0, q1, [x10, #128]
+        add     w7, w7, w28
+        ldp     q2, q3, [x10, #160]
+        neg     w28, w28
+        add     v0.4s, v0.4s, v8.4s
+        add     v1.4s, v1.4s, v9.4s
+        ror     w7, w7, w28
+        add     v2.4s, v2.4s, v10.4s
+        add     w1, w4, w25
+        add     v3.4s, v3.4s, v11.4s
+        add     w1, w1, w11
+        add     v0.4s, v0.4s, v13.4s
+        ror     w4, w1, #29
+        add     v1.4s, v1.4s, v16.4s
+        add     w1, w4, w25
+        add     v2.4s, v2.4s, v19.4s
+        add     w8, w8, w1
+        add     v3.4s, v3.4s, v22.4s
+        neg     w1, w1
+        shl     v8.4s, v0.4s, #3
+        ror     w8, w8, w1
+        shl     v9.4s, v1.4s, #3
+        add     w27, w5, w26
+        shl     v10.4s, v2.4s, #3
+        add     w27, w27, w11
+        shl     v11.4s, v3.4s, #3
+        ror     w5, w27, #29
+        sri     v8.4s, v0.4s, #29
+        stp     w4, w5, [x30, #72]
+        sri     v9.4s, v1.4s, #29
+        add     w27, w5, w26
+        sri     v10.4s, v2.4s, #29
+        add     w17, w17, w27
+        sri     v11.4s, v3.4s, #29
+        neg     w27, w27
+        stp     q8, q9, [x10, #128]
+        ror     w17, w17, w27
+        stp     q10, q11, [x10, #160]
+        add     v0.4s, v13.4s, v8.4s
+        ldr     w11, [sp, #4132]
+        add     v1.4s, v16.4s, v9.4s
+        add     w27, w2, w6
+        add     v2.4s, v19.4s, v10.4s
+        add     w27, w27, w11
+        add     v3.4s, v22.4s, v11.4s
+        ror     w2, w27, #29
+        add     v14.4s, v14.4s, v0.4s
+        add     w27, w2, w6
+        add     v17.4s, v17.4s, v1.4s
+        add     w19, w19, w27
+        add     v20.4s, v20.4s, v2.4s
+        neg     w27, w27
+        add     v23.4s, v23.4s, v3.4s
+        ror     w19, w19, w27
+        and     v4.16b, v0.16b, v24.16b
+        add     w28, w3, w7
+        and     v5.16b, v1.16b, v24.16b
+        add     w28, w28, w11
+        and     v6.16b, v2.16b, v24.16b
+        ror     w3, w28, #29
+        and     v7.16b, v3.16b, v24.16b
+        stp     w2, w3, [x30, #128]
+        orr     v0.16b, v0.16b, v25.16b
+        add     w28, w3, w7
+        orr     v1.16b, v1.16b, v25.16b
+        add     w20, w20, w28
+        orr     v2.16b, v2.16b, v25.16b
+        neg     w28, w28
+        orr     v3.16b, v3.16b, v25.16b
+        ror     w20, w20, w28
+        ushl    v4.4s, v14.4s, v4.4s
+        ushl    v5.4s, v17.4s, v5.4s
+        add     w1, w4, w8
+        ushl    v6.4s, v20.4s, v6.4s
+        add     w1, w1, w11
+        ushl    v7.4s, v23.4s, v7.4s
+        ror     w4, w1, #29
+        ushl    v0.4s, v14.4s, v0.4s
+        add     w1, w4, w8
+        ushl    v1.4s, v17.4s, v1.4s
+        add     w21, w21, w1
+        ushl    v2.4s, v20.4s, v2.4s
+        neg     w1, w1
+        ushl    v3.4s, v23.4s, v3.4s
+        ror     w21, w21, w1
+        orr     v14.16b, v4.16b, v0.16b
+        add     w27, w5, w17
+        orr     v17.16b, v5.16b, v1.16b
+        add     w27, w27, w11
+        orr     v20.16b, v6.16b, v2.16b
+        ror     w5, w27, #29
+        orr     v23.16b, v7.16b, v3.16b
+        stp     w4, w5, [x30, #136]
+        // k=42: A = (A + S[16] + B2) <<< 3; S[16] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
+        add     w27, w5, w17
+        ldp     q0, q1, [x10, #192]
+        add     w22, w22, w27
+        ldp     q2, q3, [x10, #224]
+        neg     w27, w27
+        add     v0.4s, v0.4s, v8.4s
+        ror     w22, w22, w27
+        add     v1.4s, v1.4s, v9.4s
+        add     v2.4s, v2.4s, v10.4s
+        // handoff: A and L0..L2, transposed
+        add     v3.4s, v3.4s, v11.4s
+        stp     w2, w3, [x30, #192]
+        add     v0.4s, v0.4s, v14.4s
+        stp     w4, w5, [x30, #200]
+        add     v1.4s, v1.4s, v17.4s
+        add     x30, x12, #1984
+        add     v2.4s, v2.4s, v20.4s
+        stp     w6, w7, [x30, #-256]
+        add     v3.4s, v3.4s, v23.4s
+        stp     w8, w17, [x30, #-248]
+        shl     v8.4s, v0.4s, #3
+        stp     w19, w20, [x30, #-192]
+        shl     v9.4s, v1.4s, #3
+        stp     w21, w22, [x30, #-184]
+        shl     v10.4s, v2.4s, #3
+        stp     w23, w24, [x30, #-128]
+        shl     v11.4s, v3.4s, #3
+        stp     w25, w26, [x30, #-120]
         sri     v8.4s, v0.4s, #29
         // ---- scalar subgroup 1: keys 4..7 of the next batch
         sri     v9.4s, v1.4s, #29
@@ -1780,3268 +1778,3122 @@ L(batch_loop):
         stp     q10, q11, [x10, #224]
         mov     w5, w11
         add     v0.4s, v14.4s, v8.4s
-        ldr     w11, [sp, #160]
         add     v1.4s, v17.4s, v9.4s
-        mov     w6, w11
+        ldr     w11, [sp, #160]
         add     v2.4s, v20.4s, v10.4s
-        mov     w7, w11
+        mov     w6, w11
         add     v3.4s, v23.4s, v11.4s
-        mov     w8, w11
+        mov     w7, w11
         add     v12.4s, v12.4s, v0.4s
-        mov     w17, w11
+        mov     w8, w11
         add     v15.4s, v15.4s, v1.4s
-        ldr     w11, [sp, #168]
+        mov     w17, w11
         add     v18.4s, v18.4s, v2.4s
-        mov     w19, w11
+        ldr     w11, [sp, #168]
         add     v21.4s, v21.4s, v3.4s
-        mov     w20, w11
+        mov     w19, w11
         and     v4.16b, v0.16b, v24.16b
-        mov     w21, w11
-        mov     w22, w11
+        mov     w20, w11
         and     v5.16b, v1.16b, v24.16b
-        // L2_i = (L0hi + 4+i + pre_B_2) <<< pre_B_2
+        mov     w21, w11
         and     v6.16b, v2.16b, v24.16b
-        ldr     w11, [sp, #180]
+        mov     w22, w11
         and     v7.16b, v3.16b, v24.16b
-        add     w23, w11, #4
+        // L2_i = (L0hi + 4+i + pre_B_2) <<< pre_B_2
         orr     v0.16b, v0.16b, v25.16b
-        add     w24, w11, #5
+        ldr     w11, [sp, #180]
         orr     v1.16b, v1.16b, v25.16b
-        add     w25, w11, #6
+        add     w23, w11, #4
         orr     v2.16b, v2.16b, v25.16b
-        add     w26, w11, #7
+        add     w24, w11, #5
         orr     v3.16b, v3.16b, v25.16b
-        ldr     w11, [sp, #176]
+        add     w25, w11, #6
         ushl    v4.4s, v12.4s, v4.4s
-        neg     w27, w11
         ushl    v5.4s, v15.4s, v5.4s
-        add     w23, w23, w11
+        add     w26, w11, #7
         ushl    v6.4s, v18.4s, v6.4s
-        ror     w23, w23, w27
+        ldr     w11, [sp, #176]
         ushl    v7.4s, v21.4s, v7.4s
-        add     w24, w24, w11
+        neg     w27, w11
         ushl    v0.4s, v12.4s, v0.4s
-        ror     w24, w24, w27
+        add     w23, w23, w11
         ushl    v1.4s, v15.4s, v1.4s
-        add     w25, w25, w11
+        ror     w23, w23, w27
         ushl    v2.4s, v18.4s, v2.4s
-        ror     w25, w25, w27
+        add     w24, w24, w11
         ushl    v3.4s, v21.4s, v3.4s
-        add     w26, w26, w11
+        ror     w24, w24, w27
         orr     v12.16b, v4.16b, v0.16b
-        ror     w26, w26, w27
+        add     w25, w25, w11
         orr     v15.16b, v5.16b, v1.16b
-        mov     w11, #0xBE8E
+        ror     w25, w25, w27
         orr     v18.16b, v6.16b, v2.16b
-        movk    w11, #0x9287, lsl #16
+        add     w26, w26, w11
         orr     v21.16b, v7.16b, v3.16b
-        add     w27, w2, w23
+        ror     w26, w26, w27
         // k=43: A = (A + S[17] + B0) <<< 3; S[17] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
-        add     w27, w27, w11
+        ldr     w11, [sp, #4044]
         ldp     q0, q1, [x10, #256]
-        ror     w2, w27, #29
-        ldp     q2, q3, [x10, #288]
-        str     w2, [x12, #208]
-        add     v0.4s, v0.4s, v8.4s
         add     w27, w2, w23
+        ldp     q2, q3, [x10, #288]
+        add     w27, w27, w11
+        add     v0.4s, v0.4s, v8.4s
+        ror     w2, w27, #29
         add     v1.4s, v1.4s, v9.4s
-        add     w6, w6, w27
+        add     w27, w2, w23
         add     v2.4s, v2.4s, v10.4s
-        neg     w27, w27
         add     v3.4s, v3.4s, v11.4s
-        ror     w6, w6, w27
+        add     w6, w6, w27
         add     v0.4s, v0.4s, v12.4s
-        add     w28, w3, w24
+        neg     w27, w27
         add     v1.4s, v1.4s, v15.4s
-        add     w28, w28, w11
+        ror     w6, w6, w27
         add     v2.4s, v2.4s, v18.4s
-        ror     w3, w28, #29
-        add     v3.4s, v3.4s, v21.4s
-        str     w3, [x12, #212]
-        shl     v8.4s, v0.4s, #3
         add     w28, w3, w24
+        add     v3.4s, v3.4s, v21.4s
+        add     w28, w28, w11
+        shl     v8.4s, v0.4s, #3
+        ror     w3, w28, #29
         shl     v9.4s, v1.4s, #3
-        add     w7, w7, w28
+        add     x30, x12, #464
         shl     v10.4s, v2.4s, #3
-        neg     w28, w28
-        ror     w7, w7, w28
+        stp     w2, w3, [x30, #-256]
         shl     v11.4s, v3.4s, #3
-        add     w1, w4, w25
+        add     w28, w3, w24
         sri     v8.4s, v0.4s, #29
-        add     w1, w1, w11
+        add     w7, w7, w28
         sri     v9.4s, v1.4s, #29
-        ror     w4, w1, #29
+        neg     w28, w28
         sri     v10.4s, v2.4s, #29
-        str     w4, [x12, #216]
+        ror     w7, w7, w28
         sri     v11.4s, v3.4s, #29
         add     w1, w4, w25
         stp     q8, q9, [x10, #256]
-        add     w8, w8, w1
+        add     w1, w1, w11
         stp     q10, q11, [x10, #288]
-        neg     w1, w1
+        ror     w4, w1, #29
         add     v0.4s, v12.4s, v8.4s
-        ror     w8, w8, w1
+        add     w1, w4, w25
         add     v1.4s, v15.4s, v9.4s
-        add     w27, w5, w26
         add     v2.4s, v18.4s, v10.4s
-        add     w27, w27, w11
+        add     w8, w8, w1
         add     v3.4s, v21.4s, v11.4s
-        ror     w5, w27, #29
+        neg     w1, w1
         add     v13.4s, v13.4s, v0.4s
-        str     w5, [x12, #220]
+        ror     w8, w8, w1
         add     v16.4s, v16.4s, v1.4s
         add     w27, w5, w26
         add     v19.4s, v19.4s, v2.4s
-        add     w17, w17, w27
-        add     v22.4s, v22.4s, v3.4s
-        neg     w27, w27
-        and     v4.16b, v0.16b, v24.16b
-        ror     w17, w17, w27
-        and     v5.16b, v1.16b, v24.16b
-        mov     w11, #0x3847
-        and     v6.16b, v2.16b, v24.16b
-        movk    w11, #0x30BF, lsl #16
-        and     v7.16b, v3.16b, v24.16b
-        add     w27, w2, w6
-        orr     v0.16b, v0.16b, v25.16b
         add     w27, w27, w11
-        orr     v1.16b, v1.16b, v25.16b
-        ror     w2, w27, #29
-        orr     v2.16b, v2.16b, v25.16b
-        str     w2, [x12, #272]
-        orr     v3.16b, v3.16b, v25.16b
-        add     w27, w2, w6
-        ushl    v4.4s, v13.4s, v4.4s
-        add     w19, w19, w27
-        ushl    v5.4s, v16.4s, v5.4s
+        add     v22.4s, v22.4s, v3.4s
+        ror     w5, w27, #29
+        and     v4.16b, v0.16b, v24.16b
+        stp     w4, w5, [x30, #-248]
+        and     v5.16b, v1.16b, v24.16b
+        add     w27, w5, w26
+        and     v6.16b, v2.16b, v24.16b
+        add     w17, w17, w27
+        and     v7.16b, v3.16b, v24.16b
         neg     w27, w27
+        orr     v0.16b, v0.16b, v25.16b
+        ror     w17, w17, w27
+        orr     v1.16b, v1.16b, v25.16b
+        ldr     w11, [sp, #4048]
+        orr     v2.16b, v2.16b, v25.16b
+        add     w27, w2, w6
+        orr     v3.16b, v3.16b, v25.16b
+        add     w27, w27, w11
+        ushl    v4.4s, v13.4s, v4.4s
+        ror     w2, w27, #29
+        ushl    v5.4s, v16.4s, v5.4s
         ushl    v6.4s, v19.4s, v6.4s
-        ror     w19, w19, w27
+        add     w27, w2, w6
         ushl    v7.4s, v22.4s, v7.4s
-        add     w28, w3, w7
+        add     w19, w19, w27
         ushl    v0.4s, v13.4s, v0.4s
-        add     w28, w28, w11
+        neg     w27, w27
         ushl    v1.4s, v16.4s, v1.4s
-        ror     w3, w28, #29
+        ror     w19, w19, w27
         ushl    v2.4s, v19.4s, v2.4s
-        str     w3, [x12, #276]
-        ushl    v3.4s, v22.4s, v3.4s
         add     w28, w3, w7
+        ushl    v3.4s, v22.4s, v3.4s
+        add     w28, w28, w11
         orr     v13.16b, v4.16b, v0.16b
-        add     w20, w20, w28
+        ror     w3, w28, #29
         orr     v16.16b, v5.16b, v1.16b
-        neg     w28, w28
-        ror     w20, w20, w28
+        stp     w2, w3, [x30, #-192]
         orr     v19.16b, v6.16b, v2.16b
-        add     w1, w4, w8
+        add     w28, w3, w7
         orr     v22.16b, v7.16b, v3.16b
-        add     w1, w1, w11
+        add     w20, w20, w28
         // k=44: A = (A + S[18] + B1) <<< 3; S[18] = A; B2 = (B2 + B1 + A) <<< (B1 + A)
-        ror     w4, w1, #29
+        neg     w28, w28
         ldp     q0, q1, [x10, #320]
-        str     w4, [x12, #280]
+        ror     w20, w20, w28
         ldp     q2, q3, [x10, #352]
         add     w1, w4, w8
         add     v0.4s, v0.4s, v8.4s
-        add     w21, w21, w1
+        add     w1, w1, w11
         add     v1.4s, v1.4s, v9.4s
-        neg     w1, w1
+        ror     w4, w1, #29
         add     v2.4s, v2.4s, v10.4s
-        ror     w21, w21, w1
+        add     w1, w4, w8
         add     v3.4s, v3.4s, v11.4s
-        add     w27, w5, w17
         add     v0.4s, v0.4s, v13.4s
-        add     w27, w27, w11
+        add     w21, w21, w1
         add     v1.4s, v1.4s, v16.4s
-        ror     w5, w27, #29
+        neg     w1, w1
         add     v2.4s, v2.4s, v19.4s
-        str     w5, [x12, #284]
+        ror     w21, w21, w1
         add     v3.4s, v3.4s, v22.4s
         add     w27, w5, w17
         shl     v8.4s, v0.4s, #3
-        add     w22, w22, w27
-        shl     v9.4s, v1.4s, #3
-        neg     w27, w27
-        shl     v10.4s, v2.4s, #3
-        ror     w22, w22, w27
-        shl     v11.4s, v3.4s, #3
-        mov     w11, #0xB200
-        sri     v8.4s, v0.4s, #29
-        movk    w11, #0xCEF6, lsl #16
-        sri     v9.4s, v1.4s, #29
-        add     w27, w2, w19
-        sri     v10.4s, v2.4s, #29
         add     w27, w27, w11
-        sri     v11.4s, v3.4s, #29
-        ror     w2, w27, #29
-        stp     q8, q9, [x10, #320]
-        str     w2, [x12, #336]
-        stp     q10, q11, [x10, #352]
-        add     w27, w2, w19
-        add     v0.4s, v13.4s, v8.4s
-        add     w23, w23, w27
-        add     v1.4s, v16.4s, v9.4s
+        shl     v9.4s, v1.4s, #3
+        ror     w5, w27, #29
+        shl     v10.4s, v2.4s, #3
+        stp     w4, w5, [x30, #-184]
+        shl     v11.4s, v3.4s, #3
+        add     w27, w5, w17
+        sri     v8.4s, v0.4s, #29
+        add     w22, w22, w27
+        sri     v9.4s, v1.4s, #29
         neg     w27, w27
+        sri     v10.4s, v2.4s, #29
+        ror     w22, w22, w27
+        sri     v11.4s, v3.4s, #29
+        ldr     w11, [sp, #4052]
+        stp     q8, q9, [x10, #320]
+        add     w27, w2, w19
+        stp     q10, q11, [x10, #352]
+        add     w27, w27, w11
+        add     v0.4s, v13.4s, v8.4s
+        ror     w2, w27, #29
+        add     v1.4s, v16.4s, v9.4s
+        add     w27, w2, w19
         add     v2.4s, v19.4s, v10.4s
-        ror     w23, w23, w27
         add     v3.4s, v22.4s, v11.4s
-        add     w28, w3, w20
+        add     w23, w23, w27
         add     v14.4s, v14.4s, v0.4s
-        add     w28, w28, w11
+        neg     w27, w27
         add     v17.4s, v17.4s, v1.4s
-        ror     w3, w28, #29
+        ror     w23, w23, w27
         add     v20.4s, v20.4s, v2.4s
-        str     w3, [x12, #340]
-        add     v23.4s, v23.4s, v3.4s
         add     w28, w3, w20
+        add     v23.4s, v23.4s, v3.4s
+        add     w28, w28, w11
         and     v4.16b, v0.16b, v24.16b
-        add     w24, w24, w28
+        ror     w3, w28, #29
         and     v5.16b, v1.16b, v24.16b
-        neg     w28, w28
-        ror     w24, w24, w28
+        stp     w2, w3, [x30, #-128]
         and     v6.16b, v2.16b, v24.16b
-        add     w1, w4, w21
+        add     w28, w3, w20
         and     v7.16b, v3.16b, v24.16b
-        add     w1, w1, w11
+        add     w24, w24, w28
         orr     v0.16b, v0.16b, v25.16b
-        ror     w4, w1, #29
+        neg     w28, w28
         orr     v1.16b, v1.16b, v25.16b
-        str     w4, [x12, #344]
+        ror     w24, w24, w28
         orr     v2.16b, v2.16b, v25.16b
         add     w1, w4, w21
         orr     v3.16b, v3.16b, v25.16b
-        add     w25, w25, w1
+        add     w1, w1, w11
         ushl    v4.4s, v14.4s, v4.4s
-        neg     w1, w1
+        ror     w4, w1, #29
         ushl    v5.4s, v17.4s, v5.4s
-        ror     w25, w25, w1
+        add     w1, w4, w21
         ushl    v6.4s, v20.4s, v6.4s
-        add     w27, w5, w22
         ushl    v7.4s, v23.4s, v7.4s
-        add     w27, w27, w11
+        add     w25, w25, w1
         ushl    v0.4s, v14.4s, v0.4s
-        ror     w5, w27, #29
+        neg     w1, w1
         ushl    v1.4s, v17.4s, v1.4s
-        str     w5, [x12, #348]
+        ror     w25, w25, w1
         ushl    v2.4s, v20.4s, v2.4s
         add     w27, w5, w22
         ushl    v3.4s, v23.4s, v3.4s
-        add     w26, w26, w27
-        orr     v14.16b, v4.16b, v0.16b
-        neg     w27, w27
-        orr     v17.16b, v5.16b, v1.16b
-        ror     w26, w26, w27
-        orr     v20.16b, v6.16b, v2.16b
-        mov     w11, #0x2BB9
-        orr     v23.16b, v7.16b, v3.16b
-        movk    w11, #0x6D2E, lsl #16
-        // k=45: A = (A + S[19] + B2) <<< 3; S[19] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
-        add     w27, w2, w23
-        ldp     q0, q1, [x10, #384]
         add     w27, w27, w11
-        ldp     q2, q3, [x10, #416]
-        ror     w2, w27, #29
-        add     v0.4s, v0.4s, v8.4s
-        str     w2, [x12, #400]
-        add     v1.4s, v1.4s, v9.4s
-        add     w27, w2, w23
-        add     v2.4s, v2.4s, v10.4s
-        add     w6, w6, w27
-        add     v3.4s, v3.4s, v11.4s
+        orr     v14.16b, v4.16b, v0.16b
+        ror     w5, w27, #29
+        orr     v17.16b, v5.16b, v1.16b
+        stp     w4, w5, [x30, #-120]
+        orr     v20.16b, v6.16b, v2.16b
+        add     w27, w5, w22
+        orr     v23.16b, v7.16b, v3.16b
+        add     w26, w26, w27
+        // k=45: A = (A + S[19] + B2) <<< 3; S[19] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
         neg     w27, w27
+        ldp     q0, q1, [x10, #384]
+        ror     w26, w26, w27
+        ldp     q2, q3, [x10, #416]
+        ldr     w11, [sp, #4056]
+        add     v0.4s, v0.4s, v8.4s
+        add     w27, w2, w23
+        add     v1.4s, v1.4s, v9.4s
+        add     w27, w27, w11
+        add     v2.4s, v2.4s, v10.4s
+        ror     w2, w27, #29
+        add     v3.4s, v3.4s, v11.4s
+        add     w27, w2, w23
         add     v0.4s, v0.4s, v14.4s
-        ror     w6, w6, w27
         add     v1.4s, v1.4s, v17.4s
-        add     w28, w3, w24
+        add     w6, w6, w27
         add     v2.4s, v2.4s, v20.4s
-        add     w28, w28, w11
+        neg     w27, w27
         add     v3.4s, v3.4s, v23.4s
-        ror     w3, w28, #29
+        ror     w6, w6, w27
         shl     v8.4s, v0.4s, #3
-        str     w3, [x12, #404]
-        shl     v9.4s, v1.4s, #3
         add     w28, w3, w24
+        shl     v9.4s, v1.4s, #3
+        add     w28, w28, w11
         shl     v10.4s, v2.4s, #3
-        add     w7, w7, w28
+        ror     w3, w28, #29
         shl     v11.4s, v3.4s, #3
-        neg     w28, w28
-        ror     w7, w7, w28
+        stp     w2, w3, [x30, #-64]
         sri     v8.4s, v0.4s, #29
-        add     w1, w4, w25
+        add     w28, w3, w24
         sri     v9.4s, v1.4s, #29
-        add     w1, w1, w11
+        add     w7, w7, w28
         sri     v10.4s, v2.4s, #29
-        ror     w4, w1, #29
+        neg     w28, w28
         sri     v11.4s, v3.4s, #29
-        str     w4, [x12, #408]
+        ror     w7, w7, w28
         stp     q8, q9, [x10, #384]
         add     w1, w4, w25
         stp     q10, q11, [x10, #416]
-        add     w8, w8, w1
+        add     w1, w1, w11
         add     v0.4s, v14.4s, v8.4s
-        neg     w1, w1
+        ror     w4, w1, #29
         add     v1.4s, v17.4s, v9.4s
-        ror     w8, w8, w1
+        add     w1, w4, w25
         add     v2.4s, v20.4s, v10.4s
-        add     w27, w5, w26
+        add     w8, w8, w1
         add     v3.4s, v23.4s, v11.4s
-        add     w27, w27, w11
         add     v12.4s, v12.4s, v0.4s
-        ror     w5, w27, #29
+        neg     w1, w1
         add     v15.4s, v15.4s, v1.4s
-        str     w5, [x12, #412]
+        ror     w8, w8, w1
         add     v18.4s, v18.4s, v2.4s
         add     w27, w5, w26
         add     v21.4s, v21.4s, v3.4s
-        add     w17, w17, w27
-        and     v4.16b, v0.16b, v24.16b
-        neg     w27, w27
-        and     v5.16b, v1.16b, v24.16b
-        ror     w17, w17, w27
-        and     v6.16b, v2.16b, v24.16b
-        mov     w11, #0xA572
-        and     v7.16b, v3.16b, v24.16b
-        movk    w11, #0x0B65, lsl #16
-        orr     v0.16b, v0.16b, v25.16b
-        add     w27, w2, w6
-        orr     v1.16b, v1.16b, v25.16b
         add     w27, w27, w11
-        orr     v2.16b, v2.16b, v25.16b
-        ror     w2, w27, #29
-        orr     v3.16b, v3.16b, v25.16b
-        str     w2, [x12, #464]
-        ushl    v4.4s, v12.4s, v4.4s
-        add     w27, w2, w6
-        ushl    v5.4s, v15.4s, v5.4s
-        add     w19, w19, w27
-        ushl    v6.4s, v18.4s, v6.4s
+        and     v4.16b, v0.16b, v24.16b
+        ror     w5, w27, #29
+        and     v5.16b, v1.16b, v24.16b
+        stp     w4, w5, [x30, #-56]
+        and     v6.16b, v2.16b, v24.16b
+        add     w27, w5, w26
+        and     v7.16b, v3.16b, v24.16b
+        add     w17, w17, w27
+        orr     v0.16b, v0.16b, v25.16b
         neg     w27, w27
+        orr     v1.16b, v1.16b, v25.16b
+        ror     w17, w17, w27
+        orr     v2.16b, v2.16b, v25.16b
+        ldr     w11, [sp, #4060]
+        orr     v3.16b, v3.16b, v25.16b
+        add     w27, w2, w6
+        ushl    v4.4s, v12.4s, v4.4s
+        add     w27, w27, w11
+        ushl    v5.4s, v15.4s, v5.4s
+        ror     w2, w27, #29
+        ushl    v6.4s, v18.4s, v6.4s
+        add     w27, w2, w6
         ushl    v7.4s, v21.4s, v7.4s
-        ror     w19, w19, w27
         ushl    v0.4s, v12.4s, v0.4s
-        add     w28, w3, w7
+        add     w19, w19, w27
         ushl    v1.4s, v15.4s, v1.4s
-        add     w28, w28, w11
+        neg     w27, w27
         ushl    v2.4s, v18.4s, v2.4s
-        ror     w3, w28, #29
+        ror     w19, w19, w27
         ushl    v3.4s, v21.4s, v3.4s
-        str     w3, [x12, #468]
-        orr     v12.16b, v4.16b, v0.16b
         add     w28, w3, w7
+        orr     v12.16b, v4.16b, v0.16b
+        add     w28, w28, w11
         orr     v15.16b, v5.16b, v1.16b
-        add     w20, w20, w28
+        ror     w3, w28, #29
         orr     v18.16b, v6.16b, v2.16b
-        neg     w28, w28
-        ror     w20, w20, w28
+        stp     w2, w3, [x30, #0]
         orr     v21.16b, v7.16b, v3.16b
-        add     w1, w4, w8
+        add     w28, w3, w7
         // k=46: A = (A + S[20] + B0) <<< 3; S[20] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
-        add     w1, w1, w11
+        add     w20, w20, w28
         ldp     q0, q1, [x10, #448]
-        ror     w4, w1, #29
+        neg     w28, w28
         ldp     q2, q3, [x10, #480]
-        str     w4, [x12, #472]
+        ror     w20, w20, w28
         add     v0.4s, v0.4s, v8.4s
         add     w1, w4, w8
         add     v1.4s, v1.4s, v9.4s
-        add     w21, w21, w1
+        add     w1, w1, w11
         add     v2.4s, v2.4s, v10.4s
-        neg     w1, w1
+        ror     w4, w1, #29
         add     v3.4s, v3.4s, v11.4s
-        ror     w21, w21, w1
+        add     w1, w4, w8
         add     v0.4s, v0.4s, v12.4s
-        add     w27, w5, w17
+        add     w21, w21, w1
         add     v1.4s, v1.4s, v15.4s
-        add     w27, w27, w11
         add     v2.4s, v2.4s, v18.4s
-        ror     w5, w27, #29
+        neg     w1, w1
         add     v3.4s, v3.4s, v21.4s
-        str     w5, [x12, #476]
+        ror     w21, w21, w1
         shl     v8.4s, v0.4s, #3
         add     w27, w5, w17
         shl     v9.4s, v1.4s, #3
-        add     w22, w22, w27
-        shl     v10.4s, v2.4s, #3
-        neg     w27, w27
-        shl     v11.4s, v3.4s, #3
-        ror     w22, w22, w27
-        sri     v8.4s, v0.4s, #29
-        mov     w11, #0x1F2B
-        sri     v9.4s, v1.4s, #29
-        movk    w11, #0xA99D, lsl #16
-        sri     v10.4s, v2.4s, #29
-        add     w27, w2, w19
-        sri     v11.4s, v3.4s, #29
         add     w27, w27, w11
-        stp     q8, q9, [x10, #448]
-        ror     w2, w27, #29
-        stp     q10, q11, [x10, #480]
-        str     w2, [x12, #528]
-        add     v0.4s, v12.4s, v8.4s
-        add     w27, w2, w19
-        add     v1.4s, v15.4s, v9.4s
-        add     w23, w23, w27
-        add     v2.4s, v18.4s, v10.4s
+        shl     v10.4s, v2.4s, #3
+        ror     w5, w27, #29
+        shl     v11.4s, v3.4s, #3
+        stp     w4, w5, [x30, #8]
+        sri     v8.4s, v0.4s, #29
+        add     w27, w5, w17
+        sri     v9.4s, v1.4s, #29
+        add     w22, w22, w27
+        sri     v10.4s, v2.4s, #29
         neg     w27, w27
+        sri     v11.4s, v3.4s, #29
+        ror     w22, w22, w27
+        stp     q8, q9, [x10, #448]
+        ldr     w11, [sp, #4064]
+        stp     q10, q11, [x10, #480]
+        add     w27, w2, w19
+        add     v0.4s, v12.4s, v8.4s
+        add     w27, w27, w11
+        add     v1.4s, v15.4s, v9.4s
+        ror     w2, w27, #29
+        add     v2.4s, v18.4s, v10.4s
+        add     w27, w2, w19
         add     v3.4s, v21.4s, v11.4s
-        ror     w23, w23, w27
         add     v13.4s, v13.4s, v0.4s
-        add     w28, w3, w20
+        add     w23, w23, w27
         add     v16.4s, v16.4s, v1.4s
-        add     w28, w28, w11
+        neg     w27, w27
         add     v19.4s, v19.4s, v2.4s
-        ror     w3, w28, #29
+        ror     w23, w23, w27
         add     v22.4s, v22.4s, v3.4s
-        str     w3, [x12, #532]
-        and     v4.16b, v0.16b, v24.16b
         add     w28, w3, w20
+        and     v4.16b, v0.16b, v24.16b
+        add     w28, w28, w11
         and     v5.16b, v1.16b, v24.16b
-        add     w24, w24, w28
+        ror     w3, w28, #29
         and     v6.16b, v2.16b, v24.16b
-        neg     w28, w28
-        ror     w24, w24, w28
+        stp     w2, w3, [x30, #64]
         and     v7.16b, v3.16b, v24.16b
-        add     w1, w4, w21
+        add     w28, w3, w20
         orr     v0.16b, v0.16b, v25.16b
-        add     w1, w1, w11
+        add     w24, w24, w28
         orr     v1.16b, v1.16b, v25.16b
-        ror     w4, w1, #29
+        neg     w28, w28
         orr     v2.16b, v2.16b, v25.16b
-        str     w4, [x12, #536]
+        ror     w24, w24, w28
         orr     v3.16b, v3.16b, v25.16b
         add     w1, w4, w21
         ushl    v4.4s, v13.4s, v4.4s
-        add     w25, w25, w1
+        add     w1, w1, w11
         ushl    v5.4s, v16.4s, v5.4s
-        neg     w1, w1
+        ror     w4, w1, #29
         ushl    v6.4s, v19.4s, v6.4s
-        ror     w25, w25, w1
+        add     w1, w4, w21
         ushl    v7.4s, v22.4s, v7.4s
-        add     w27, w5, w22
+        add     w25, w25, w1
         ushl    v0.4s, v13.4s, v0.4s
-        add     w27, w27, w11
         ushl    v1.4s, v16.4s, v1.4s
-        ror     w5, w27, #29
+        neg     w1, w1
         ushl    v2.4s, v19.4s, v2.4s
-        str     w5, [x12, #540]
+        ror     w25, w25, w1
         ushl    v3.4s, v22.4s, v3.4s
         add     w27, w5, w22
         orr     v13.16b, v4.16b, v0.16b
-        add     w26, w26, w27
-        orr     v16.16b, v5.16b, v1.16b
-        neg     w27, w27
-        orr     v19.16b, v6.16b, v2.16b
-        ror     w26, w26, w27
-        orr     v22.16b, v7.16b, v3.16b
-        mov     w11, #0x98E4
-        // k=47: A = (A + S[21] + B1) <<< 3; S[21] = A; B2 = (B2 + B1 + A) <<< (B1 + A)
-        movk    w11, #0x47D4, lsl #16
-        ldp     q0, q1, [x10, #512]
-        add     w27, w2, w23
-        ldp     q2, q3, [x10, #544]
         add     w27, w27, w11
-        add     v0.4s, v0.4s, v8.4s
-        ror     w2, w27, #29
-        add     v1.4s, v1.4s, v9.4s
-        str     w2, [x12, #592]
-        add     v2.4s, v2.4s, v10.4s
-        add     w27, w2, w23
-        add     v3.4s, v3.4s, v11.4s
-        add     w6, w6, w27
-        add     v0.4s, v0.4s, v13.4s
+        orr     v16.16b, v5.16b, v1.16b
+        ror     w5, w27, #29
+        orr     v19.16b, v6.16b, v2.16b
+        stp     w4, w5, [x30, #72]
+        orr     v22.16b, v7.16b, v3.16b
+        add     w27, w5, w22
+        // k=47: A = (A + S[21] + B1) <<< 3; S[21] = A; B2 = (B2 + B1 + A) <<< (B1 + A)
+        add     w26, w26, w27
+        ldp     q0, q1, [x10, #512]
         neg     w27, w27
+        ldp     q2, q3, [x10, #544]
+        ror     w26, w26, w27
+        add     v0.4s, v0.4s, v8.4s
+        ldr     w11, [sp, #4068]
+        add     v1.4s, v1.4s, v9.4s
+        add     w27, w2, w23
+        add     v2.4s, v2.4s, v10.4s
+        add     w27, w27, w11
+        add     v3.4s, v3.4s, v11.4s
+        ror     w2, w27, #29
+        add     v0.4s, v0.4s, v13.4s
+        add     w27, w2, w23
         add     v1.4s, v1.4s, v16.4s
-        ror     w6, w6, w27
+        add     w6, w6, w27
         add     v2.4s, v2.4s, v19.4s
-        add     w28, w3, w24
         add     v3.4s, v3.4s, v22.4s
-        add     w28, w28, w11
+        neg     w27, w27
         shl     v8.4s, v0.4s, #3
-        ror     w3, w28, #29
+        ror     w6, w6, w27
         shl     v9.4s, v1.4s, #3
-        str     w3, [x12, #596]
-        shl     v10.4s, v2.4s, #3
         add     w28, w3, w24
+        shl     v10.4s, v2.4s, #3
+        add     w28, w28, w11
         shl     v11.4s, v3.4s, #3
-        add     w7, w7, w28
+        ror     w3, w28, #29
         sri     v8.4s, v0.4s, #29
-        neg     w28, w28
-        ror     w7, w7, w28
+        stp     w2, w3, [x30, #128]
         sri     v9.4s, v1.4s, #29
-        add     w1, w4, w25
+        add     w28, w3, w24
         sri     v10.4s, v2.4s, #29
-        add     w1, w1, w11
+        add     w7, w7, w28
         sri     v11.4s, v3.4s, #29
-        ror     w4, w1, #29
+        neg     w28, w28
         stp     q8, q9, [x10, #512]
-        str     w4, [x12, #600]
+        ror     w7, w7, w28
         stp     q10, q11, [x10, #544]
         add     w1, w4, w25
         add     v0.4s, v13.4s, v8.4s
-        add     w8, w8, w1
+        add     w1, w1, w11
         add     v1.4s, v16.4s, v9.4s
-        neg     w1, w1
+        ror     w4, w1, #29
         add     v2.4s, v19.4s, v10.4s
-        ror     w8, w8, w1
+        add     w1, w4, w25
         add     v3.4s, v22.4s, v11.4s
-        add     w27, w5, w26
+        add     w8, w8, w1
         add     v14.4s, v14.4s, v0.4s
-        add     w27, w27, w11
         add     v17.4s, v17.4s, v1.4s
-        ror     w5, w27, #29
+        neg     w1, w1
         add     v20.4s, v20.4s, v2.4s
-        str     w5, [x12, #604]
+        ror     w8, w8, w1
         add     v23.4s, v23.4s, v3.4s
         add     w27, w5, w26
         and     v4.16b, v0.16b, v24.16b
-        add     w17, w17, w27
-        and     v5.16b, v1.16b, v24.16b
-        neg     w27, w27
-        and     v6.16b, v2.16b, v24.16b
-        ror     w17, w17, w27
-        and     v7.16b, v3.16b, v24.16b
-        mov     w11, #0x129D
-        orr     v0.16b, v0.16b, v25.16b
-        movk    w11, #0xE60C, lsl #16
-        orr     v1.16b, v1.16b, v25.16b
-        add     w27, w2, w6
-        orr     v2.16b, v2.16b, v25.16b
         add     w27, w27, w11
-        orr     v3.16b, v3.16b, v25.16b
-        ror     w2, w27, #29
-        ushl    v4.4s, v14.4s, v4.4s
-        str     w2, [x12, #656]
-        ushl    v5.4s, v17.4s, v5.4s
-        add     w27, w2, w6
-        ushl    v6.4s, v20.4s, v6.4s
-        add     w19, w19, w27
-        ushl    v7.4s, v23.4s, v7.4s
+        and     v5.16b, v1.16b, v24.16b
+        ror     w5, w27, #29
+        and     v6.16b, v2.16b, v24.16b
+        stp     w4, w5, [x30, #136]
+        and     v7.16b, v3.16b, v24.16b
+        add     w27, w5, w26
+        orr     v0.16b, v0.16b, v25.16b
+        add     w17, w17, w27
+        orr     v1.16b, v1.16b, v25.16b
         neg     w27, w27
+        orr     v2.16b, v2.16b, v25.16b
+        ror     w17, w17, w27
+        orr     v3.16b, v3.16b, v25.16b
+        ldr     w11, [sp, #4072]
+        ushl    v4.4s, v14.4s, v4.4s
+        add     w27, w2, w6
+        ushl    v5.4s, v17.4s, v5.4s
+        add     w27, w27, w11
+        ushl    v6.4s, v20.4s, v6.4s
+        ror     w2, w27, #29
+        ushl    v7.4s, v23.4s, v7.4s
+        add     w27, w2, w6
         ushl    v0.4s, v14.4s, v0.4s
-        ror     w19, w19, w27
+        add     w19, w19, w27
         ushl    v1.4s, v17.4s, v1.4s
-        add     w28, w3, w7
         ushl    v2.4s, v20.4s, v2.4s
-        add     w28, w28, w11
+        neg     w27, w27
         ushl    v3.4s, v23.4s, v3.4s
-        ror     w3, w28, #29
+        ror     w19, w19, w27
         orr     v14.16b, v4.16b, v0.16b
-        str     w3, [x12, #660]
-        orr     v17.16b, v5.16b, v1.16b
         add     w28, w3, w7
+        orr     v17.16b, v5.16b, v1.16b
+        add     w28, w28, w11
         orr     v20.16b, v6.16b, v2.16b
-        add     w20, w20, w28
-        neg     w28, w28
+        ror     w3, w28, #29
         orr     v23.16b, v7.16b, v3.16b
-        ror     w20, w20, w28
+        stp     w2, w3, [x30, #192]
         // k=48: A = (A + S[22] + B2) <<< 3; S[22] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
-        add     w1, w4, w8
+        add     w28, w3, w7
         ldp     q0, q1, [x10, #576]
-        add     w1, w1, w11
+        add     w20, w20, w28
         ldp     q2, q3, [x10, #608]
-        ror     w4, w1, #29
+        neg     w28, w28
         add     v0.4s, v0.4s, v8.4s
-        str     w4, [x12, #664]
+        ror     w20, w20, w28
         add     v1.4s, v1.4s, v9.4s
         add     w1, w4, w8
         add     v2.4s, v2.4s, v10.4s
-        add     w21, w21, w1
+        add     w1, w1, w11
         add     v3.4s, v3.4s, v11.4s
-        neg     w1, w1
+        ror     w4, w1, #29
         add     v0.4s, v0.4s, v14.4s
-        ror     w21, w21, w1
+        add     w1, w4, w8
         add     v1.4s, v1.4s, v17.4s
-        add     w27, w5, w17
+        add     w21, w21, w1
         add     v2.4s, v2.4s, v20.4s
-        add     w27, w27, w11
+        neg     w1, w1
         add     v3.4s, v3.4s, v23.4s
-        ror     w5, w27, #29
         shl     v8.4s, v0.4s, #3
-        str     w5, [x12, #668]
+        ror     w21, w21, w1
         shl     v9.4s, v1.4s, #3
         add     w27, w5, w17
         shl     v10.4s, v2.4s, #3
-        add     w22, w22, w27
+        add     w27, w27, w11
         shl     v11.4s, v3.4s, #3
-        neg     w27, w27
-        sri     v8.4s, v0.4s, #29
-        ror     w22, w22, w27
-        sri     v9.4s, v1.4s, #29
-        mov     w11, #0x8C56
-        sri     v10.4s, v2.4s, #29
-        movk    w11, #0x8443, lsl #16
-        sri     v11.4s, v3.4s, #29
-        add     w27, w2, w19
-        stp     q8, q9, [x10, #576]
-        add     w27, w27, w11
-        stp     q10, q11, [x10, #608]
-        ror     w2, w27, #29
-        add     v0.4s, v14.4s, v8.4s
-        str     w2, [x12, #720]
-        add     v1.4s, v17.4s, v9.4s
-        add     w27, w2, w19
-        add     v2.4s, v20.4s, v10.4s
-        add     w23, w23, w27
-        add     v3.4s, v23.4s, v11.4s
-        neg     w27, w27
-        add     v12.4s, v12.4s, v0.4s
-        ror     w23, w23, w27
-        add     v15.4s, v15.4s, v1.4s
-        add     w28, w3, w20
-        add     v18.4s, v18.4s, v2.4s
-        add     w28, w28, w11
-        add     v21.4s, v21.4s, v3.4s
-        ror     w3, w28, #29
-        and     v4.16b, v0.16b, v24.16b
-        str     w3, [x12, #724]
-        and     v5.16b, v1.16b, v24.16b
-        add     w28, w3, w20
-        and     v6.16b, v2.16b, v24.16b
-        add     w24, w24, w28
-        neg     w28, w28
-        and     v7.16b, v3.16b, v24.16b
-        ror     w24, w24, w28
-        orr     v0.16b, v0.16b, v25.16b
-        add     w1, w4, w21
-        orr     v1.16b, v1.16b, v25.16b
-        add     w1, w1, w11
-        orr     v2.16b, v2.16b, v25.16b
-        ror     w4, w1, #29
-        orr     v3.16b, v3.16b, v25.16b
-        str     w4, [x12, #728]
-        ushl    v4.4s, v12.4s, v4.4s
-        add     w1, w4, w21
-        ushl    v5.4s, v15.4s, v5.4s
-        add     w25, w25, w1
-        ushl    v6.4s, v18.4s, v6.4s
-        neg     w1, w1
-        ushl    v7.4s, v21.4s, v7.4s
-        ror     w25, w25, w1
-        ushl    v0.4s, v12.4s, v0.4s
-        add     w27, w5, w22
-        ushl    v1.4s, v15.4s, v1.4s
-        add     w27, w27, w11
-        ushl    v2.4s, v18.4s, v2.4s
         ror     w5, w27, #29
-        ushl    v3.4s, v21.4s, v3.4s
-        str     w5, [x12, #732]
-        orr     v12.16b, v4.16b, v0.16b
-        add     w27, w5, w22
-        orr     v15.16b, v5.16b, v1.16b
-        add     w26, w26, w27
-        orr     v18.16b, v6.16b, v2.16b
+        sri     v8.4s, v0.4s, #29
+        stp     w4, w5, [x30, #200]
+        sri     v9.4s, v1.4s, #29
+        add     w27, w5, w17
+        sri     v10.4s, v2.4s, #29
+        add     w22, w22, w27
+        sri     v11.4s, v3.4s, #29
         neg     w27, w27
-        orr     v21.16b, v7.16b, v3.16b
-        ror     w26, w26, w27
-        // k=49: A = (A + S[23] + B0) <<< 3; S[23] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
-        mov     w11, #0x060F
-        ldp     q0, q1, [x10, #640]
-        movk    w11, #0x227B, lsl #16
-        ldp     q2, q3, [x10, #672]
-        add     w27, w2, w23
-        add     v0.4s, v0.4s, v8.4s
+        stp     q8, q9, [x10, #576]
+        ror     w22, w22, w27
+        stp     q10, q11, [x10, #608]
+        ldr     w11, [sp, #4076]
+        add     v0.4s, v14.4s, v8.4s
+        add     w27, w2, w19
+        add     v1.4s, v17.4s, v9.4s
         add     w27, w27, w11
-        add     v1.4s, v1.4s, v9.4s
+        add     v2.4s, v20.4s, v10.4s
         ror     w2, w27, #29
+        add     v3.4s, v23.4s, v11.4s
+        add     w27, w2, w19
+        add     v12.4s, v12.4s, v0.4s
+        add     w23, w23, w27
+        add     v15.4s, v15.4s, v1.4s
+        add     v18.4s, v18.4s, v2.4s
+        neg     w27, w27
+        add     v21.4s, v21.4s, v3.4s
+        ror     w23, w23, w27
+        and     v4.16b, v0.16b, v24.16b
+        add     w28, w3, w20
+        and     v5.16b, v1.16b, v24.16b
+        add     w28, w28, w11
+        and     v6.16b, v2.16b, v24.16b
+        ror     w3, w28, #29
+        and     v7.16b, v3.16b, v24.16b
+        add     x30, x12, #976
+        orr     v0.16b, v0.16b, v25.16b
+        stp     w2, w3, [x30, #-256]
+        orr     v1.16b, v1.16b, v25.16b
+        add     w28, w3, w20
+        orr     v2.16b, v2.16b, v25.16b
+        add     w24, w24, w28
+        orr     v3.16b, v3.16b, v25.16b
+        neg     w28, w28
+        ushl    v4.4s, v12.4s, v4.4s
+        ror     w24, w24, w28
+        ushl    v5.4s, v15.4s, v5.4s
+        add     w1, w4, w21
+        ushl    v6.4s, v18.4s, v6.4s
+        add     w1, w1, w11
+        ushl    v7.4s, v21.4s, v7.4s
+        ror     w4, w1, #29
+        ushl    v0.4s, v12.4s, v0.4s
+        add     w1, w4, w21
+        ushl    v1.4s, v15.4s, v1.4s
+        add     w25, w25, w1
+        ushl    v2.4s, v18.4s, v2.4s
+        ushl    v3.4s, v21.4s, v3.4s
+        neg     w1, w1
+        orr     v12.16b, v4.16b, v0.16b
+        ror     w25, w25, w1
+        orr     v15.16b, v5.16b, v1.16b
+        add     w27, w5, w22
+        orr     v18.16b, v6.16b, v2.16b
+        add     w27, w27, w11
+        orr     v21.16b, v7.16b, v3.16b
+        ror     w5, w27, #29
+        // k=49: A = (A + S[23] + B0) <<< 3; S[23] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
+        stp     w4, w5, [x30, #-248]
+        ldp     q0, q1, [x10, #640]
+        add     w27, w5, w22
+        ldp     q2, q3, [x10, #672]
+        add     w26, w26, w27
+        add     v0.4s, v0.4s, v8.4s
+        neg     w27, w27
+        add     v1.4s, v1.4s, v9.4s
+        ror     w26, w26, w27
         add     v2.4s, v2.4s, v10.4s
-        str     w2, [x12, #784]
+        ldr     w11, [sp, #4080]
         add     v3.4s, v3.4s, v11.4s
         add     w27, w2, w23
         add     v0.4s, v0.4s, v12.4s
-        add     w6, w6, w27
+        add     w27, w27, w11
         add     v1.4s, v1.4s, v15.4s
-        neg     w27, w27
+        ror     w2, w27, #29
         add     v2.4s, v2.4s, v18.4s
-        ror     w6, w6, w27
+        add     w27, w2, w23
         add     v3.4s, v3.4s, v21.4s
-        add     w28, w3, w24
+        add     w6, w6, w27
         shl     v8.4s, v0.4s, #3
-        add     w28, w28, w11
         shl     v9.4s, v1.4s, #3
-        ror     w3, w28, #29
+        neg     w27, w27
         shl     v10.4s, v2.4s, #3
-        str     w3, [x12, #788]
+        ror     w6, w6, w27
         shl     v11.4s, v3.4s, #3
         add     w28, w3, w24
         sri     v8.4s, v0.4s, #29
-        add     w7, w7, w28
-        neg     w28, w28
+        add     w28, w28, w11
         sri     v9.4s, v1.4s, #29
-        ror     w7, w7, w28
+        ror     w3, w28, #29
         sri     v10.4s, v2.4s, #29
-        add     w1, w4, w25
+        stp     w2, w3, [x30, #-192]
         sri     v11.4s, v3.4s, #29
-        add     w1, w1, w11
+        add     w28, w3, w24
         stp     q8, q9, [x10, #640]
-        ror     w4, w1, #29
+        add     w7, w7, w28
         stp     q10, q11, [x10, #672]
-        str     w4, [x12, #792]
+        neg     w28, w28
         add     v0.4s, v12.4s, v8.4s
-        add     w1, w4, w25
+        ror     w7, w7, w28
         add     v1.4s, v15.4s, v9.4s
-        add     w8, w8, w1
+        add     w1, w4, w25
         add     v2.4s, v18.4s, v10.4s
-        neg     w1, w1
+        add     w1, w1, w11
         add     v3.4s, v21.4s, v11.4s
-        ror     w8, w8, w1
+        ror     w4, w1, #29
         add     v13.4s, v13.4s, v0.4s
-        add     w27, w5, w26
+        add     w1, w4, w25
         add     v16.4s, v16.4s, v1.4s
-        add     w27, w27, w11
+        add     w8, w8, w1
         add     v19.4s, v19.4s, v2.4s
-        ror     w5, w27, #29
         add     v22.4s, v22.4s, v3.4s
-        str     w5, [x12, #796]
+        neg     w1, w1
         and     v4.16b, v0.16b, v24.16b
-        add     w27, w5, w26
+        ror     w8, w8, w1
         and     v5.16b, v1.16b, v24.16b
-        add     w17, w17, w27
+        add     w27, w5, w26
         and     v6.16b, v2.16b, v24.16b
-        neg     w27, w27
-        and     v7.16b, v3.16b, v24.16b
-        ror     w17, w17, w27
-        orr     v0.16b, v0.16b, v25.16b
-        mov     w11, #0x7FC8
-        orr     v1.16b, v1.16b, v25.16b
-        movk    w11, #0xC0B2, lsl #16
-        orr     v2.16b, v2.16b, v25.16b
-        add     w27, w2, w6
-        orr     v3.16b, v3.16b, v25.16b
         add     w27, w27, w11
+        and     v7.16b, v3.16b, v24.16b
+        ror     w5, w27, #29
+        orr     v0.16b, v0.16b, v25.16b
+        stp     w4, w5, [x30, #-184]
+        orr     v1.16b, v1.16b, v25.16b
+        add     w27, w5, w26
+        orr     v2.16b, v2.16b, v25.16b
+        add     w17, w17, w27
+        orr     v3.16b, v3.16b, v25.16b
+        neg     w27, w27
         ushl    v4.4s, v13.4s, v4.4s
-        ror     w2, w27, #29
+        ror     w17, w17, w27
         ushl    v5.4s, v16.4s, v5.4s
-        str     w2, [x12, #848]
+        ldr     w11, [sp, #4084]
         ushl    v6.4s, v19.4s, v6.4s
         add     w27, w2, w6
         ushl    v7.4s, v22.4s, v7.4s
-        add     w19, w19, w27
+        add     w27, w27, w11
         ushl    v0.4s, v13.4s, v0.4s
-        neg     w27, w27
+        ror     w2, w27, #29
         ushl    v1.4s, v16.4s, v1.4s
-        ror     w19, w19, w27
+        add     w27, w2, w6
         ushl    v2.4s, v19.4s, v2.4s
-        add     w28, w3, w7
+        add     w19, w19, w27
         ushl    v3.4s, v22.4s, v3.4s
-        add     w28, w28, w11
         orr     v13.16b, v4.16b, v0.16b
-        ror     w3, w28, #29
+        neg     w27, w27
         orr     v16.16b, v5.16b, v1.16b
-        str     w3, [x12, #852]
+        ror     w19, w19, w27
         orr     v19.16b, v6.16b, v2.16b
         add     w28, w3, w7
         orr     v22.16b, v7.16b, v3.16b
-        add     w20, w20, w28
-        neg     w28, w28
+        add     w28, w28, w11
         // k=50: A = (A + S[24] + B1) <<< 3; S[24] = A; B2 = (B2 + B1 + A) <<< (B1 + A)
-        ror     w20, w20, w28
+        ror     w3, w28, #29
         ldp     q0, q1, [x10, #704]
-        add     w1, w4, w8
+        stp     w2, w3, [x30, #-128]
         ldp     q2, q3, [x10, #736]
-        add     w1, w1, w11
+        add     w28, w3, w7
         add     v0.4s, v0.4s, v8.4s
-        ror     w4, w1, #29
+        add     w20, w20, w28
         add     v1.4s, v1.4s, v9.4s
-        str     w4, [x12, #856]
+        neg     w28, w28
         add     v2.4s, v2.4s, v10.4s
-        add     w1, w4, w8
+        ror     w20, w20, w28
         add     v3.4s, v3.4s, v11.4s
-        add     w21, w21, w1
+        add     w1, w4, w8
         add     v0.4s, v0.4s, v13.4s
-        neg     w1, w1
+        add     w1, w1, w11
         add     v1.4s, v1.4s, v16.4s
-        ror     w21, w21, w1
+        ror     w4, w1, #29
         add     v2.4s, v2.4s, v19.4s
-        add     w27, w5, w17
+        add     w1, w4, w8
         add     v3.4s, v3.4s, v22.4s
-        add     w27, w27, w11
+        add     w21, w21, w1
         shl     v8.4s, v0.4s, #3
-        ror     w5, w27, #29
+        neg     w1, w1
         shl     v9.4s, v1.4s, #3
-        str     w5, [x12, #860]
         shl     v10.4s, v2.4s, #3
-        add     w27, w5, w17
+        ror     w21, w21, w1
         shl     v11.4s, v3.4s, #3
-        add     w22, w22, w27
+        add     w27, w5, w17
         sri     v8.4s, v0.4s, #29
-        neg     w27, w27
-        sri     v9.4s, v1.4s, #29
-        ror     w22, w22, w27
-        sri     v10.4s, v2.4s, #29
-        mov     w11, #0xF981
-        sri     v11.4s, v3.4s, #29
-        movk    w11, #0x5EE9, lsl #16
-        stp     q8, q9, [x10, #704]
-        add     w27, w2, w19
-        stp     q10, q11, [x10, #736]
         add     w27, w27, w11
+        sri     v9.4s, v1.4s, #29
+        ror     w5, w27, #29
+        sri     v10.4s, v2.4s, #29
+        stp     w4, w5, [x30, #-120]
+        sri     v11.4s, v3.4s, #29
+        add     w27, w5, w17
+        stp     q8, q9, [x10, #704]
+        add     w22, w22, w27
+        stp     q10, q11, [x10, #736]
+        neg     w27, w27
         add     v0.4s, v13.4s, v8.4s
-        ror     w2, w27, #29
+        ror     w22, w22, w27
         add     v1.4s, v16.4s, v9.4s
-        str     w2, [x12, #912]
+        ldr     w11, [sp, #4088]
         add     v2.4s, v19.4s, v10.4s
         add     w27, w2, w19
         add     v3.4s, v22.4s, v11.4s
-        add     w23, w23, w27
+        add     w27, w27, w11
         add     v14.4s, v14.4s, v0.4s
-        neg     w27, w27
+        ror     w2, w27, #29
         add     v17.4s, v17.4s, v1.4s
-        ror     w23, w23, w27
+        add     w27, w2, w19
         add     v20.4s, v20.4s, v2.4s
-        add     w28, w3, w20
+        add     w23, w23, w27
         add     v23.4s, v23.4s, v3.4s
-        add     w28, w28, w11
         and     v4.16b, v0.16b, v24.16b
-        ror     w3, w28, #29
+        neg     w27, w27
         and     v5.16b, v1.16b, v24.16b
-        str     w3, [x12, #916]
+        ror     w23, w23, w27
         and     v6.16b, v2.16b, v24.16b
         add     w28, w3, w20
         and     v7.16b, v3.16b, v24.16b
-        add     w24, w24, w28
-        neg     w28, w28
+        add     w28, w28, w11
         orr     v0.16b, v0.16b, v25.16b
-        ror     w24, w24, w28
+        ror     w3, w28, #29
         orr     v1.16b, v1.16b, v25.16b
-        add     w1, w4, w21
+        stp     w2, w3, [x30, #-64]
         orr     v2.16b, v2.16b, v25.16b
-        add     w1, w1, w11
+        add     w28, w3, w20
         orr     v3.16b, v3.16b, v25.16b
-        ror     w4, w1, #29
+        add     w24, w24, w28
         ushl    v4.4s, v14.4s, v4.4s
-        str     w4, [x12, #920]
+        neg     w28, w28
         ushl    v5.4s, v17.4s, v5.4s
-        add     w1, w4, w21
+        ror     w24, w24, w28
         ushl    v6.4s, v20.4s, v6.4s
-        add     w25, w25, w1
+        add     w1, w4, w21
         ushl    v7.4s, v23.4s, v7.4s
-        neg     w1, w1
+        add     w1, w1, w11
         ushl    v0.4s, v14.4s, v0.4s
-        ror     w25, w25, w1
+        ror     w4, w1, #29
         ushl    v1.4s, v17.4s, v1.4s
-        add     w27, w5, w22
+        add     w1, w4, w21
         ushl    v2.4s, v20.4s, v2.4s
-        add     w27, w27, w11
+        add     w25, w25, w1
         ushl    v3.4s, v23.4s, v3.4s
-        ror     w5, w27, #29
+        neg     w1, w1
         orr     v14.16b, v4.16b, v0.16b
-        str     w5, [x12, #924]
         orr     v17.16b, v5.16b, v1.16b
-        add     w27, w5, w22
+        ror     w25, w25, w1
         orr     v20.16b, v6.16b, v2.16b
-        add     w26, w26, w27
+        add     w27, w5, w22
         orr     v23.16b, v7.16b, v3.16b
-        neg     w27, w27
-        // k=51: A = (A + S[25] + B2) <<< 3; S[25] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
-        ror     w26, w26, w27
-        ldp     q0, q1, [x10, #768]
-        mov     w11, #0x733A
-        ldp     q2, q3, [x10, #800]
-        movk    w11, #0xFD21, lsl #16
-        add     v0.4s, v0.4s, v8.4s
-        add     w27, w2, w23
-        add     v1.4s, v1.4s, v9.4s
         add     w27, w27, w11
+        // k=51: A = (A + S[25] + B2) <<< 3; S[25] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
+        ror     w5, w27, #29
+        ldp     q0, q1, [x10, #768]
+        stp     w4, w5, [x30, #-56]
+        ldp     q2, q3, [x10, #800]
+        add     w27, w5, w22
+        add     v0.4s, v0.4s, v8.4s
+        add     w26, w26, w27
+        add     v1.4s, v1.4s, v9.4s
+        neg     w27, w27
         add     v2.4s, v2.4s, v10.4s
-        ror     w2, w27, #29
+        ror     w26, w26, w27
         add     v3.4s, v3.4s, v11.4s
-        str     w2, [x12, #976]
+        ldr     w11, [sp, #4092]
         add     v0.4s, v0.4s, v14.4s
         add     w27, w2, w23
         add     v1.4s, v1.4s, v17.4s
-        add     w6, w6, w27
+        add     w27, w27, w11
         add     v2.4s, v2.4s, v20.4s
-        neg     w27, w27
+        ror     w2, w27, #29
         add     v3.4s, v3.4s, v23.4s
-        ror     w6, w6, w27
+        add     w27, w2, w23
         shl     v8.4s, v0.4s, #3
-        add     w28, w3, w24
+        add     w6, w6, w27
         shl     v9.4s, v1.4s, #3
-        add     w28, w28, w11
         shl     v10.4s, v2.4s, #3
-        ror     w3, w28, #29
+        neg     w27, w27
         shl     v11.4s, v3.4s, #3
-        str     w3, [x12, #980]
+        ror     w6, w6, w27
         sri     v8.4s, v0.4s, #29
         add     w28, w3, w24
         sri     v9.4s, v1.4s, #29
-        add     w7, w7, w28
-        neg     w28, w28
+        add     w28, w28, w11
         sri     v10.4s, v2.4s, #29
-        ror     w7, w7, w28
+        ror     w3, w28, #29
         sri     v11.4s, v3.4s, #29
-        add     w1, w4, w25
+        stp     w2, w3, [x30, #0]
         stp     q8, q9, [x10, #768]
-        add     w1, w1, w11
+        add     w28, w3, w24
         stp     q10, q11, [x10, #800]
-        ror     w4, w1, #29
+        add     w7, w7, w28
         add     v0.4s, v14.4s, v8.4s
-        str     w4, [x12, #984]
+        neg     w28, w28
         add     v1.4s, v17.4s, v9.4s
-        add     w1, w4, w25
+        ror     w7, w7, w28
         add     v2.4s, v20.4s, v10.4s
-        add     w8, w8, w1
+        add     w1, w4, w25
         add     v3.4s, v23.4s, v11.4s
-        neg     w1, w1
+        add     w1, w1, w11
         add     v12.4s, v12.4s, v0.4s
-        ror     w8, w8, w1
+        ror     w4, w1, #29
         add     v15.4s, v15.4s, v1.4s
-        add     w27, w5, w26
+        add     w1, w4, w25
         add     v18.4s, v18.4s, v2.4s
-        add     w27, w27, w11
+        add     w8, w8, w1
         add     v21.4s, v21.4s, v3.4s
-        ror     w5, w27, #29
+        neg     w1, w1
         and     v4.16b, v0.16b, v24.16b
-        str     w5, [x12, #988]
         and     v5.16b, v1.16b, v24.16b
-        add     w27, w5, w26
+        ror     w8, w8, w1
         and     v6.16b, v2.16b, v24.16b
-        add     w17, w17, w27
+        add     w27, w5, w26
         and     v7.16b, v3.16b, v24.16b
-        neg     w27, w27
-        orr     v0.16b, v0.16b, v25.16b
-        ror     w17, w17, w27
-        orr     v1.16b, v1.16b, v25.16b
-        mov     w11, #0xECF3
-        orr     v2.16b, v2.16b, v25.16b
-        movk    w11, #0x9B58, lsl #16
-        orr     v3.16b, v3.16b, v25.16b
-        add     w27, w2, w6
-        ushl    v4.4s, v12.4s, v4.4s
         add     w27, w27, w11
+        orr     v0.16b, v0.16b, v25.16b
+        ror     w5, w27, #29
+        orr     v1.16b, v1.16b, v25.16b
+        stp     w4, w5, [x30, #8]
+        orr     v2.16b, v2.16b, v25.16b
+        add     w27, w5, w26
+        orr     v3.16b, v3.16b, v25.16b
+        add     w17, w17, w27
+        ushl    v4.4s, v12.4s, v4.4s
+        neg     w27, w27
         ushl    v5.4s, v15.4s, v5.4s
-        ror     w2, w27, #29
+        ror     w17, w17, w27
         ushl    v6.4s, v18.4s, v6.4s
-        str     w2, [x12, #1040]
+        ldr     w11, [sp, #4096]
         ushl    v7.4s, v21.4s, v7.4s
         add     w27, w2, w6
         ushl    v0.4s, v12.4s, v0.4s
-        add     w19, w19, w27
+        add     w27, w27, w11
         ushl    v1.4s, v15.4s, v1.4s
-        neg     w27, w27
+        ror     w2, w27, #29
         ushl    v2.4s, v18.4s, v2.4s
-        ror     w19, w19, w27
+        add     w27, w2, w6
         ushl    v3.4s, v21.4s, v3.4s
-        add     w28, w3, w7
+        add     w19, w19, w27
         orr     v12.16b, v4.16b, v0.16b
-        add     w28, w28, w11
+        neg     w27, w27
         orr     v15.16b, v5.16b, v1.16b
-        ror     w3, w28, #29
         orr     v18.16b, v6.16b, v2.16b
-        str     w3, [x12, #1044]
+        ror     w19, w19, w27
         orr     v21.16b, v7.16b, v3.16b
         add     w28, w3, w7
         // k=52: A = (A + S[0] + B0) <<< 3; S[0] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
-        add     w20, w20, w28
-        neg     w28, w28
+        add     w28, w28, w11
         ldp     q0, q1, [x10, #-832]
-        ror     w20, w20, w28
+        ror     w3, w28, #29
         ldp     q2, q3, [x10, #-800]
-        add     w1, w4, w8
+        stp     w2, w3, [x30, #64]
         add     v0.4s, v0.4s, v8.4s
-        add     w1, w1, w11
+        add     w28, w3, w7
         add     v1.4s, v1.4s, v9.4s
-        ror     w4, w1, #29
+        add     w20, w20, w28
         add     v2.4s, v2.4s, v10.4s
-        str     w4, [x12, #1048]
+        neg     w28, w28
         add     v3.4s, v3.4s, v11.4s
-        add     w1, w4, w8
+        ror     w20, w20, w28
         add     v0.4s, v0.4s, v12.4s
-        add     w21, w21, w1
+        add     w1, w4, w8
         add     v1.4s, v1.4s, v15.4s
-        neg     w1, w1
+        add     w1, w1, w11
         add     v2.4s, v2.4s, v18.4s
-        ror     w21, w21, w1
+        ror     w4, w1, #29
         add     v3.4s, v3.4s, v21.4s
-        add     w27, w5, w17
+        add     w1, w4, w8
         shl     v8.4s, v0.4s, #3
-        add     w27, w27, w11
+        add     w21, w21, w1
         shl     v9.4s, v1.4s, #3
-        ror     w5, w27, #29
+        neg     w1, w1
         shl     v10.4s, v2.4s, #3
-        str     w5, [x12, #1052]
         shl     v11.4s, v3.4s, #3
-        add     w27, w5, w17
+        ror     w21, w21, w1
         sri     v8.4s, v0.4s, #29
-        add     w22, w22, w27
+        add     w27, w5, w17
         sri     v9.4s, v1.4s, #29
-        neg     w27, w27
-        sri     v10.4s, v2.4s, #29
-        ror     w22, w22, w27
-        sri     v11.4s, v3.4s, #29
-        mov     w11, #0x66AC
-        stp     q8, q9, [x10, #-832]
-        movk    w11, #0x3990, lsl #16
-        stp     q10, q11, [x10, #-800]
-        add     w27, w2, w19
-        add     v0.4s, v12.4s, v8.4s
         add     w27, w27, w11
+        sri     v10.4s, v2.4s, #29
+        ror     w5, w27, #29
+        sri     v11.4s, v3.4s, #29
+        stp     w4, w5, [x30, #72]
+        stp     q8, q9, [x10, #-832]
+        add     w27, w5, w17
+        stp     q10, q11, [x10, #-800]
+        add     w22, w22, w27
+        add     v0.4s, v12.4s, v8.4s
+        neg     w27, w27
         add     v1.4s, v15.4s, v9.4s
-        ror     w2, w27, #29
+        ror     w22, w22, w27
         add     v2.4s, v18.4s, v10.4s
-        str     w2, [x12, #1104]
+        ldr     w11, [sp, #4100]
         add     v3.4s, v21.4s, v11.4s
         add     w27, w2, w19
         add     v13.4s, v13.4s, v0.4s
-        add     w23, w23, w27
+        add     w27, w27, w11
         add     v16.4s, v16.4s, v1.4s
-        neg     w27, w27
+        ror     w2, w27, #29
         add     v19.4s, v19.4s, v2.4s
-        ror     w23, w23, w27
+        add     w27, w2, w19
         add     v22.4s, v22.4s, v3.4s
-        add     w28, w3, w20
+        add     w23, w23, w27
         and     v4.16b, v0.16b, v24.16b
-        add     w28, w28, w11
+        neg     w27, w27
         and     v5.16b, v1.16b, v24.16b
-        ror     w3, w28, #29
         and     v6.16b, v2.16b, v24.16b
-        str     w3, [x12, #1108]
+        ror     w23, w23, w27
         and     v7.16b, v3.16b, v24.16b
         add     w28, w3, w20
         orr     v0.16b, v0.16b, v25.16b
-        add     w24, w24, w28
-        neg     w28, w28
+        add     w28, w28, w11
         orr     v1.16b, v1.16b, v25.16b
-        ror     w24, w24, w28
+        ror     w3, w28, #29
         orr     v2.16b, v2.16b, v25.16b
-        add     w1, w4, w21
+        stp     w2, w3, [x30, #128]
         orr     v3.16b, v3.16b, v25.16b
-        add     w1, w1, w11
+        add     w28, w3, w20
         ushl    v4.4s, v13.4s, v4.4s
-        ror     w4, w1, #29
+        add     w24, w24, w28
         ushl    v5.4s, v16.4s, v5.4s
-        str     w4, [x12, #1112]
+        neg     w28, w28
         ushl    v6.4s, v19.4s, v6.4s
-        add     w1, w4, w21
+        ror     w24, w24, w28
         ushl    v7.4s, v22.4s, v7.4s
-        add     w25, w25, w1
+        add     w1, w4, w21
         ushl    v0.4s, v13.4s, v0.4s
-        neg     w1, w1
+        add     w1, w1, w11
         ushl    v1.4s, v16.4s, v1.4s
-        ror     w25, w25, w1
+        ror     w4, w1, #29
         ushl    v2.4s, v19.4s, v2.4s
-        add     w27, w5, w22
+        add     w1, w4, w21
         ushl    v3.4s, v22.4s, v3.4s
-        add     w27, w27, w11
+        add     w25, w25, w1
         orr     v13.16b, v4.16b, v0.16b
-        ror     w5, w27, #29
+        neg     w1, w1
         orr     v16.16b, v5.16b, v1.16b
-        str     w5, [x12, #1116]
+        ror     w25, w25, w1
         orr     v19.16b, v6.16b, v2.16b
-        add     w27, w5, w22
         orr     v22.16b, v7.16b, v3.16b
-        add     w26, w26, w27
+        add     w27, w5, w22
         // k=53: A = (A + S[1] + B1) <<< 3; S[1] = A; B2 = (B2 + B1 + A) <<< (B1 + A)
-        neg     w27, w27
-        ldp     q0, q1, [x10, #-768]
-        ror     w26, w26, w27
-        ldp     q2, q3, [x10, #-736]
-        mov     w11, #0xE065
-        add     v0.4s, v0.4s, v8.4s
-        movk    w11, #0xD7C7, lsl #16
-        add     v1.4s, v1.4s, v9.4s
-        add     w27, w2, w23
-        add     v2.4s, v2.4s, v10.4s
         add     w27, w27, w11
+        ldp     q0, q1, [x10, #-768]
+        ror     w5, w27, #29
+        ldp     q2, q3, [x10, #-736]
+        stp     w4, w5, [x30, #136]
+        add     v0.4s, v0.4s, v8.4s
+        add     w27, w5, w22
+        add     v1.4s, v1.4s, v9.4s
+        add     w26, w26, w27
+        add     v2.4s, v2.4s, v10.4s
+        neg     w27, w27
         add     v3.4s, v3.4s, v11.4s
-        ror     w2, w27, #29
+        ror     w26, w26, w27
         add     v0.4s, v0.4s, v13.4s
-        str     w2, [x12, #1168]
+        ldr     w11, [sp, #4104]
         add     v1.4s, v1.4s, v16.4s
         add     w27, w2, w23
         add     v2.4s, v2.4s, v19.4s
-        add     w6, w6, w27
+        add     w27, w27, w11
         add     v3.4s, v3.4s, v22.4s
-        neg     w27, w27
+        ror     w2, w27, #29
         shl     v8.4s, v0.4s, #3
-        ror     w6, w6, w27
+        add     w27, w2, w23
         shl     v9.4s, v1.4s, #3
-        add     w28, w3, w24
+        add     w6, w6, w27
         shl     v10.4s, v2.4s, #3
-        add     w28, w28, w11
+        neg     w27, w27
         shl     v11.4s, v3.4s, #3
-        ror     w3, w28, #29
         sri     v8.4s, v0.4s, #29
-        str     w3, [x12, #1172]
+        ror     w6, w6, w27
         sri     v9.4s, v1.4s, #29
         add     w28, w3, w24
         sri     v10.4s, v2.4s, #29
-        add     w7, w7, w28
-        neg     w28, w28
+        add     w28, w28, w11
         sri     v11.4s, v3.4s, #29
-        ror     w7, w7, w28
+        ror     w3, w28, #29
         stp     q8, q9, [x10, #-768]
-        add     w1, w4, w25
+        stp     w2, w3, [x30, #192]
         stp     q10, q11, [x10, #-736]
-        add     w1, w1, w11
+        add     w28, w3, w24
         add     v0.4s, v13.4s, v8.4s
-        ror     w4, w1, #29
+        add     w7, w7, w28
         add     v1.4s, v16.4s, v9.4s
-        str     w4, [x12, #1176]
+        neg     w28, w28
         add     v2.4s, v19.4s, v10.4s
-        add     w1, w4, w25
+        ror     w7, w7, w28
         add     v3.4s, v22.4s, v11.4s
-        add     w8, w8, w1
+        add     w1, w4, w25
         add     v14.4s, v14.4s, v0.4s
-        neg     w1, w1
+        add     w1, w1, w11
         add     v17.4s, v17.4s, v1.4s
-        ror     w8, w8, w1
+        ror     w4, w1, #29
         add     v20.4s, v20.4s, v2.4s
-        add     w27, w5, w26
+        add     w1, w4, w25
         add     v23.4s, v23.4s, v3.4s
-        add     w27, w27, w11
+        add     w8, w8, w1
         and     v4.16b, v0.16b, v24.16b
-        ror     w5, w27, #29
+        neg     w1, w1
         and     v5.16b, v1.16b, v24.16b
-        str     w5, [x12, #1180]
+        ror     w8, w8, w1
         and     v6.16b, v2.16b, v24.16b
-        add     w27, w5, w26
         and     v7.16b, v3.16b, v24.16b
-        add     w17, w17, w27
+        add     w27, w5, w26
         orr     v0.16b, v0.16b, v25.16b
-        neg     w27, w27
-        orr     v1.16b, v1.16b, v25.16b
-        ror     w17, w17, w27
-        orr     v2.16b, v2.16b, v25.16b
-        mov     w11, #0x5A1E
-        orr     v3.16b, v3.16b, v25.16b
-        movk    w11, #0x75FF, lsl #16
-        ushl    v4.4s, v14.4s, v4.4s
-        add     w27, w2, w6
-        ushl    v5.4s, v17.4s, v5.4s
         add     w27, w27, w11
+        orr     v1.16b, v1.16b, v25.16b
+        ror     w5, w27, #29
+        orr     v2.16b, v2.16b, v25.16b
+        stp     w4, w5, [x30, #200]
+        orr     v3.16b, v3.16b, v25.16b
+        add     w27, w5, w26
+        ushl    v4.4s, v14.4s, v4.4s
+        add     w17, w17, w27
+        ushl    v5.4s, v17.4s, v5.4s
+        neg     w27, w27
         ushl    v6.4s, v20.4s, v6.4s
-        ror     w2, w27, #29
+        ror     w17, w17, w27
         ushl    v7.4s, v23.4s, v7.4s
-        str     w2, [x12, #1232]
+        ldr     w11, [sp, #4108]
         ushl    v0.4s, v14.4s, v0.4s
         add     w27, w2, w6
         ushl    v1.4s, v17.4s, v1.4s
-        add     w19, w19, w27
+        add     w27, w27, w11
         ushl    v2.4s, v20.4s, v2.4s
-        neg     w27, w27
+        ror     w2, w27, #29
         ushl    v3.4s, v23.4s, v3.4s
-        ror     w19, w19, w27
+        add     w27, w2, w6
         orr     v14.16b, v4.16b, v0.16b
-        add     w28, w3, w7
+        add     w19, w19, w27
         orr     v17.16b, v5.16b, v1.16b
-        add     w28, w28, w11
+        neg     w27, w27
         orr     v20.16b, v6.16b, v2.16b
-        ror     w3, w28, #29
+        ror     w19, w19, w27
         orr     v23.16b, v7.16b, v3.16b
-        str     w3, [x12, #1236]
         // k=54: A = (A + S[2] + B2) <<< 3; S[2] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
         add     w28, w3, w7
         ldp     q0, q1, [x10, #-704]
-        add     w20, w20, w28
-        neg     w28, w28
+        add     w28, w28, w11
         ldp     q2, q3, [x10, #-672]
-        ror     w20, w20, w28
+        ror     w3, w28, #29
         add     v0.4s, v0.4s, v8.4s
-        add     w1, w4, w8
+        add     x30, x12, #1488
         add     v1.4s, v1.4s, v9.4s
-        add     w1, w1, w11
+        stp     w2, w3, [x30, #-256]
         add     v2.4s, v2.4s, v10.4s
-        ror     w4, w1, #29
+        add     w28, w3, w7
         add     v3.4s, v3.4s, v11.4s
-        str     w4, [x12, #1240]
+        add     w20, w20, w28
         add     v0.4s, v0.4s, v14.4s
-        add     w1, w4, w8
+        neg     w28, w28
         add     v1.4s, v1.4s, v17.4s
-        add     w21, w21, w1
+        ror     w20, w20, w28
         add     v2.4s, v2.4s, v20.4s
-        neg     w1, w1
+        add     w1, w4, w8
         add     v3.4s, v3.4s, v23.4s
-        ror     w21, w21, w1
+        add     w1, w1, w11
         shl     v8.4s, v0.4s, #3
-        add     w27, w5, w17
+        ror     w4, w1, #29
         shl     v9.4s, v1.4s, #3
-        add     w27, w27, w11
+        add     w1, w4, w8
         shl     v10.4s, v2.4s, #3
-        ror     w5, w27, #29
+        add     w21, w21, w1
         shl     v11.4s, v3.4s, #3
-        str     w5, [x12, #1244]
+        neg     w1, w1
         sri     v8.4s, v0.4s, #29
-        add     w27, w5, w17
         sri     v9.4s, v1.4s, #29
-        add     w22, w22, w27
+        ror     w21, w21, w1
         sri     v10.4s, v2.4s, #29
-        neg     w27, w27
+        add     w27, w5, w17
         sri     v11.4s, v3.4s, #29
-        ror     w22, w22, w27
+        add     w27, w27, w11
         stp     q8, q9, [x10, #-704]
-        mov     w11, #0xD3D7
+        ror     w5, w27, #29
         stp     q10, q11, [x10, #-672]
-        movk    w11, #0x1436, lsl #16
+        stp     w4, w5, [x30, #-248]
         add     v0.4s, v14.4s, v8.4s
-        add     w27, w2, w19
+        add     w27, w5, w17
         add     v1.4s, v17.4s, v9.4s
-        add     w27, w27, w11
+        add     w22, w22, w27
         add     v2.4s, v20.4s, v10.4s
-        ror     w2, w27, #29
-        add     v3.4s, v23.4s, v11.4s
-        str     w2, [x12, #1296]
-        add     v12.4s, v12.4s, v0.4s
-        add     w27, w2, w19
-        add     v15.4s, v15.4s, v1.4s
-        add     w23, w23, w27
-        add     v18.4s, v18.4s, v2.4s
         neg     w27, w27
-        add     v21.4s, v21.4s, v3.4s
-        ror     w23, w23, w27
-        and     v4.16b, v0.16b, v24.16b
-        add     w28, w3, w20
-        and     v5.16b, v1.16b, v24.16b
-        add     w28, w28, w11
-        and     v6.16b, v2.16b, v24.16b
-        ror     w3, w28, #29
-        and     v7.16b, v3.16b, v24.16b
-        str     w3, [x12, #1300]
-        orr     v0.16b, v0.16b, v25.16b
-        add     w28, w3, w20
-        orr     v1.16b, v1.16b, v25.16b
-        add     w24, w24, w28
-        neg     w28, w28
-        orr     v2.16b, v2.16b, v25.16b
-        ror     w24, w24, w28
-        orr     v3.16b, v3.16b, v25.16b
-        add     w1, w4, w21
-        ushl    v4.4s, v12.4s, v4.4s
-        add     w1, w1, w11
-        ushl    v5.4s, v15.4s, v5.4s
-        ror     w4, w1, #29
-        ushl    v6.4s, v18.4s, v6.4s
-        str     w4, [x12, #1304]
-        ushl    v7.4s, v21.4s, v7.4s
-        add     w1, w4, w21
-        ushl    v0.4s, v12.4s, v0.4s
-        add     w25, w25, w1
-        ushl    v1.4s, v15.4s, v1.4s
-        neg     w1, w1
-        ushl    v2.4s, v18.4s, v2.4s
-        ror     w25, w25, w1
-        ushl    v3.4s, v21.4s, v3.4s
-        add     w27, w5, w22
-        orr     v12.16b, v4.16b, v0.16b
+        add     v3.4s, v23.4s, v11.4s
+        ror     w22, w22, w27
+        add     v12.4s, v12.4s, v0.4s
+        ldr     w11, [sp, #4112]
+        add     v15.4s, v15.4s, v1.4s
+        add     w27, w2, w19
+        add     v18.4s, v18.4s, v2.4s
         add     w27, w27, w11
+        add     v21.4s, v21.4s, v3.4s
+        ror     w2, w27, #29
+        and     v4.16b, v0.16b, v24.16b
+        add     w27, w2, w19
+        and     v5.16b, v1.16b, v24.16b
+        add     w23, w23, w27
+        and     v6.16b, v2.16b, v24.16b
+        neg     w27, w27
+        and     v7.16b, v3.16b, v24.16b
+        orr     v0.16b, v0.16b, v25.16b
+        ror     w23, w23, w27
+        orr     v1.16b, v1.16b, v25.16b
+        add     w28, w3, w20
+        orr     v2.16b, v2.16b, v25.16b
+        add     w28, w28, w11
+        orr     v3.16b, v3.16b, v25.16b
+        ror     w3, w28, #29
+        ushl    v4.4s, v12.4s, v4.4s
+        stp     w2, w3, [x30, #-192]
+        ushl    v5.4s, v15.4s, v5.4s
+        add     w28, w3, w20
+        ushl    v6.4s, v18.4s, v6.4s
+        add     w24, w24, w28
+        ushl    v7.4s, v21.4s, v7.4s
+        neg     w28, w28
+        ushl    v0.4s, v12.4s, v0.4s
+        ror     w24, w24, w28
+        ushl    v1.4s, v15.4s, v1.4s
+        add     w1, w4, w21
+        ushl    v2.4s, v18.4s, v2.4s
+        add     w1, w1, w11
+        ushl    v3.4s, v21.4s, v3.4s
+        ror     w4, w1, #29
+        orr     v12.16b, v4.16b, v0.16b
+        add     w1, w4, w21
         orr     v15.16b, v5.16b, v1.16b
-        ror     w5, w27, #29
+        add     w25, w25, w1
         orr     v18.16b, v6.16b, v2.16b
-        str     w5, [x12, #1308]
+        neg     w1, w1
         orr     v21.16b, v7.16b, v3.16b
-        add     w27, w5, w22
         // k=55: A = (A + S[3] + B0) <<< 3; S[3] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
-        add     w26, w26, w27
+        ror     w25, w25, w1
         ldp     q0, q1, [x10, #-640]
-        neg     w27, w27
+        add     w27, w5, w22
         ldp     q2, q3, [x10, #-608]
-        ror     w26, w26, w27
-        add     v0.4s, v0.4s, v8.4s
-        mov     w11, #0x4D90
-        add     v1.4s, v1.4s, v9.4s
-        movk    w11, #0xB26E, lsl #16
-        add     v2.4s, v2.4s, v10.4s
-        add     w27, w2, w23
-        add     v3.4s, v3.4s, v11.4s
         add     w27, w27, w11
+        add     v0.4s, v0.4s, v8.4s
+        ror     w5, w27, #29
+        add     v1.4s, v1.4s, v9.4s
+        stp     w4, w5, [x30, #-184]
+        add     v2.4s, v2.4s, v10.4s
+        add     w27, w5, w22
+        add     v3.4s, v3.4s, v11.4s
+        add     w26, w26, w27
         add     v0.4s, v0.4s, v12.4s
-        ror     w2, w27, #29
-        add     v1.4s, v1.4s, v15.4s
-        str     w2, [x12, #1360]
-        add     v2.4s, v2.4s, v18.4s
-        add     w27, w2, w23
-        add     v3.4s, v3.4s, v21.4s
-        add     w6, w6, w27
-        shl     v8.4s, v0.4s, #3
         neg     w27, w27
+        add     v1.4s, v1.4s, v15.4s
+        ror     w26, w26, w27
+        add     v2.4s, v2.4s, v18.4s
+        ldr     w11, [sp, #4116]
+        add     v3.4s, v3.4s, v21.4s
+        add     w27, w2, w23
+        shl     v8.4s, v0.4s, #3
+        add     w27, w27, w11
         shl     v9.4s, v1.4s, #3
-        ror     w6, w6, w27
+        ror     w2, w27, #29
         shl     v10.4s, v2.4s, #3
-        add     w28, w3, w24
+        add     w27, w2, w23
         shl     v11.4s, v3.4s, #3
-        add     w28, w28, w11
+        add     w6, w6, w27
         sri     v8.4s, v0.4s, #29
-        ror     w3, w28, #29
+        neg     w27, w27
         sri     v9.4s, v1.4s, #29
-        str     w3, [x12, #1364]
         sri     v10.4s, v2.4s, #29
-        add     w28, w3, w24
+        ror     w6, w6, w27
         sri     v11.4s, v3.4s, #29
-        add     w7, w7, w28
-        neg     w28, w28
+        add     w28, w3, w24
         stp     q8, q9, [x10, #-640]
-        ror     w7, w7, w28
+        add     w28, w28, w11
         stp     q10, q11, [x10, #-608]
-        add     w1, w4, w25
-        add     v0.4s, v12.4s, v8.4s
-        add     w1, w1, w11
-        add     v1.4s, v15.4s, v9.4s
-        ror     w4, w1, #29
-        add     v2.4s, v18.4s, v10.4s
-        str     w4, [x12, #1368]
-        add     v3.4s, v21.4s, v11.4s
-        add     w1, w4, w25
-        add     v13.4s, v13.4s, v0.4s
-        add     w8, w8, w1
-        add     v16.4s, v16.4s, v1.4s
-        neg     w1, w1
-        add     v19.4s, v19.4s, v2.4s
-        ror     w8, w8, w1
-        add     v22.4s, v22.4s, v3.4s
-        add     w27, w5, w26
-        and     v4.16b, v0.16b, v24.16b
-        add     w27, w27, w11
-        and     v5.16b, v1.16b, v24.16b
-        ror     w5, w27, #29
-        and     v6.16b, v2.16b, v24.16b
-        str     w5, [x12, #1372]
-        and     v7.16b, v3.16b, v24.16b
-        add     w27, w5, w26
-        orr     v0.16b, v0.16b, v25.16b
-        add     w17, w17, w27
-        orr     v1.16b, v1.16b, v25.16b
-        neg     w27, w27
-        orr     v2.16b, v2.16b, v25.16b
-        ror     w17, w17, w27
-        orr     v3.16b, v3.16b, v25.16b
-        mov     w11, #0xC749
-        ushl    v4.4s, v13.4s, v4.4s
-        movk    w11, #0x50A5, lsl #16
-        ushl    v5.4s, v16.4s, v5.4s
-        add     w27, w2, w6
-        ushl    v6.4s, v19.4s, v6.4s
-        add     w27, w27, w11
-        ushl    v7.4s, v22.4s, v7.4s
-        ror     w2, w27, #29
-        ushl    v0.4s, v13.4s, v0.4s
-        str     w2, [x12, #1424]
-        ushl    v1.4s, v16.4s, v1.4s
-        add     w27, w2, w6
-        ushl    v2.4s, v19.4s, v2.4s
-        add     w19, w19, w27
-        ushl    v3.4s, v22.4s, v3.4s
-        neg     w27, w27
-        orr     v13.16b, v4.16b, v0.16b
-        ror     w19, w19, w27
-        orr     v16.16b, v5.16b, v1.16b
-        add     w28, w3, w7
-        orr     v19.16b, v6.16b, v2.16b
-        add     w28, w28, w11
-        orr     v22.16b, v7.16b, v3.16b
         ror     w3, w28, #29
+        add     v0.4s, v12.4s, v8.4s
+        stp     w2, w3, [x30, #-128]
+        add     v1.4s, v15.4s, v9.4s
+        add     w28, w3, w24
+        add     v2.4s, v18.4s, v10.4s
+        add     w7, w7, w28
+        add     v3.4s, v21.4s, v11.4s
+        neg     w28, w28
+        add     v13.4s, v13.4s, v0.4s
+        ror     w7, w7, w28
+        add     v16.4s, v16.4s, v1.4s
+        add     w1, w4, w25
+        add     v19.4s, v19.4s, v2.4s
+        add     w1, w1, w11
+        add     v22.4s, v22.4s, v3.4s
+        ror     w4, w1, #29
+        and     v4.16b, v0.16b, v24.16b
+        add     w1, w4, w25
+        and     v5.16b, v1.16b, v24.16b
+        add     w8, w8, w1
+        and     v6.16b, v2.16b, v24.16b
+        neg     w1, w1
+        and     v7.16b, v3.16b, v24.16b
+        ror     w8, w8, w1
+        orr     v0.16b, v0.16b, v25.16b
+        orr     v1.16b, v1.16b, v25.16b
+        add     w27, w5, w26
+        orr     v2.16b, v2.16b, v25.16b
+        add     w27, w27, w11
+        orr     v3.16b, v3.16b, v25.16b
+        ror     w5, w27, #29
+        ushl    v4.4s, v13.4s, v4.4s
+        stp     w4, w5, [x30, #-120]
+        ushl    v5.4s, v16.4s, v5.4s
+        add     w27, w5, w26
+        ushl    v6.4s, v19.4s, v6.4s
+        add     w17, w17, w27
+        ushl    v7.4s, v22.4s, v7.4s
+        neg     w27, w27
+        ushl    v0.4s, v13.4s, v0.4s
+        ror     w17, w17, w27
+        ushl    v1.4s, v16.4s, v1.4s
+        ldr     w11, [sp, #4120]
+        ushl    v2.4s, v19.4s, v2.4s
+        add     w27, w2, w6
+        ushl    v3.4s, v22.4s, v3.4s
+        add     w27, w27, w11
+        orr     v13.16b, v4.16b, v0.16b
+        ror     w2, w27, #29
+        orr     v16.16b, v5.16b, v1.16b
+        add     w27, w2, w6
+        orr     v19.16b, v6.16b, v2.16b
+        add     w19, w19, w27
+        orr     v22.16b, v7.16b, v3.16b
+        neg     w27, w27
         // k=56: A = (A + S[4] + B1) <<< 3; S[4] = A; B2 = (B2 + B1 + A) <<< (B1 + A)
-        str     w3, [x12, #1428]
         ldp     q0, q1, [x10, #-576]
-        add     w28, w3, w7
+        ror     w19, w19, w27
         ldp     q2, q3, [x10, #-544]
-        add     w20, w20, w28
-        neg     w28, w28
+        add     w28, w3, w7
         add     v0.4s, v0.4s, v8.4s
-        ror     w20, w20, w28
+        add     w28, w28, w11
         add     v1.4s, v1.4s, v9.4s
-        add     w1, w4, w8
+        ror     w3, w28, #29
         add     v2.4s, v2.4s, v10.4s
-        add     w1, w1, w11
+        stp     w2, w3, [x30, #-64]
         add     v3.4s, v3.4s, v11.4s
-        ror     w4, w1, #29
+        add     w28, w3, w7
         add     v0.4s, v0.4s, v13.4s
-        str     w4, [x12, #1432]
+        add     w20, w20, w28
         add     v1.4s, v1.4s, v16.4s
-        add     w1, w4, w8
+        neg     w28, w28
         add     v2.4s, v2.4s, v19.4s
-        add     w21, w21, w1
+        ror     w20, w20, w28
         add     v3.4s, v3.4s, v22.4s
-        neg     w1, w1
+        add     w1, w4, w8
         shl     v8.4s, v0.4s, #3
-        ror     w21, w21, w1
+        add     w1, w1, w11
         shl     v9.4s, v1.4s, #3
-        add     w27, w5, w17
+        ror     w4, w1, #29
         shl     v10.4s, v2.4s, #3
-        add     w27, w27, w11
+        add     w1, w4, w8
         shl     v11.4s, v3.4s, #3
-        ror     w5, w27, #29
+        add     w21, w21, w1
         sri     v8.4s, v0.4s, #29
-        str     w5, [x12, #1436]
+        neg     w1, w1
         sri     v9.4s, v1.4s, #29
-        add     w27, w5, w17
+        ror     w21, w21, w1
         sri     v10.4s, v2.4s, #29
-        add     w22, w22, w27
         sri     v11.4s, v3.4s, #29
-        neg     w27, w27
+        add     w27, w5, w17
         stp     q8, q9, [x10, #-576]
-        ror     w22, w22, w27
+        add     w27, w27, w11
         stp     q10, q11, [x10, #-544]
-        mov     w11, #0x4102
-        add     v0.4s, v13.4s, v8.4s
-        movk    w11, #0xEEDD, lsl #16
-        add     v1.4s, v16.4s, v9.4s
-        add     w27, w2, w19
-        add     v2.4s, v19.4s, v10.4s
-        add     w27, w27, w11
-        add     v3.4s, v22.4s, v11.4s
-        ror     w2, w27, #29
-        add     v14.4s, v14.4s, v0.4s
-        str     w2, [x12, #1488]
-        add     v17.4s, v17.4s, v1.4s
-        add     w27, w2, w19
-        add     v20.4s, v20.4s, v2.4s
-        add     w23, w23, w27
-        add     v23.4s, v23.4s, v3.4s
-        neg     w27, w27
-        and     v4.16b, v0.16b, v24.16b
-        ror     w23, w23, w27
-        and     v5.16b, v1.16b, v24.16b
-        add     w28, w3, w20
-        and     v6.16b, v2.16b, v24.16b
-        add     w28, w28, w11
-        and     v7.16b, v3.16b, v24.16b
-        ror     w3, w28, #29
-        orr     v0.16b, v0.16b, v25.16b
-        str     w3, [x12, #1492]
-        orr     v1.16b, v1.16b, v25.16b
-        add     w28, w3, w20
-        orr     v2.16b, v2.16b, v25.16b
-        add     w24, w24, w28
-        neg     w28, w28
-        orr     v3.16b, v3.16b, v25.16b
-        ror     w24, w24, w28
-        ushl    v4.4s, v14.4s, v4.4s
-        add     w1, w4, w21
-        ushl    v5.4s, v17.4s, v5.4s
-        add     w1, w1, w11
-        ushl    v6.4s, v20.4s, v6.4s
-        ror     w4, w1, #29
-        ushl    v7.4s, v23.4s, v7.4s
-        str     w4, [x12, #1496]
-        ushl    v0.4s, v14.4s, v0.4s
-        add     w1, w4, w21
-        ushl    v1.4s, v17.4s, v1.4s
-        add     w25, w25, w1
-        ushl    v2.4s, v20.4s, v2.4s
-        neg     w1, w1
-        ushl    v3.4s, v23.4s, v3.4s
-        ror     w25, w25, w1
-        orr     v14.16b, v4.16b, v0.16b
-        add     w27, w5, w22
-        orr     v17.16b, v5.16b, v1.16b
-        add     w27, w27, w11
-        orr     v20.16b, v6.16b, v2.16b
         ror     w5, w27, #29
+        add     v0.4s, v13.4s, v8.4s
+        stp     w4, w5, [x30, #-56]
+        add     v1.4s, v16.4s, v9.4s
+        add     w27, w5, w17
+        add     v2.4s, v19.4s, v10.4s
+        add     w22, w22, w27
+        add     v3.4s, v22.4s, v11.4s
+        neg     w27, w27
+        add     v14.4s, v14.4s, v0.4s
+        ror     w22, w22, w27
+        add     v17.4s, v17.4s, v1.4s
+        ldr     w11, [sp, #4124]
+        add     v20.4s, v20.4s, v2.4s
+        add     w27, w2, w19
+        add     v23.4s, v23.4s, v3.4s
+        add     w27, w27, w11
+        and     v4.16b, v0.16b, v24.16b
+        ror     w2, w27, #29
+        and     v5.16b, v1.16b, v24.16b
+        add     w27, w2, w19
+        and     v6.16b, v2.16b, v24.16b
+        add     w23, w23, w27
+        and     v7.16b, v3.16b, v24.16b
+        neg     w27, w27
+        orr     v0.16b, v0.16b, v25.16b
+        ror     w23, w23, w27
+        orr     v1.16b, v1.16b, v25.16b
+        orr     v2.16b, v2.16b, v25.16b
+        add     w28, w3, w20
+        orr     v3.16b, v3.16b, v25.16b
+        add     w28, w28, w11
+        ushl    v4.4s, v14.4s, v4.4s
+        ror     w3, w28, #29
+        ushl    v5.4s, v17.4s, v5.4s
+        stp     w2, w3, [x30, #0]
+        ushl    v6.4s, v20.4s, v6.4s
+        add     w28, w3, w20
+        ushl    v7.4s, v23.4s, v7.4s
+        add     w24, w24, w28
+        ushl    v0.4s, v14.4s, v0.4s
+        neg     w28, w28
+        ushl    v1.4s, v17.4s, v1.4s
+        ror     w24, w24, w28
+        ushl    v2.4s, v20.4s, v2.4s
+        add     w1, w4, w21
+        ushl    v3.4s, v23.4s, v3.4s
+        add     w1, w1, w11
+        orr     v14.16b, v4.16b, v0.16b
+        ror     w4, w1, #29
+        orr     v17.16b, v5.16b, v1.16b
+        add     w1, w4, w21
+        orr     v20.16b, v6.16b, v2.16b
+        add     w25, w25, w1
         orr     v23.16b, v7.16b, v3.16b
-        str     w5, [x12, #1500]
+        neg     w1, w1
         // k=57: A = (A + S[5] + B2) <<< 3; S[5] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
-        add     w27, w5, w22
+        ror     w25, w25, w1
         ldp     q0, q1, [x10, #-512]
-        add     w26, w26, w27
         ldp     q2, q3, [x10, #-480]
-        neg     w27, w27
+        add     w27, w5, w22
         add     v0.4s, v0.4s, v8.4s
-        ror     w26, w26, w27
-        add     v1.4s, v1.4s, v9.4s
-        mov     w11, #0xBABB
-        add     v2.4s, v2.4s, v10.4s
-        movk    w11, #0x8D14, lsl #16
-        add     v3.4s, v3.4s, v11.4s
-        add     w27, w2, w23
-        add     v0.4s, v0.4s, v14.4s
         add     w27, w27, w11
+        add     v1.4s, v1.4s, v9.4s
+        ror     w5, w27, #29
+        add     v2.4s, v2.4s, v10.4s
+        stp     w4, w5, [x30, #8]
+        add     v3.4s, v3.4s, v11.4s
+        add     w27, w5, w22
+        add     v0.4s, v0.4s, v14.4s
+        add     w26, w26, w27
         add     v1.4s, v1.4s, v17.4s
-        ror     w2, w27, #29
-        add     v2.4s, v2.4s, v20.4s
-        str     w2, [x12, #1552]
-        add     v3.4s, v3.4s, v23.4s
-        add     w27, w2, w23
-        shl     v8.4s, v0.4s, #3
-        add     w6, w6, w27
-        shl     v9.4s, v1.4s, #3
         neg     w27, w27
+        add     v2.4s, v2.4s, v20.4s
+        ror     w26, w26, w27
+        add     v3.4s, v3.4s, v23.4s
+        ldr     w11, [sp, #4128]
+        shl     v8.4s, v0.4s, #3
+        add     w27, w2, w23
+        shl     v9.4s, v1.4s, #3
+        add     w27, w27, w11
         shl     v10.4s, v2.4s, #3
-        ror     w6, w6, w27
+        ror     w2, w27, #29
         shl     v11.4s, v3.4s, #3
-        add     w28, w3, w24
+        add     w27, w2, w23
         sri     v8.4s, v0.4s, #29
-        add     w28, w28, w11
+        add     w6, w6, w27
         sri     v9.4s, v1.4s, #29
-        ror     w3, w28, #29
+        neg     w27, w27
         sri     v10.4s, v2.4s, #29
-        str     w3, [x12, #1556]
+        ror     w6, w6, w27
         sri     v11.4s, v3.4s, #29
-        add     w28, w3, w24
         stp     q8, q9, [x10, #-512]
-        add     w7, w7, w28
-        neg     w28, w28
+        add     w28, w3, w24
         stp     q10, q11, [x10, #-480]
-        ror     w7, w7, w28
-        add     v0.4s, v14.4s, v8.4s
-        add     w1, w4, w25
-        add     v1.4s, v17.4s, v9.4s
-        add     w1, w1, w11
-        add     v2.4s, v20.4s, v10.4s
-        ror     w4, w1, #29
-        add     v3.4s, v23.4s, v11.4s
-        str     w4, [x12, #1560]
-        add     v12.4s, v12.4s, v0.4s
-        add     w1, w4, w25
-        add     v15.4s, v15.4s, v1.4s
-        add     w8, w8, w1
-        add     v18.4s, v18.4s, v2.4s
-        neg     w1, w1
-        add     v21.4s, v21.4s, v3.4s
-        ror     w8, w8, w1
-        and     v4.16b, v0.16b, v24.16b
-        add     w27, w5, w26
-        and     v5.16b, v1.16b, v24.16b
-        add     w27, w27, w11
-        and     v6.16b, v2.16b, v24.16b
-        ror     w5, w27, #29
-        and     v7.16b, v3.16b, v24.16b
-        str     w5, [x12, #1564]
-        orr     v0.16b, v0.16b, v25.16b
-        add     w27, w5, w26
-        orr     v1.16b, v1.16b, v25.16b
-        add     w17, w17, w27
-        orr     v2.16b, v2.16b, v25.16b
-        neg     w27, w27
-        orr     v3.16b, v3.16b, v25.16b
-        ror     w17, w17, w27
-        ushl    v4.4s, v12.4s, v4.4s
-        mov     w11, #0x3474
-        ushl    v5.4s, v15.4s, v5.4s
-        movk    w11, #0x2B4C, lsl #16
-        ushl    v6.4s, v18.4s, v6.4s
-        add     w27, w2, w6
-        ushl    v7.4s, v21.4s, v7.4s
-        add     w27, w27, w11
-        ushl    v0.4s, v12.4s, v0.4s
-        ror     w2, w27, #29
-        ushl    v1.4s, v15.4s, v1.4s
-        str     w2, [x12, #1616]
-        ushl    v2.4s, v18.4s, v2.4s
-        add     w27, w2, w6
-        ushl    v3.4s, v21.4s, v3.4s
-        add     w19, w19, w27
-        orr     v12.16b, v4.16b, v0.16b
-        neg     w27, w27
-        orr     v15.16b, v5.16b, v1.16b
-        ror     w19, w19, w27
-        orr     v18.16b, v6.16b, v2.16b
-        add     w28, w3, w7
-        orr     v21.16b, v7.16b, v3.16b
         add     w28, w28, w11
+        add     v0.4s, v14.4s, v8.4s
+        ror     w3, w28, #29
+        add     v1.4s, v17.4s, v9.4s
+        stp     w2, w3, [x30, #64]
+        add     v2.4s, v20.4s, v10.4s
+        add     w28, w3, w24
+        add     v3.4s, v23.4s, v11.4s
+        add     w7, w7, w28
+        add     v12.4s, v12.4s, v0.4s
+        neg     w28, w28
+        add     v15.4s, v15.4s, v1.4s
+        ror     w7, w7, w28
+        add     v18.4s, v18.4s, v2.4s
+        add     w1, w4, w25
+        add     v21.4s, v21.4s, v3.4s
+        add     w1, w1, w11
+        and     v4.16b, v0.16b, v24.16b
+        ror     w4, w1, #29
+        and     v5.16b, v1.16b, v24.16b
+        add     w1, w4, w25
+        and     v6.16b, v2.16b, v24.16b
+        add     w8, w8, w1
+        and     v7.16b, v3.16b, v24.16b
+        neg     w1, w1
+        orr     v0.16b, v0.16b, v25.16b
+        ror     w8, w8, w1
+        orr     v1.16b, v1.16b, v25.16b
+        add     w27, w5, w26
+        orr     v2.16b, v2.16b, v25.16b
+        orr     v3.16b, v3.16b, v25.16b
+        add     w27, w27, w11
+        ushl    v4.4s, v12.4s, v4.4s
+        ror     w5, w27, #29
+        ushl    v5.4s, v15.4s, v5.4s
+        stp     w4, w5, [x30, #72]
+        ushl    v6.4s, v18.4s, v6.4s
+        add     w27, w5, w26
+        ushl    v7.4s, v21.4s, v7.4s
+        add     w17, w17, w27
+        ushl    v0.4s, v12.4s, v0.4s
+        neg     w27, w27
+        ushl    v1.4s, v15.4s, v1.4s
+        ror     w17, w17, w27
+        ushl    v2.4s, v18.4s, v2.4s
+        ldr     w11, [sp, #4132]
+        ushl    v3.4s, v21.4s, v3.4s
+        add     w27, w2, w6
+        orr     v12.16b, v4.16b, v0.16b
+        add     w27, w27, w11
+        orr     v15.16b, v5.16b, v1.16b
+        ror     w2, w27, #29
+        orr     v18.16b, v6.16b, v2.16b
+        add     w27, w2, w6
+        orr     v21.16b, v7.16b, v3.16b
+        add     w19, w19, w27
         // k=58: A = (A + S[6] + B0) <<< 3; S[6] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
-        ror     w3, w28, #29
+        neg     w27, w27
         ldp     q0, q1, [x10, #-448]
-        str     w3, [x12, #1620]
+        ror     w19, w19, w27
         ldp     q2, q3, [x10, #-416]
-        add     w28, w3, w7
         add     v0.4s, v0.4s, v8.4s
-        add     w20, w20, w28
-        neg     w28, w28
+        add     w28, w3, w7
         add     v1.4s, v1.4s, v9.4s
-        ror     w20, w20, w28
+        add     w28, w28, w11
         add     v2.4s, v2.4s, v10.4s
-        add     w1, w4, w8
+        ror     w3, w28, #29
         add     v3.4s, v3.4s, v11.4s
-        add     w1, w1, w11
+        stp     w2, w3, [x30, #128]
         add     v0.4s, v0.4s, v12.4s
-        ror     w4, w1, #29
+        add     w28, w3, w7
         add     v1.4s, v1.4s, v15.4s
-        str     w4, [x12, #1624]
+        add     w20, w20, w28
         add     v2.4s, v2.4s, v18.4s
-        add     w1, w4, w8
+        neg     w28, w28
         add     v3.4s, v3.4s, v21.4s
-        add     w21, w21, w1
+        ror     w20, w20, w28
         shl     v8.4s, v0.4s, #3
-        neg     w1, w1
+        add     w1, w4, w8
         shl     v9.4s, v1.4s, #3
-        ror     w21, w21, w1
+        add     w1, w1, w11
         shl     v10.4s, v2.4s, #3
-        add     w27, w5, w17
+        ror     w4, w1, #29
         shl     v11.4s, v3.4s, #3
-        add     w27, w27, w11
+        add     w1, w4, w8
         sri     v8.4s, v0.4s, #29
-        ror     w5, w27, #29
+        add     w21, w21, w1
         sri     v9.4s, v1.4s, #29
-        str     w5, [x12, #1628]
+        neg     w1, w1
         sri     v10.4s, v2.4s, #29
-        add     w27, w5, w17
+        ror     w21, w21, w1
         sri     v11.4s, v3.4s, #29
-        add     w22, w22, w27
+        add     w27, w5, w17
         stp     q8, q9, [x10, #-448]
-        neg     w27, w27
         stp     q10, q11, [x10, #-416]
-        ror     w22, w22, w27
+        add     w27, w27, w11
         add     v0.4s, v12.4s, v8.4s
+        ror     w5, w27, #29
+        add     v1.4s, v15.4s, v9.4s
+        stp     w4, w5, [x30, #136]
+        add     v2.4s, v18.4s, v10.4s
+        add     w27, w5, w17
+        add     v3.4s, v21.4s, v11.4s
+        add     w22, w22, w27
+        add     v13.4s, v13.4s, v0.4s
+        neg     w27, w27
+        add     v16.4s, v16.4s, v1.4s
+        ror     w22, w22, w27
+        add     v19.4s, v19.4s, v2.4s
         // handoff: A and L0..L2, transposed
-        add     v1.4s, v15.4s, v9.4s
-        str     w2, [x12, #1680]
-        add     v2.4s, v18.4s, v10.4s
-        str     w3, [x12, #1684]
-        add     v3.4s, v21.4s, v11.4s
-        str     w4, [x12, #1688]
-        add     v13.4s, v13.4s, v0.4s
-        str     w5, [x12, #1692]
-        add     v16.4s, v16.4s, v1.4s
-        str     w6, [x12, #1744]
-        add     v19.4s, v19.4s, v2.4s
-        str     w7, [x12, #1748]
         add     v22.4s, v22.4s, v3.4s
-        str     w8, [x12, #1752]
+        stp     w2, w3, [x30, #192]
         and     v4.16b, v0.16b, v24.16b
-        str     w17, [x12, #1756]
+        stp     w4, w5, [x30, #200]
         and     v5.16b, v1.16b, v24.16b
-        str     w19, [x12, #1808]
+        add     x30, x12, #2000
         and     v6.16b, v2.16b, v24.16b
-        str     w20, [x12, #1812]
+        stp     w6, w7, [x30, #-256]
         and     v7.16b, v3.16b, v24.16b
-        str     w21, [x12, #1816]
+        stp     w8, w17, [x30, #-248]
         orr     v0.16b, v0.16b, v25.16b
-        str     w22, [x12, #1820]
+        stp     w19, w20, [x30, #-192]
         orr     v1.16b, v1.16b, v25.16b
-        str     w23, [x12, #1872]
+        stp     w21, w22, [x30, #-184]
         orr     v2.16b, v2.16b, v25.16b
-        str     w24, [x12, #1876]
-        str     w25, [x12, #1880]
+        stp     w23, w24, [x30, #-128]
         orr     v3.16b, v3.16b, v25.16b
-        str     w26, [x12, #1884]
         ushl    v4.4s, v13.4s, v4.4s
+        stp     w25, w26, [x30, #-120]
+        ushl    v5.4s, v16.4s, v5.4s
         // ---- scalar subgroup 2: keys 8..11 of the next batch
-        ushl    v5.4s, v16.4s, v5.4s
+        ushl    v6.4s, v19.4s, v6.4s
         ldr     w11, [sp, #172]
-        ushl    v6.4s, v19.4s, v6.4s
+        ushl    v7.4s, v22.4s, v7.4s
         mov     w2, w11
-        ushl    v7.4s, v22.4s, v7.4s
+        ushl    v0.4s, v13.4s, v0.4s
         mov     w3, w11
-        ushl    v0.4s, v13.4s, v0.4s
+        ushl    v1.4s, v16.4s, v1.4s
         mov     w4, w11
-        ushl    v1.4s, v16.4s, v1.4s
+        ushl    v2.4s, v19.4s, v2.4s
         mov     w5, w11
-        ushl    v2.4s, v19.4s, v2.4s
+        ushl    v3.4s, v22.4s, v3.4s
         ldr     w11, [sp, #160]
-        ushl    v3.4s, v22.4s, v3.4s
+        orr     v13.16b, v4.16b, v0.16b
         mov     w6, w11
-        orr     v13.16b, v4.16b, v0.16b
+        orr     v16.16b, v5.16b, v1.16b
         mov     w7, w11
-        orr     v16.16b, v5.16b, v1.16b
+        orr     v19.16b, v6.16b, v2.16b
         mov     w8, w11
-        orr     v19.16b, v6.16b, v2.16b
+        orr     v22.16b, v7.16b, v3.16b
         mov     w17, w11
-        orr     v22.16b, v7.16b, v3.16b
-        ldr     w11, [sp, #168]
         // k=59: A = (A + S[7] + B1) <<< 3; S[7] = A; B2 = (B2 + B1 + A) <<< (B1 + A)
-        mov     w19, w11
+        ldr     w11, [sp, #168]
         ldp     q0, q1, [x10, #-384]
-        mov     w20, w11
+        mov     w19, w11
         ldp     q2, q3, [x10, #-352]
+        mov     w20, w11
+        add     v0.4s, v0.4s, v8.4s
+        add     v1.4s, v1.4s, v9.4s
         mov     w21, w11
-        add     v0.4s, v0.4s, v8.4s
+        add     v2.4s, v2.4s, v10.4s
         mov     w22, w11
-        add     v1.4s, v1.4s, v9.4s
+        add     v3.4s, v3.4s, v11.4s
         // L2_i = (L0hi + 8+i + pre_B_2) <<< pre_B_2
-        add     v2.4s, v2.4s, v10.4s
+        add     v0.4s, v0.4s, v13.4s
         ldr     w11, [sp, #180]
-        add     v3.4s, v3.4s, v11.4s
+        add     v1.4s, v1.4s, v16.4s
         add     w23, w11, #8
-        add     v0.4s, v0.4s, v13.4s
+        add     v2.4s, v2.4s, v19.4s
         add     w24, w11, #9
-        add     v1.4s, v1.4s, v16.4s
+        add     v3.4s, v3.4s, v22.4s
         add     w25, w11, #10
-        add     v2.4s, v2.4s, v19.4s
+        shl     v8.4s, v0.4s, #3
         add     w26, w11, #11
-        add     v3.4s, v3.4s, v22.4s
+        shl     v9.4s, v1.4s, #3
         ldr     w11, [sp, #176]
-        shl     v8.4s, v0.4s, #3
+        shl     v10.4s, v2.4s, #3
         neg     w27, w11
-        shl     v9.4s, v1.4s, #3
+        shl     v11.4s, v3.4s, #3
         add     w23, w23, w11
-        shl     v10.4s, v2.4s, #3
+        sri     v8.4s, v0.4s, #29
         ror     w23, w23, w27
-        shl     v11.4s, v3.4s, #3
+        sri     v9.4s, v1.4s, #29
         add     w24, w24, w11
-        sri     v8.4s, v0.4s, #29
+        sri     v10.4s, v2.4s, #29
         ror     w24, w24, w27
-        sri     v9.4s, v1.4s, #29
+        sri     v11.4s, v3.4s, #29
         add     w25, w25, w11
-        sri     v10.4s, v2.4s, #29
-        ror     w25, w25, w27
-        sri     v11.4s, v3.4s, #29
-        add     w26, w26, w11
         stp     q8, q9, [x10, #-384]
-        ror     w26, w26, w27
-        mov     w11, #0xBE8E
+        ror     w25, w25, w27
         stp     q10, q11, [x10, #-352]
-        movk    w11, #0x9287, lsl #16
         add     v0.4s, v13.4s, v8.4s
-        add     w27, w2, w23
+        add     w26, w26, w11
         add     v1.4s, v16.4s, v9.4s
-        add     w27, w27, w11
+        ror     w26, w26, w27
         add     v2.4s, v19.4s, v10.4s
-        ror     w2, w27, #29
+        ldr     w11, [sp, #4044]
         add     v3.4s, v22.4s, v11.4s
-        str     w2, [x12, #224]
-        add     v14.4s, v14.4s, v0.4s
         add     w27, w2, w23
+        add     v14.4s, v14.4s, v0.4s
+        add     w27, w27, w11
         add     v17.4s, v17.4s, v1.4s
-        add     w6, w6, w27
+        ror     w2, w27, #29
         add     v20.4s, v20.4s, v2.4s
-        neg     w27, w27
+        add     w27, w2, w23
         add     v23.4s, v23.4s, v3.4s
-        ror     w6, w6, w27
+        add     w6, w6, w27
         and     v4.16b, v0.16b, v24.16b
-        add     w28, w3, w24
+        neg     w27, w27
         and     v5.16b, v1.16b, v24.16b
-        add     w28, w28, w11
+        ror     w6, w6, w27
         and     v6.16b, v2.16b, v24.16b
-        ror     w3, w28, #29
-        and     v7.16b, v3.16b, v24.16b
-        str     w3, [x12, #228]
-        orr     v0.16b, v0.16b, v25.16b
         add     w28, w3, w24
+        and     v7.16b, v3.16b, v24.16b
+        add     w28, w28, w11
+        orr     v0.16b, v0.16b, v25.16b
+        ror     w3, w28, #29
         orr     v1.16b, v1.16b, v25.16b
-        add     w7, w7, w28
+        add     x30, x12, #480
         orr     v2.16b, v2.16b, v25.16b
-        neg     w28, w28
+        stp     w2, w3, [x30, #-256]
         orr     v3.16b, v3.16b, v25.16b
-        ror     w7, w7, w28
         ushl    v4.4s, v14.4s, v4.4s
-        add     w1, w4, w25
+        add     w28, w3, w24
         ushl    v5.4s, v17.4s, v5.4s
-        add     w1, w1, w11
+        add     w7, w7, w28
         ushl    v6.4s, v20.4s, v6.4s
-        ror     w4, w1, #29
+        neg     w28, w28
         ushl    v7.4s, v23.4s, v7.4s
-        str     w4, [x12, #232]
+        ror     w7, w7, w28
         ushl    v0.4s, v14.4s, v0.4s
         add     w1, w4, w25
         ushl    v1.4s, v17.4s, v1.4s
-        add     w8, w8, w1
+        add     w1, w1, w11
         ushl    v2.4s, v20.4s, v2.4s
-        neg     w1, w1
+        ror     w4, w1, #29
         ushl    v3.4s, v23.4s, v3.4s
-        ror     w8, w8, w1
+        add     w1, w4, w25
         orr     v14.16b, v4.16b, v0.16b
-        add     w27, w5, w26
+        add     w8, w8, w1
         orr     v17.16b, v5.16b, v1.16b
-        add     w27, w27, w11
+        neg     w1, w1
         orr     v20.16b, v6.16b, v2.16b
-        ror     w5, w27, #29
+        ror     w8, w8, w1
         orr     v23.16b, v7.16b, v3.16b
-        str     w5, [x12, #236]
+        add     w27, w5, w26
         // k=60: A = (A + S[8] + B2) <<< 3; S[8] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
-        add     w27, w5, w26
-        ldp     q0, q1, [x10, #-320]
-        add     w17, w17, w27
-        ldp     q2, q3, [x10, #-288]
-        neg     w27, w27
-        add     v0.4s, v0.4s, v8.4s
-        ror     w17, w17, w27
-        mov     w11, #0x3847
-        add     v1.4s, v1.4s, v9.4s
-        movk    w11, #0x30BF, lsl #16
-        add     v2.4s, v2.4s, v10.4s
-        add     w27, w2, w6
-        add     v3.4s, v3.4s, v11.4s
         add     w27, w27, w11
+        ldp     q0, q1, [x10, #-320]
+        ror     w5, w27, #29
+        ldp     q2, q3, [x10, #-288]
+        stp     w4, w5, [x30, #-248]
+        add     v0.4s, v0.4s, v8.4s
+        add     w27, w5, w26
+        add     v1.4s, v1.4s, v9.4s
+        add     v2.4s, v2.4s, v10.4s
+        add     w17, w17, w27
+        add     v3.4s, v3.4s, v11.4s
+        neg     w27, w27
         add     v0.4s, v0.4s, v14.4s
-        ror     w2, w27, #29
+        ror     w17, w17, w27
         add     v1.4s, v1.4s, v17.4s
-        str     w2, [x12, #288]
+        ldr     w11, [sp, #4048]
         add     v2.4s, v2.4s, v20.4s
         add     w27, w2, w6
         add     v3.4s, v3.4s, v23.4s
-        add     w19, w19, w27
+        add     w27, w27, w11
         shl     v8.4s, v0.4s, #3
-        neg     w27, w27
+        ror     w2, w27, #29
         shl     v9.4s, v1.4s, #3
-        ror     w19, w19, w27
+        add     w27, w2, w6
         shl     v10.4s, v2.4s, #3
-        add     w28, w3, w7
+        add     w19, w19, w27
         shl     v11.4s, v3.4s, #3
-        add     w28, w28, w11
+        neg     w27, w27
         sri     v8.4s, v0.4s, #29
-        ror     w3, w28, #29
+        ror     w19, w19, w27
         sri     v9.4s, v1.4s, #29
-        str     w3, [x12, #292]
-        sri     v10.4s, v2.4s, #29
         add     w28, w3, w7
+        sri     v10.4s, v2.4s, #29
+        add     w28, w28, w11
         sri     v11.4s, v3.4s, #29
-        add     w20, w20, w28
+        ror     w3, w28, #29
         stp     q8, q9, [x10, #-320]
-        neg     w28, w28
+        stp     w2, w3, [x30, #-192]
         stp     q10, q11, [x10, #-288]
-        ror     w20, w20, w28
+        add     w28, w3, w7
         add     v0.4s, v14.4s, v8.4s
-        add     w1, w4, w8
         add     v1.4s, v17.4s, v9.4s
-        add     w1, w1, w11
+        add     w20, w20, w28
         add     v2.4s, v20.4s, v10.4s
-        ror     w4, w1, #29
+        neg     w28, w28
         add     v3.4s, v23.4s, v11.4s
-        str     w4, [x12, #296]
+        ror     w20, w20, w28
         add     v12.4s, v12.4s, v0.4s
         add     w1, w4, w8
         add     v15.4s, v15.4s, v1.4s
-        add     w21, w21, w1
+        add     w1, w1, w11
         add     v18.4s, v18.4s, v2.4s
-        neg     w1, w1
+        ror     w4, w1, #29
         add     v21.4s, v21.4s, v3.4s
-        ror     w21, w21, w1
+        add     w1, w4, w8
         and     v4.16b, v0.16b, v24.16b
-        add     w27, w5, w17
+        add     w21, w21, w1
         and     v5.16b, v1.16b, v24.16b
-        add     w27, w27, w11
+        neg     w1, w1
         and     v6.16b, v2.16b, v24.16b
-        ror     w5, w27, #29
+        ror     w21, w21, w1
         and     v7.16b, v3.16b, v24.16b
-        str     w5, [x12, #300]
-        orr     v0.16b, v0.16b, v25.16b
         add     w27, w5, w17
-        orr     v1.16b, v1.16b, v25.16b
-        add     w22, w22, w27
-        orr     v2.16b, v2.16b, v25.16b
-        neg     w27, w27
-        orr     v3.16b, v3.16b, v25.16b
-        ror     w22, w22, w27
-        mov     w11, #0xB200
-        ushl    v4.4s, v12.4s, v4.4s
-        movk    w11, #0xCEF6, lsl #16
-        ushl    v5.4s, v15.4s, v5.4s
-        add     w27, w2, w19
-        ushl    v6.4s, v18.4s, v6.4s
+        orr     v0.16b, v0.16b, v25.16b
         add     w27, w27, w11
+        orr     v1.16b, v1.16b, v25.16b
+        ror     w5, w27, #29
+        orr     v2.16b, v2.16b, v25.16b
+        stp     w4, w5, [x30, #-184]
+        orr     v3.16b, v3.16b, v25.16b
+        add     w27, w5, w17
+        ushl    v4.4s, v12.4s, v4.4s
+        ushl    v5.4s, v15.4s, v5.4s
+        add     w22, w22, w27
+        ushl    v6.4s, v18.4s, v6.4s
+        neg     w27, w27
         ushl    v7.4s, v21.4s, v7.4s
-        ror     w2, w27, #29
+        ror     w22, w22, w27
         ushl    v0.4s, v12.4s, v0.4s
-        str     w2, [x12, #352]
+        ldr     w11, [sp, #4052]
         ushl    v1.4s, v15.4s, v1.4s
         add     w27, w2, w19
         ushl    v2.4s, v18.4s, v2.4s
-        add     w23, w23, w27
+        add     w27, w27, w11
         ushl    v3.4s, v21.4s, v3.4s
-        neg     w27, w27
+        ror     w2, w27, #29
         orr     v12.16b, v4.16b, v0.16b
-        ror     w23, w23, w27
+        add     w27, w2, w19
         orr     v15.16b, v5.16b, v1.16b
-        add     w28, w3, w20
+        add     w23, w23, w27
         orr     v18.16b, v6.16b, v2.16b
-        add     w28, w28, w11
+        neg     w27, w27
         orr     v21.16b, v7.16b, v3.16b
-        ror     w3, w28, #29
+        ror     w23, w23, w27
         // k=61: A = (A + S[9] + B0) <<< 3; S[9] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
-        str     w3, [x12, #356]
-        ldp     q0, q1, [x10, #-256]
         add     w28, w3, w20
+        ldp     q0, q1, [x10, #-256]
+        add     w28, w28, w11
         ldp     q2, q3, [x10, #-224]
-        add     w24, w24, w28
+        ror     w3, w28, #29
         add     v0.4s, v0.4s, v8.4s
-        neg     w28, w28
+        stp     w2, w3, [x30, #-128]
         add     v1.4s, v1.4s, v9.4s
-        ror     w24, w24, w28
+        add     w28, w3, w20
         add     v2.4s, v2.4s, v10.4s
-        add     w1, w4, w21
         add     v3.4s, v3.4s, v11.4s
-        add     w1, w1, w11
+        add     w24, w24, w28
         add     v0.4s, v0.4s, v12.4s
-        ror     w4, w1, #29
+        neg     w28, w28
         add     v1.4s, v1.4s, v15.4s
-        str     w4, [x12, #360]
+        ror     w24, w24, w28
         add     v2.4s, v2.4s, v18.4s
         add     w1, w4, w21
         add     v3.4s, v3.4s, v21.4s
-        add     w25, w25, w1
+        add     w1, w1, w11
         shl     v8.4s, v0.4s, #3
-        neg     w1, w1
+        ror     w4, w1, #29
         shl     v9.4s, v1.4s, #3
-        ror     w25, w25, w1
+        add     w1, w4, w21
         shl     v10.4s, v2.4s, #3
-        add     w27, w5, w22
+        add     w25, w25, w1
         shl     v11.4s, v3.4s, #3
-        add     w27, w27, w11
+        neg     w1, w1
         sri     v8.4s, v0.4s, #29
-        ror     w5, w27, #29
+        ror     w25, w25, w1
         sri     v9.4s, v1.4s, #29
-        str     w5, [x12, #364]
-        sri     v10.4s, v2.4s, #29
         add     w27, w5, w22
-        sri     v11.4s, v3.4s, #29
-        add     w26, w26, w27
-        stp     q8, q9, [x10, #-256]
-        neg     w27, w27
-        stp     q10, q11, [x10, #-224]
-        ror     w26, w26, w27
-        mov     w11, #0x2BB9
-        add     v0.4s, v12.4s, v8.4s
-        movk    w11, #0x6D2E, lsl #16
-        add     v1.4s, v15.4s, v9.4s
-        add     w27, w2, w23
-        add     v2.4s, v18.4s, v10.4s
+        sri     v10.4s, v2.4s, #29
         add     w27, w27, w11
+        sri     v11.4s, v3.4s, #29
+        ror     w5, w27, #29
+        stp     q8, q9, [x10, #-256]
+        stp     w4, w5, [x30, #-120]
+        stp     q10, q11, [x10, #-224]
+        add     w27, w5, w22
+        add     v0.4s, v12.4s, v8.4s
+        add     w26, w26, w27
+        add     v1.4s, v15.4s, v9.4s
+        add     v2.4s, v18.4s, v10.4s
+        neg     w27, w27
         add     v3.4s, v21.4s, v11.4s
-        ror     w2, w27, #29
+        ror     w26, w26, w27
         add     v13.4s, v13.4s, v0.4s
-        str     w2, [x12, #416]
+        ldr     w11, [sp, #4056]
         add     v16.4s, v16.4s, v1.4s
         add     w27, w2, w23
         add     v19.4s, v19.4s, v2.4s
-        add     w6, w6, w27
+        add     w27, w27, w11
         add     v22.4s, v22.4s, v3.4s
-        neg     w27, w27
+        ror     w2, w27, #29
         and     v4.16b, v0.16b, v24.16b
-        ror     w6, w6, w27
+        add     w27, w2, w23
         and     v5.16b, v1.16b, v24.16b
-        add     w28, w3, w24
+        add     w6, w6, w27
         and     v6.16b, v2.16b, v24.16b
-        add     w28, w28, w11
+        neg     w27, w27
         and     v7.16b, v3.16b, v24.16b
-        ror     w3, w28, #29
+        ror     w6, w6, w27
         orr     v0.16b, v0.16b, v25.16b
-        str     w3, [x12, #420]
-        orr     v1.16b, v1.16b, v25.16b
         add     w28, w3, w24
+        orr     v1.16b, v1.16b, v25.16b
+        add     w28, w28, w11
         orr     v2.16b, v2.16b, v25.16b
-        add     w7, w7, w28
+        ror     w3, w28, #29
         orr     v3.16b, v3.16b, v25.16b
-        neg     w28, w28
+        stp     w2, w3, [x30, #-64]
         ushl    v4.4s, v13.4s, v4.4s
-        ror     w7, w7, w28
+        add     w28, w3, w24
         ushl    v5.4s, v16.4s, v5.4s
-        add     w1, w4, w25
         ushl    v6.4s, v19.4s, v6.4s
-        add     w1, w1, w11
+        add     w7, w7, w28
         ushl    v7.4s, v22.4s, v7.4s
-        ror     w4, w1, #29
+        neg     w28, w28
         ushl    v0.4s, v13.4s, v0.4s
-        str     w4, [x12, #424]
+        ror     w7, w7, w28
         ushl    v1.4s, v16.4s, v1.4s
         add     w1, w4, w25
         ushl    v2.4s, v19.4s, v2.4s
-        add     w8, w8, w1
+        add     w1, w1, w11
         ushl    v3.4s, v22.4s, v3.4s
-        neg     w1, w1
+        ror     w4, w1, #29
         orr     v13.16b, v4.16b, v0.16b
-        ror     w8, w8, w1
+        add     w1, w4, w25
         orr     v16.16b, v5.16b, v1.16b
-        add     w27, w5, w26
+        add     w8, w8, w1
         orr     v19.16b, v6.16b, v2.16b
-        add     w27, w27, w11
+        neg     w1, w1
         orr     v22.16b, v7.16b, v3.16b
-        ror     w5, w27, #29
+        ror     w8, w8, w1
         // k=62: A = (A + S[10] + B1) <<< 3; S[10] = A; B2 = (B2 + B1 + A) <<< (B1 + A)
-        str     w5, [x12, #428]
-        ldp     q0, q1, [x10, #-192]
         add     w27, w5, w26
-        ldp     q2, q3, [x10, #-160]
-        add     w17, w17, w27
-        add     v0.4s, v0.4s, v8.4s
-        neg     w27, w27
-        add     v1.4s, v1.4s, v9.4s
-        ror     w17, w17, w27
-        mov     w11, #0xA572
-        add     v2.4s, v2.4s, v10.4s
-        movk    w11, #0x0B65, lsl #16
-        add     v3.4s, v3.4s, v11.4s
-        add     w27, w2, w6
-        add     v0.4s, v0.4s, v13.4s
+        ldp     q0, q1, [x10, #-192]
         add     w27, w27, w11
+        ldp     q2, q3, [x10, #-160]
+        ror     w5, w27, #29
+        add     v0.4s, v0.4s, v8.4s
+        stp     w4, w5, [x30, #-56]
+        add     v1.4s, v1.4s, v9.4s
+        add     w27, w5, w26
+        add     v2.4s, v2.4s, v10.4s
+        add     w17, w17, w27
+        add     v3.4s, v3.4s, v11.4s
+        add     v0.4s, v0.4s, v13.4s
+        neg     w27, w27
         add     v1.4s, v1.4s, v16.4s
-        ror     w2, w27, #29
+        ror     w17, w17, w27
         add     v2.4s, v2.4s, v19.4s
-        str     w2, [x12, #480]
+        ldr     w11, [sp, #4060]
         add     v3.4s, v3.4s, v22.4s
         add     w27, w2, w6
         shl     v8.4s, v0.4s, #3
-        add     w19, w19, w27
+        add     w27, w27, w11
         shl     v9.4s, v1.4s, #3
-        neg     w27, w27
+        ror     w2, w27, #29
         shl     v10.4s, v2.4s, #3
-        ror     w19, w19, w27
+        add     w27, w2, w6
         shl     v11.4s, v3.4s, #3
-        add     w28, w3, w7
+        add     w19, w19, w27
         sri     v8.4s, v0.4s, #29
-        add     w28, w28, w11
+        neg     w27, w27
         sri     v9.4s, v1.4s, #29
-        ror     w3, w28, #29
+        ror     w19, w19, w27
         sri     v10.4s, v2.4s, #29
-        str     w3, [x12, #484]
-        sri     v11.4s, v3.4s, #29
         add     w28, w3, w7
+        sri     v11.4s, v3.4s, #29
+        add     w28, w28, w11
         stp     q8, q9, [x10, #-192]
-        add     w20, w20, w28
+        ror     w3, w28, #29
         stp     q10, q11, [x10, #-160]
-        neg     w28, w28
+        stp     w2, w3, [x30, #0]
         add     v0.4s, v13.4s, v8.4s
-        ror     w20, w20, w28
+        add     w28, w3, w7
         add     v1.4s, v16.4s, v9.4s
-        add     w1, w4, w8
+        add     w20, w20, w28
         add     v2.4s, v19.4s, v10.4s
-        add     w1, w1, w11
         add     v3.4s, v22.4s, v11.4s
-        ror     w4, w1, #29
+        neg     w28, w28
         add     v14.4s, v14.4s, v0.4s
-        str     w4, [x12, #488]
+        ror     w20, w20, w28
         add     v17.4s, v17.4s, v1.4s
         add     w1, w4, w8
         add     v20.4s, v20.4s, v2.4s
-        add     w21, w21, w1
+        add     w1, w1, w11
         add     v23.4s, v23.4s, v3.4s
-        neg     w1, w1
+        ror     w4, w1, #29
         and     v4.16b, v0.16b, v24.16b
-        ror     w21, w21, w1
+        add     w1, w4, w8
         and     v5.16b, v1.16b, v24.16b
-        add     w27, w5, w17
+        add     w21, w21, w1
         and     v6.16b, v2.16b, v24.16b
-        add     w27, w27, w11
+        neg     w1, w1
         and     v7.16b, v3.16b, v24.16b
-        ror     w5, w27, #29
+        ror     w21, w21, w1
         orr     v0.16b, v0.16b, v25.16b
-        str     w5, [x12, #492]
-        orr     v1.16b, v1.16b, v25.16b
         add     w27, w5, w17
-        orr     v2.16b, v2.16b, v25.16b
-        add     w22, w22, w27
-        orr     v3.16b, v3.16b, v25.16b
-        neg     w27, w27
-        ushl    v4.4s, v14.4s, v4.4s
-        ror     w22, w22, w27
-        mov     w11, #0x1F2B
-        ushl    v5.4s, v17.4s, v5.4s
-        movk    w11, #0xA99D, lsl #16
-        ushl    v6.4s, v20.4s, v6.4s
-        add     w27, w2, w19
-        ushl    v7.4s, v23.4s, v7.4s
+        orr     v1.16b, v1.16b, v25.16b
         add     w27, w27, w11
+        orr     v2.16b, v2.16b, v25.16b
+        ror     w5, w27, #29
+        orr     v3.16b, v3.16b, v25.16b
+        stp     w4, w5, [x30, #8]
+        ushl    v4.4s, v14.4s, v4.4s
+        add     w27, w5, w17
+        ushl    v5.4s, v17.4s, v5.4s
+        add     w22, w22, w27
+        ushl    v6.4s, v20.4s, v6.4s
+        ushl    v7.4s, v23.4s, v7.4s
+        neg     w27, w27
         ushl    v0.4s, v14.4s, v0.4s
-        ror     w2, w27, #29
+        ror     w22, w22, w27
         ushl    v1.4s, v17.4s, v1.4s
-        str     w2, [x12, #544]
+        ldr     w11, [sp, #4064]
         ushl    v2.4s, v20.4s, v2.4s
         add     w27, w2, w19
         ushl    v3.4s, v23.4s, v3.4s
-        add     w23, w23, w27
+        add     w27, w27, w11
         orr     v14.16b, v4.16b, v0.16b
-        neg     w27, w27
+        ror     w2, w27, #29
         orr     v17.16b, v5.16b, v1.16b
-        ror     w23, w23, w27
+        add     w27, w2, w19
         orr     v20.16b, v6.16b, v2.16b
-        add     w28, w3, w20
+        add     w23, w23, w27
         orr     v23.16b, v7.16b, v3.16b
-        add     w28, w28, w11
+        neg     w27, w27
         // k=63: A = (A + S[11] + B2) <<< 3; S[11] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
-        ror     w3, w28, #29
+        ror     w23, w23, w27
         ldp     q0, q1, [x10, #-128]
-        str     w3, [x12, #548]
-        ldp     q2, q3, [x10, #-96]
         add     w28, w3, w20
+        ldp     q2, q3, [x10, #-96]
+        add     w28, w28, w11
         add     v0.4s, v0.4s, v8.4s
-        add     w24, w24, w28
+        ror     w3, w28, #29
         add     v1.4s, v1.4s, v9.4s
-        neg     w28, w28
+        stp     w2, w3, [x30, #64]
         add     v2.4s, v2.4s, v10.4s
-        ror     w24, w24, w28
+        add     w28, w3, w20
         add     v3.4s, v3.4s, v11.4s
-        add     w1, w4, w21
+        add     w24, w24, w28
         add     v0.4s, v0.4s, v14.4s
-        add     w1, w1, w11
         add     v1.4s, v1.4s, v17.4s
-        ror     w4, w1, #29
+        neg     w28, w28
         add     v2.4s, v2.4s, v20.4s
-        str     w4, [x12, #552]
+        ror     w24, w24, w28
         add     v3.4s, v3.4s, v23.4s
         add     w1, w4, w21
         shl     v8.4s, v0.4s, #3
-        add     w25, w25, w1
+        add     w1, w1, w11
         shl     v9.4s, v1.4s, #3
-        neg     w1, w1
+        ror     w4, w1, #29
         shl     v10.4s, v2.4s, #3
-        ror     w25, w25, w1
+        add     w1, w4, w21
         shl     v11.4s, v3.4s, #3
-        add     w27, w5, w22
+        add     w25, w25, w1
         sri     v8.4s, v0.4s, #29
-        add     w27, w27, w11
+        neg     w1, w1
         sri     v9.4s, v1.4s, #29
-        ror     w5, w27, #29
+        ror     w25, w25, w1
         sri     v10.4s, v2.4s, #29
-        str     w5, [x12, #556]
-        sri     v11.4s, v3.4s, #29
         add     w27, w5, w22
-        stp     q8, q9, [x10, #-128]
-        add     w26, w26, w27
-        stp     q10, q11, [x10, #-96]
-        neg     w27, w27
-        add     v0.4s, v14.4s, v8.4s
-        ror     w26, w26, w27
-        mov     w11, #0x98E4
-        add     v1.4s, v17.4s, v9.4s
-        movk    w11, #0x47D4, lsl #16
-        add     v2.4s, v20.4s, v10.4s
-        add     w27, w2, w23
-        add     v3.4s, v23.4s, v11.4s
+        sri     v11.4s, v3.4s, #29
         add     w27, w27, w11
+        stp     q8, q9, [x10, #-128]
+        ror     w5, w27, #29
+        stp     q10, q11, [x10, #-96]
+        stp     w4, w5, [x30, #72]
+        add     v0.4s, v14.4s, v8.4s
+        add     w27, w5, w22
+        add     v1.4s, v17.4s, v9.4s
+        add     w26, w26, w27
+        add     v2.4s, v20.4s, v10.4s
+        add     v3.4s, v23.4s, v11.4s
+        neg     w27, w27
         add     v12.4s, v12.4s, v0.4s
-        ror     w2, w27, #29
+        ror     w26, w26, w27
         add     v15.4s, v15.4s, v1.4s
-        str     w2, [x12, #608]
+        ldr     w11, [sp, #4068]
         add     v18.4s, v18.4s, v2.4s
         add     w27, w2, w23
         add     v21.4s, v21.4s, v3.4s
-        add     w6, w6, w27
+        add     w27, w27, w11
         and     v4.16b, v0.16b, v24.16b
-        neg     w27, w27
+        ror     w2, w27, #29
         and     v5.16b, v1.16b, v24.16b
-        ror     w6, w6, w27
+        add     w27, w2, w23
         and     v6.16b, v2.16b, v24.16b
-        add     w28, w3, w24
+        add     w6, w6, w27
         and     v7.16b, v3.16b, v24.16b
-        add     w28, w28, w11
+        neg     w27, w27
         orr     v0.16b, v0.16b, v25.16b
-        ror     w3, w28, #29
+        ror     w6, w6, w27
         orr     v1.16b, v1.16b, v25.16b
-        str     w3, [x12, #612]
-        orr     v2.16b, v2.16b, v25.16b
         add     w28, w3, w24
+        orr     v2.16b, v2.16b, v25.16b
+        add     w28, w28, w11
         orr     v3.16b, v3.16b, v25.16b
-        add     w7, w7, w28
+        ror     w3, w28, #29
         ushl    v4.4s, v12.4s, v4.4s
-        neg     w28, w28
+        stp     w2, w3, [x30, #128]
         ushl    v5.4s, v15.4s, v5.4s
-        ror     w7, w7, w28
+        add     w28, w3, w24
         ushl    v6.4s, v18.4s, v6.4s
-        add     w1, w4, w25
+        add     w7, w7, w28
         ushl    v7.4s, v21.4s, v7.4s
-        add     w1, w1, w11
         ushl    v0.4s, v12.4s, v0.4s
-        ror     w4, w1, #29
+        neg     w28, w28
         ushl    v1.4s, v15.4s, v1.4s
-        str     w4, [x12, #616]
+        ror     w7, w7, w28
         ushl    v2.4s, v18.4s, v2.4s
         add     w1, w4, w25
         ushl    v3.4s, v21.4s, v3.4s
-        add     w8, w8, w1
+        add     w1, w1, w11
         orr     v12.16b, v4.16b, v0.16b
-        neg     w1, w1
+        ror     w4, w1, #29
         orr     v15.16b, v5.16b, v1.16b
-        ror     w8, w8, w1
+        add     w1, w4, w25
         orr     v18.16b, v6.16b, v2.16b
-        add     w27, w5, w26
+        add     w8, w8, w1
         orr     v21.16b, v7.16b, v3.16b
-        add     w27, w27, w11
+        neg     w1, w1
         // k=64: A = (A + S[12] + B0) <<< 3; S[12] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
-        ror     w5, w27, #29
+        ror     w8, w8, w1
         ldp     q0, q1, [x10, #-64]
-        str     w5, [x12, #620]
-        ldp     q2, q3, [x10, #-32]
         add     w27, w5, w26
-        add     v0.4s, v0.4s, v8.4s
-        add     w17, w17, w27
-        add     v1.4s, v1.4s, v9.4s
-        neg     w27, w27
-        add     v2.4s, v2.4s, v10.4s
-        ror     w17, w17, w27
-        mov     w11, #0x129D
-        add     v3.4s, v3.4s, v11.4s
-        movk    w11, #0xE60C, lsl #16
-        add     v0.4s, v0.4s, v12.4s
-        add     w27, w2, w6
-        add     v1.4s, v1.4s, v15.4s
+        ldp     q2, q3, [x10, #-32]
         add     w27, w27, w11
+        add     v0.4s, v0.4s, v8.4s
+        ror     w5, w27, #29
+        add     v1.4s, v1.4s, v9.4s
+        stp     w4, w5, [x30, #136]
+        add     v2.4s, v2.4s, v10.4s
+        add     w27, w5, w26
+        add     v3.4s, v3.4s, v11.4s
+        add     w17, w17, w27
+        add     v0.4s, v0.4s, v12.4s
+        neg     w27, w27
+        add     v1.4s, v1.4s, v15.4s
         add     v2.4s, v2.4s, v18.4s
-        ror     w2, w27, #29
+        ror     w17, w17, w27
         add     v3.4s, v3.4s, v21.4s
-        str     w2, [x12, #672]
+        ldr     w11, [sp, #4072]
         shl     v8.4s, v0.4s, #3
         add     w27, w2, w6
         shl     v9.4s, v1.4s, #3
-        add     w19, w19, w27
+        add     w27, w27, w11
         shl     v10.4s, v2.4s, #3
-        neg     w27, w27
+        ror     w2, w27, #29
         shl     v11.4s, v3.4s, #3
-        ror     w19, w19, w27
+        add     w27, w2, w6
         sri     v8.4s, v0.4s, #29
-        add     w28, w3, w7
+        add     w19, w19, w27
         sri     v9.4s, v1.4s, #29
-        add     w28, w28, w11
+        neg     w27, w27
         sri     v10.4s, v2.4s, #29
-        ror     w3, w28, #29
+        ror     w19, w19, w27
         sri     v11.4s, v3.4s, #29
-        str     w3, [x12, #676]
-        stp     q8, q9, [x10, #-64]
         add     w28, w3, w7
+        stp     q8, q9, [x10, #-64]
+        add     w28, w28, w11
         stp     q10, q11, [x10, #-32]
-        add     w20, w20, w28
+        ror     w3, w28, #29
         add     v0.4s, v12.4s, v8.4s
-        neg     w28, w28
+        stp     w2, w3, [x30, #192]
         add     v1.4s, v15.4s, v9.4s
-        ror     w20, w20, w28
+        add     w28, w3, w7
         add     v2.4s, v18.4s, v10.4s
-        add     w1, w4, w8
+        add     w20, w20, w28
         add     v3.4s, v21.4s, v11.4s
-        add     w1, w1, w11
         add     v13.4s, v13.4s, v0.4s
-        ror     w4, w1, #29
+        neg     w28, w28
         add     v16.4s, v16.4s, v1.4s
-        str     w4, [x12, #680]
+        ror     w20, w20, w28
         add     v19.4s, v19.4s, v2.4s
         add     w1, w4, w8
         add     v22.4s, v22.4s, v3.4s
-        add     w21, w21, w1
+        add     w1, w1, w11
         and     v4.16b, v0.16b, v24.16b
-        neg     w1, w1
+        ror     w4, w1, #29
         and     v5.16b, v1.16b, v24.16b
-        ror     w21, w21, w1
+        add     w1, w4, w8
         and     v6.16b, v2.16b, v24.16b
-        add     w27, w5, w17
+        add     w21, w21, w1
         and     v7.16b, v3.16b, v24.16b
-        add     w27, w27, w11
+        neg     w1, w1
         orr     v0.16b, v0.16b, v25.16b
-        ror     w5, w27, #29
+        ror     w21, w21, w1
         orr     v1.16b, v1.16b, v25.16b
-        str     w5, [x12, #684]
-        orr     v2.16b, v2.16b, v25.16b
         add     w27, w5, w17
-        orr     v3.16b, v3.16b, v25.16b
-        add     w22, w22, w27
-        ushl    v4.4s, v13.4s, v4.4s
-        neg     w27, w27
-        ushl    v5.4s, v16.4s, v5.4s
-        ror     w22, w22, w27
-        mov     w11, #0x8C56
-        ushl    v6.4s, v19.4s, v6.4s
-        movk    w11, #0x8443, lsl #16
-        ushl    v7.4s, v22.4s, v7.4s
-        add     w27, w2, w19
-        ushl    v0.4s, v13.4s, v0.4s
+        orr     v2.16b, v2.16b, v25.16b
         add     w27, w27, w11
+        orr     v3.16b, v3.16b, v25.16b
+        ror     w5, w27, #29
+        ushl    v4.4s, v13.4s, v4.4s
+        stp     w4, w5, [x30, #200]
+        ushl    v5.4s, v16.4s, v5.4s
+        add     w27, w5, w17
+        ushl    v6.4s, v19.4s, v6.4s
+        add     w22, w22, w27
+        ushl    v7.4s, v22.4s, v7.4s
+        neg     w27, w27
+        ushl    v0.4s, v13.4s, v0.4s
         ushl    v1.4s, v16.4s, v1.4s
-        ror     w2, w27, #29
+        ror     w22, w22, w27
         ushl    v2.4s, v19.4s, v2.4s
-        str     w2, [x12, #736]
+        ldr     w11, [sp, #4076]
         ushl    v3.4s, v22.4s, v3.4s
         add     w27, w2, w19
         orr     v13.16b, v4.16b, v0.16b
-        add     w23, w23, w27
-        orr     v16.16b, v5.16b, v1.16b
-        neg     w27, w27
-        orr     v19.16b, v6.16b, v2.16b
-        ror     w23, w23, w27
-        orr     v22.16b, v7.16b, v3.16b
-        add     w28, w3, w20
-        // k=65: A = (A + S[13] + B1) <<< 3; S[13] = A; B2 = (B2 + B1 + A) <<< (B1 + A)
-        add     w28, w28, w11
-        ldp     q0, q1, [x10, #0]
-        ror     w3, w28, #29
-        ldp     q2, q3, [x10, #32]
-        str     w3, [x12, #740]
-        add     v0.4s, v0.4s, v8.4s
-        add     w28, w3, w20
-        add     v1.4s, v1.4s, v9.4s
-        add     w24, w24, w28
-        add     v2.4s, v2.4s, v10.4s
-        neg     w28, w28
-        add     v3.4s, v3.4s, v11.4s
-        ror     w24, w24, w28
-        add     v0.4s, v0.4s, v13.4s
-        add     w1, w4, w21
-        add     v1.4s, v1.4s, v16.4s
-        add     w1, w1, w11
-        add     v2.4s, v2.4s, v19.4s
-        ror     w4, w1, #29
-        add     v3.4s, v3.4s, v22.4s
-        str     w4, [x12, #744]
-        shl     v8.4s, v0.4s, #3
-        add     w1, w4, w21
-        shl     v9.4s, v1.4s, #3
-        add     w25, w25, w1
-        shl     v10.4s, v2.4s, #3
-        neg     w1, w1
-        shl     v11.4s, v3.4s, #3
-        ror     w25, w25, w1
-        sri     v8.4s, v0.4s, #29
-        add     w27, w5, w22
-        sri     v9.4s, v1.4s, #29
         add     w27, w27, w11
+        orr     v16.16b, v5.16b, v1.16b
+        ror     w2, w27, #29
+        orr     v19.16b, v6.16b, v2.16b
+        add     w27, w2, w19
+        orr     v22.16b, v7.16b, v3.16b
+        add     w23, w23, w27
+        // k=65: A = (A + S[13] + B1) <<< 3; S[13] = A; B2 = (B2 + B1 + A) <<< (B1 + A)
+        neg     w27, w27
+        ldp     q0, q1, [x10, #0]
+        ror     w23, w23, w27
+        ldp     q2, q3, [x10, #32]
+        add     w28, w3, w20
+        add     v0.4s, v0.4s, v8.4s
+        add     w28, w28, w11
+        add     v1.4s, v1.4s, v9.4s
+        ror     w3, w28, #29
+        add     v2.4s, v2.4s, v10.4s
+        add     x30, x12, #992
+        add     v3.4s, v3.4s, v11.4s
+        stp     w2, w3, [x30, #-256]
+        add     v0.4s, v0.4s, v13.4s
+        add     w28, w3, w20
+        add     v1.4s, v1.4s, v16.4s
+        add     w24, w24, w28
+        add     v2.4s, v2.4s, v19.4s
+        add     v3.4s, v3.4s, v22.4s
+        neg     w28, w28
+        shl     v8.4s, v0.4s, #3
+        ror     w24, w24, w28
+        shl     v9.4s, v1.4s, #3
+        add     w1, w4, w21
+        shl     v10.4s, v2.4s, #3
+        add     w1, w1, w11
+        shl     v11.4s, v3.4s, #3
+        ror     w4, w1, #29
+        sri     v8.4s, v0.4s, #29
+        add     w1, w4, w21
+        sri     v9.4s, v1.4s, #29
+        add     w25, w25, w1
         sri     v10.4s, v2.4s, #29
-        ror     w5, w27, #29
+        neg     w1, w1
         sri     v11.4s, v3.4s, #29
-        str     w5, [x12, #748]
+        ror     w25, w25, w1
         stp     q8, q9, [x10, #0]
         add     w27, w5, w22
         stp     q10, q11, [x10, #32]
-        add     w26, w26, w27
-        add     v0.4s, v13.4s, v8.4s
-        neg     w27, w27
-        add     v1.4s, v16.4s, v9.4s
-        ror     w26, w26, w27
-        mov     w11, #0x060F
-        add     v2.4s, v19.4s, v10.4s
-        movk    w11, #0x227B, lsl #16
-        add     v3.4s, v22.4s, v11.4s
-        add     w27, w2, w23
-        add     v14.4s, v14.4s, v0.4s
         add     w27, w27, w11
+        add     v0.4s, v13.4s, v8.4s
+        ror     w5, w27, #29
+        add     v1.4s, v16.4s, v9.4s
+        stp     w4, w5, [x30, #-248]
+        add     v2.4s, v19.4s, v10.4s
+        add     w27, w5, w22
+        add     v3.4s, v22.4s, v11.4s
+        add     w26, w26, w27
+        add     v14.4s, v14.4s, v0.4s
         add     v17.4s, v17.4s, v1.4s
-        ror     w2, w27, #29
-        add     v20.4s, v20.4s, v2.4s
-        str     w2, [x12, #800]
-        add     v23.4s, v23.4s, v3.4s
-        add     w27, w2, w23
-        and     v4.16b, v0.16b, v24.16b
-        add     w6, w6, w27
-        and     v5.16b, v1.16b, v24.16b
         neg     w27, w27
+        add     v20.4s, v20.4s, v2.4s
+        ror     w26, w26, w27
+        add     v23.4s, v23.4s, v3.4s
+        ldr     w11, [sp, #4080]
+        and     v4.16b, v0.16b, v24.16b
+        add     w27, w2, w23
+        and     v5.16b, v1.16b, v24.16b
+        add     w27, w27, w11
         and     v6.16b, v2.16b, v24.16b
-        ror     w6, w6, w27
+        ror     w2, w27, #29
         and     v7.16b, v3.16b, v24.16b
-        add     w28, w3, w24
+        add     w27, w2, w23
         orr     v0.16b, v0.16b, v25.16b
-        add     w28, w28, w11
+        add     w6, w6, w27
         orr     v1.16b, v1.16b, v25.16b
-        ror     w3, w28, #29
+        neg     w27, w27
         orr     v2.16b, v2.16b, v25.16b
-        str     w3, [x12, #804]
+        ror     w6, w6, w27
         orr     v3.16b, v3.16b, v25.16b
         add     w28, w3, w24
         ushl    v4.4s, v14.4s, v4.4s
-        add     w7, w7, w28
+        add     w28, w28, w11
         ushl    v5.4s, v17.4s, v5.4s
-        neg     w28, w28
+        ror     w3, w28, #29
         ushl    v6.4s, v20.4s, v6.4s
-        ror     w7, w7, w28
+        stp     w2, w3, [x30, #-192]
         ushl    v7.4s, v23.4s, v7.4s
-        add     w1, w4, w25
+        add     w28, w3, w24
         ushl    v0.4s, v14.4s, v0.4s
-        add     w1, w1, w11
+        add     w7, w7, w28
         ushl    v1.4s, v17.4s, v1.4s
-        ror     w4, w1, #29
         ushl    v2.4s, v20.4s, v2.4s
-        str     w4, [x12, #808]
+        neg     w28, w28
         ushl    v3.4s, v23.4s, v3.4s
-        add     w1, w4, w25
+        ror     w7, w7, w28
         orr     v14.16b, v4.16b, v0.16b
-        add     w8, w8, w1
+        add     w1, w4, w25
         orr     v17.16b, v5.16b, v1.16b
-        neg     w1, w1
+        add     w1, w1, w11
         orr     v20.16b, v6.16b, v2.16b
-        ror     w8, w8, w1
+        ror     w4, w1, #29
         orr     v23.16b, v7.16b, v3.16b
-        add     w27, w5, w26
+        add     w1, w4, w25
         // k=66: A = (A + S[14] + B2) <<< 3; S[14] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
-        add     w27, w27, w11
+        add     w8, w8, w1
         ldp     q0, q1, [x10, #64]
-        ror     w5, w27, #29
+        neg     w1, w1
         ldp     q2, q3, [x10, #96]
-        str     w5, [x12, #812]
+        ror     w8, w8, w1
         add     v0.4s, v0.4s, v8.4s
         add     w27, w5, w26
         add     v1.4s, v1.4s, v9.4s
-        add     w17, w17, w27
-        add     v2.4s, v2.4s, v10.4s
-        neg     w27, w27
-        add     v3.4s, v3.4s, v11.4s
-        ror     w17, w17, w27
-        mov     w11, #0x7FC8
-        add     v0.4s, v0.4s, v14.4s
-        movk    w11, #0xC0B2, lsl #16
-        add     v1.4s, v1.4s, v17.4s
-        add     w27, w2, w6
-        add     v2.4s, v2.4s, v20.4s
         add     w27, w27, w11
-        add     v3.4s, v3.4s, v23.4s
-        ror     w2, w27, #29
-        shl     v8.4s, v0.4s, #3
-        str     w2, [x12, #864]
-        shl     v9.4s, v1.4s, #3
-        add     w27, w2, w6
-        shl     v10.4s, v2.4s, #3
-        add     w19, w19, w27
-        shl     v11.4s, v3.4s, #3
+        add     v2.4s, v2.4s, v10.4s
+        ror     w5, w27, #29
+        add     v3.4s, v3.4s, v11.4s
+        stp     w4, w5, [x30, #-184]
+        add     v0.4s, v0.4s, v14.4s
+        add     w27, w5, w26
+        add     v1.4s, v1.4s, v17.4s
+        add     w17, w17, w27
+        add     v2.4s, v2.4s, v20.4s
         neg     w27, w27
+        add     v3.4s, v3.4s, v23.4s
+        shl     v8.4s, v0.4s, #3
+        ror     w17, w17, w27
+        shl     v9.4s, v1.4s, #3
+        ldr     w11, [sp, #4084]
+        shl     v10.4s, v2.4s, #3
+        add     w27, w2, w6
+        shl     v11.4s, v3.4s, #3
+        add     w27, w27, w11
         sri     v8.4s, v0.4s, #29
-        ror     w19, w19, w27
+        ror     w2, w27, #29
         sri     v9.4s, v1.4s, #29
-        add     w28, w3, w7
+        add     w27, w2, w6
         sri     v10.4s, v2.4s, #29
-        add     w28, w28, w11
+        add     w19, w19, w27
         sri     v11.4s, v3.4s, #29
-        ror     w3, w28, #29
+        neg     w27, w27
         stp     q8, q9, [x10, #64]
-        str     w3, [x12, #868]
+        ror     w19, w19, w27
         stp     q10, q11, [x10, #96]
         add     w28, w3, w7
         add     v0.4s, v14.4s, v8.4s
-        add     w20, w20, w28
+        add     w28, w28, w11
         add     v1.4s, v17.4s, v9.4s
-        neg     w28, w28
+        ror     w3, w28, #29
         add     v2.4s, v20.4s, v10.4s
-        ror     w20, w20, w28
+        stp     w2, w3, [x30, #-128]
         add     v3.4s, v23.4s, v11.4s
-        add     w1, w4, w8
+        add     w28, w3, w7
         add     v12.4s, v12.4s, v0.4s
-        add     w1, w1, w11
+        add     w20, w20, w28
         add     v15.4s, v15.4s, v1.4s
-        ror     w4, w1, #29
         add     v18.4s, v18.4s, v2.4s
-        str     w4, [x12, #872]
+        neg     w28, w28
         add     v21.4s, v21.4s, v3.4s
-        add     w1, w4, w8
+        ror     w20, w20, w28
         and     v4.16b, v0.16b, v24.16b
-        add     w21, w21, w1
+        add     w1, w4, w8
         and     v5.16b, v1.16b, v24.16b
-        neg     w1, w1
+        add     w1, w1, w11
         and     v6.16b, v2.16b, v24.16b
-        ror     w21, w21, w1
+        ror     w4, w1, #29
         and     v7.16b, v3.16b, v24.16b
-        add     w27, w5, w17
+        add     w1, w4, w8
         orr     v0.16b, v0.16b, v25.16b
-        add     w27, w27, w11
+        add     w21, w21, w1
         orr     v1.16b, v1.16b, v25.16b
-        ror     w5, w27, #29
+        neg     w1, w1
         orr     v2.16b, v2.16b, v25.16b
-        str     w5, [x12, #876]
+        ror     w21, w21, w1
         orr     v3.16b, v3.16b, v25.16b
         add     w27, w5, w17
         ushl    v4.4s, v12.4s, v4.4s
-        add     w22, w22, w27
-        ushl    v5.4s, v15.4s, v5.4s
-        neg     w27, w27
-        ushl    v6.4s, v18.4s, v6.4s
-        ror     w22, w22, w27
-        mov     w11, #0xF981
-        ushl    v7.4s, v21.4s, v7.4s
-        movk    w11, #0x5EE9, lsl #16
-        ushl    v0.4s, v12.4s, v0.4s
-        add     w27, w2, w19
-        ushl    v1.4s, v15.4s, v1.4s
         add     w27, w27, w11
-        ushl    v2.4s, v18.4s, v2.4s
-        ror     w2, w27, #29
-        ushl    v3.4s, v21.4s, v3.4s
-        str     w2, [x12, #928]
-        orr     v12.16b, v4.16b, v0.16b
-        add     w27, w2, w19
-        orr     v15.16b, v5.16b, v1.16b
-        add     w23, w23, w27
-        orr     v18.16b, v6.16b, v2.16b
+        ushl    v5.4s, v15.4s, v5.4s
+        ror     w5, w27, #29
+        ushl    v6.4s, v18.4s, v6.4s
+        stp     w4, w5, [x30, #-120]
+        ushl    v7.4s, v21.4s, v7.4s
+        add     w27, w5, w17
+        ushl    v0.4s, v12.4s, v0.4s
+        add     w22, w22, w27
+        ushl    v1.4s, v15.4s, v1.4s
         neg     w27, w27
+        ushl    v2.4s, v18.4s, v2.4s
+        ushl    v3.4s, v21.4s, v3.4s
+        ror     w22, w22, w27
+        orr     v12.16b, v4.16b, v0.16b
+        ldr     w11, [sp, #4088]
+        orr     v15.16b, v5.16b, v1.16b
+        add     w27, w2, w19
+        orr     v18.16b, v6.16b, v2.16b
+        add     w27, w27, w11
         orr     v21.16b, v7.16b, v3.16b
-        ror     w23, w23, w27
+        ror     w2, w27, #29
         // k=67: A = (A + S[15] + B0) <<< 3; S[15] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
-        add     w28, w3, w20
+        add     w27, w2, w19
         ldp     q0, q1, [x10, #128]
-        add     w28, w28, w11
+        add     w23, w23, w27
         ldp     q2, q3, [x10, #160]
-        ror     w3, w28, #29
+        neg     w27, w27
         add     v0.4s, v0.4s, v8.4s
-        str     w3, [x12, #932]
+        ror     w23, w23, w27
         add     v1.4s, v1.4s, v9.4s
         add     w28, w3, w20
         add     v2.4s, v2.4s, v10.4s
-        add     w24, w24, w28
+        add     w28, w28, w11
         add     v3.4s, v3.4s, v11.4s
-        neg     w28, w28
+        ror     w3, w28, #29
         add     v0.4s, v0.4s, v12.4s
-        ror     w24, w24, w28
+        stp     w2, w3, [x30, #-64]
         add     v1.4s, v1.4s, v15.4s
-        add     w1, w4, w21
+        add     w28, w3, w20
         add     v2.4s, v2.4s, v18.4s
-        add     w1, w1, w11
+        add     w24, w24, w28
         add     v3.4s, v3.4s, v21.4s
-        ror     w4, w1, #29
         shl     v8.4s, v0.4s, #3
-        str     w4, [x12, #936]
+        neg     w28, w28
         shl     v9.4s, v1.4s, #3
-        add     w1, w4, w21
+        ror     w24, w24, w28
         shl     v10.4s, v2.4s, #3
-        add     w25, w25, w1
+        add     w1, w4, w21
         shl     v11.4s, v3.4s, #3
-        neg     w1, w1
+        add     w1, w1, w11
         sri     v8.4s, v0.4s, #29
-        ror     w25, w25, w1
+        ror     w4, w1, #29
         sri     v9.4s, v1.4s, #29
-        add     w27, w5, w22
+        add     w1, w4, w21
         sri     v10.4s, v2.4s, #29
-        add     w27, w27, w11
+        add     w25, w25, w1
         sri     v11.4s, v3.4s, #29
-        ror     w5, w27, #29
+        neg     w1, w1
         stp     q8, q9, [x10, #128]
-        str     w5, [x12, #940]
+        ror     w25, w25, w1
         stp     q10, q11, [x10, #160]
         add     w27, w5, w22
         add     v0.4s, v12.4s, v8.4s
-        add     w26, w26, w27
-        add     v1.4s, v15.4s, v9.4s
-        neg     w27, w27
-        add     v2.4s, v18.4s, v10.4s
-        ror     w26, w26, w27
-        mov     w11, #0x733A
-        add     v3.4s, v21.4s, v11.4s
-        movk    w11, #0xFD21, lsl #16
-        add     v13.4s, v13.4s, v0.4s
-        add     w27, w2, w23
-        add     v16.4s, v16.4s, v1.4s
         add     w27, w27, w11
-        add     v19.4s, v19.4s, v2.4s
-        ror     w2, w27, #29
-        add     v22.4s, v22.4s, v3.4s
-        str     w2, [x12, #992]
-        and     v4.16b, v0.16b, v24.16b
-        add     w27, w2, w23
-        and     v5.16b, v1.16b, v24.16b
-        add     w6, w6, w27
-        and     v6.16b, v2.16b, v24.16b
+        add     v1.4s, v15.4s, v9.4s
+        ror     w5, w27, #29
+        add     v2.4s, v18.4s, v10.4s
+        stp     w4, w5, [x30, #-56]
+        add     v3.4s, v21.4s, v11.4s
+        add     w27, w5, w22
+        add     v13.4s, v13.4s, v0.4s
+        add     w26, w26, w27
+        add     v16.4s, v16.4s, v1.4s
         neg     w27, w27
+        add     v19.4s, v19.4s, v2.4s
+        add     v22.4s, v22.4s, v3.4s
+        ror     w26, w26, w27
+        and     v4.16b, v0.16b, v24.16b
+        ldr     w11, [sp, #4092]
+        and     v5.16b, v1.16b, v24.16b
+        add     w27, w2, w23
+        and     v6.16b, v2.16b, v24.16b
+        add     w27, w27, w11
         and     v7.16b, v3.16b, v24.16b
-        ror     w6, w6, w27
+        ror     w2, w27, #29
         orr     v0.16b, v0.16b, v25.16b
-        add     w28, w3, w24
+        add     w27, w2, w23
         orr     v1.16b, v1.16b, v25.16b
-        add     w28, w28, w11
+        add     w6, w6, w27
         orr     v2.16b, v2.16b, v25.16b
-        ror     w3, w28, #29
+        neg     w27, w27
         orr     v3.16b, v3.16b, v25.16b
-        str     w3, [x12, #996]
+        ror     w6, w6, w27
         ushl    v4.4s, v13.4s, v4.4s
         add     w28, w3, w24
         ushl    v5.4s, v16.4s, v5.4s
-        add     w7, w7, w28
+        add     w28, w28, w11
         ushl    v6.4s, v19.4s, v6.4s
-        neg     w28, w28
+        ror     w3, w28, #29
         ushl    v7.4s, v22.4s, v7.4s
-        ror     w7, w7, w28
+        stp     w2, w3, [x30, #0]
         ushl    v0.4s, v13.4s, v0.4s
-        add     w1, w4, w25
+        add     w28, w3, w24
         ushl    v1.4s, v16.4s, v1.4s
-        add     w1, w1, w11
+        add     w7, w7, w28
         ushl    v2.4s, v19.4s, v2.4s
-        ror     w4, w1, #29
+        neg     w28, w28
         ushl    v3.4s, v22.4s, v3.4s
-        str     w4, [x12, #1000]
         orr     v13.16b, v4.16b, v0.16b
-        add     w1, w4, w25
+        ror     w7, w7, w28
         orr     v16.16b, v5.16b, v1.16b
-        add     w8, w8, w1
+        add     w1, w4, w25
         orr     v19.16b, v6.16b, v2.16b
-        neg     w1, w1
+        add     w1, w1, w11
         orr     v22.16b, v7.16b, v3.16b
-        ror     w8, w8, w1
+        ror     w4, w1, #29
         // k=68: A = (A + S[16] + B1) <<< 3; S[16] = A; B2 = (B2 + B1 + A) <<< (B1 + A)
-        add     w27, w5, w26
+        add     w1, w4, w25
         ldp     q0, q1, [x10, #192]
-        add     w27, w27, w11
+        add     w8, w8, w1
         ldp     q2, q3, [x10, #224]
-        ror     w5, w27, #29
+        neg     w1, w1
         add     v0.4s, v0.4s, v8.4s
-        str     w5, [x12, #1004]
+        ror     w8, w8, w1
         add     v1.4s, v1.4s, v9.4s
         add     w27, w5, w26
         add     v2.4s, v2.4s, v10.4s
-        add     w17, w17, w27
-        add     v3.4s, v3.4s, v11.4s
-        neg     w27, w27
-        add     v0.4s, v0.4s, v13.4s
-        ror     w17, w17, w27
-        mov     w11, #0xECF3
-        add     v1.4s, v1.4s, v16.4s
-        movk    w11, #0x9B58, lsl #16
-        add     v2.4s, v2.4s, v19.4s
-        add     w27, w2, w6
-        add     v3.4s, v3.4s, v22.4s
         add     w27, w27, w11
-        shl     v8.4s, v0.4s, #3
-        ror     w2, w27, #29
-        shl     v9.4s, v1.4s, #3
-        str     w2, [x12, #1056]
-        shl     v10.4s, v2.4s, #3
-        add     w27, w2, w6
-        shl     v11.4s, v3.4s, #3
-        add     w19, w19, w27
-        sri     v8.4s, v0.4s, #29
+        add     v3.4s, v3.4s, v11.4s
+        ror     w5, w27, #29
+        add     v0.4s, v0.4s, v13.4s
+        stp     w4, w5, [x30, #8]
+        add     v1.4s, v1.4s, v16.4s
+        add     w27, w5, w26
+        add     v2.4s, v2.4s, v19.4s
+        add     w17, w17, w27
+        add     v3.4s, v3.4s, v22.4s
         neg     w27, w27
+        shl     v8.4s, v0.4s, #3
+        shl     v9.4s, v1.4s, #3
+        ror     w17, w17, w27
+        shl     v10.4s, v2.4s, #3
+        ldr     w11, [sp, #4096]
+        shl     v11.4s, v3.4s, #3
+        add     w27, w2, w6
+        sri     v8.4s, v0.4s, #29
+        add     w27, w27, w11
         sri     v9.4s, v1.4s, #29
-        ror     w19, w19, w27
+        ror     w2, w27, #29
         sri     v10.4s, v2.4s, #29
-        add     w28, w3, w7
+        add     w27, w2, w6
         sri     v11.4s, v3.4s, #29
-        add     w28, w28, w11
+        add     w19, w19, w27
         stp     q8, q9, [x10, #192]
-        ror     w3, w28, #29
+        neg     w27, w27
         stp     q10, q11, [x10, #224]
-        str     w3, [x12, #1060]
+        ror     w19, w19, w27
         add     v0.4s, v13.4s, v8.4s
         add     w28, w3, w7
         add     v1.4s, v16.4s, v9.4s
-        add     w20, w20, w28
+        add     w28, w28, w11
         add     v2.4s, v19.4s, v10.4s
-        neg     w28, w28
+        ror     w3, w28, #29
         add     v3.4s, v22.4s, v11.4s
-        ror     w20, w20, w28
+        stp     w2, w3, [x30, #64]
         add     v14.4s, v14.4s, v0.4s
-        add     w1, w4, w8
+        add     w28, w3, w7
         add     v17.4s, v17.4s, v1.4s
-        add     w1, w1, w11
+        add     w20, w20, w28
         add     v20.4s, v20.4s, v2.4s
-        ror     w4, w1, #29
+        neg     w28, w28
         add     v23.4s, v23.4s, v3.4s
-        str     w4, [x12, #1064]
         and     v4.16b, v0.16b, v24.16b
-        add     w1, w4, w8
+        ror     w20, w20, w28
         and     v5.16b, v1.16b, v24.16b
-        add     w21, w21, w1
+        add     w1, w4, w8
         and     v6.16b, v2.16b, v24.16b
-        neg     w1, w1
+        add     w1, w1, w11
         and     v7.16b, v3.16b, v24.16b
-        ror     w21, w21, w1
+        ror     w4, w1, #29
         orr     v0.16b, v0.16b, v25.16b
-        add     w27, w5, w17
+        add     w1, w4, w8
         orr     v1.16b, v1.16b, v25.16b
-        add     w27, w27, w11
+        add     w21, w21, w1
         orr     v2.16b, v2.16b, v25.16b
-        ror     w5, w27, #29
+        neg     w1, w1
         orr     v3.16b, v3.16b, v25.16b
-        str     w5, [x12, #1068]
+        ror     w21, w21, w1
         ushl    v4.4s, v14.4s, v4.4s
         add     w27, w5, w17
         ushl    v5.4s, v17.4s, v5.4s
-        add     w22, w22, w27
-        ushl    v6.4s, v20.4s, v6.4s
-        neg     w27, w27
-        ushl    v7.4s, v23.4s, v7.4s
-        ror     w22, w22, w27
-        mov     w11, #0x66AC
-        ushl    v0.4s, v14.4s, v0.4s
-        movk    w11, #0x3990, lsl #16
-        ushl    v1.4s, v17.4s, v1.4s
-        add     w27, w2, w19
-        ushl    v2.4s, v20.4s, v2.4s
         add     w27, w27, w11
-        ushl    v3.4s, v23.4s, v3.4s
-        ror     w2, w27, #29
-        orr     v14.16b, v4.16b, v0.16b
-        str     w2, [x12, #1120]
-        orr     v17.16b, v5.16b, v1.16b
-        add     w27, w2, w19
-        orr     v20.16b, v6.16b, v2.16b
-        add     w23, w23, w27
-        orr     v23.16b, v7.16b, v3.16b
+        ushl    v6.4s, v20.4s, v6.4s
+        ror     w5, w27, #29
+        ushl    v7.4s, v23.4s, v7.4s
+        stp     w4, w5, [x30, #72]
+        ushl    v0.4s, v14.4s, v0.4s
+        add     w27, w5, w17
+        ushl    v1.4s, v17.4s, v1.4s
+        add     w22, w22, w27
+        ushl    v2.4s, v20.4s, v2.4s
         neg     w27, w27
+        ushl    v3.4s, v23.4s, v3.4s
+        ror     w22, w22, w27
+        orr     v14.16b, v4.16b, v0.16b
+        orr     v17.16b, v5.16b, v1.16b
+        ldr     w11, [sp, #4100]
+        orr     v20.16b, v6.16b, v2.16b
+        add     w27, w2, w19
+        orr     v23.16b, v7.16b, v3.16b
+        add     w27, w27, w11
         // k=69: A = (A + S[17] + B2) <<< 3; S[17] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
-        ror     w23, w23, w27
+        ror     w2, w27, #29
         ldp     q0, q1, [x10, #256]
-        add     w28, w3, w20
+        add     w27, w2, w19
         ldp     q2, q3, [x10, #288]
-        add     w28, w28, w11
+        add     w23, w23, w27
         add     v0.4s, v0.4s, v8.4s
-        ror     w3, w28, #29
+        neg     w27, w27
         add     v1.4s, v1.4s, v9.4s
-        str     w3, [x12, #1124]
+        ror     w23, w23, w27
         add     v2.4s, v2.4s, v10.4s
         add     w28, w3, w20
         add     v3.4s, v3.4s, v11.4s
-        add     w24, w24, w28
+        add     w28, w28, w11
         add     v0.4s, v0.4s, v14.4s
-        neg     w28, w28
+        ror     w3, w28, #29
         add     v1.4s, v1.4s, v17.4s
-        ror     w24, w24, w28
+        stp     w2, w3, [x30, #128]
         add     v2.4s, v2.4s, v20.4s
-        add     w1, w4, w21
+        add     w28, w3, w20
         add     v3.4s, v3.4s, v23.4s
-        add     w1, w1, w11
+        add     w24, w24, w28
         shl     v8.4s, v0.4s, #3
-        ror     w4, w1, #29
+        neg     w28, w28
         shl     v9.4s, v1.4s, #3
-        str     w4, [x12, #1128]
         shl     v10.4s, v2.4s, #3
-        add     w1, w4, w21
+        ror     w24, w24, w28
         shl     v11.4s, v3.4s, #3
-        add     w25, w25, w1
+        add     w1, w4, w21
         sri     v8.4s, v0.4s, #29
-        neg     w1, w1
+        add     w1, w1, w11
         sri     v9.4s, v1.4s, #29
-        ror     w25, w25, w1
+        ror     w4, w1, #29
         sri     v10.4s, v2.4s, #29
-        add     w27, w5, w22
+        add     w1, w4, w21
         sri     v11.4s, v3.4s, #29
-        add     w27, w27, w11
+        add     w25, w25, w1
         stp     q8, q9, [x10, #256]
-        ror     w5, w27, #29
+        neg     w1, w1
         stp     q10, q11, [x10, #288]
-        str     w5, [x12, #1132]
+        ror     w25, w25, w1
         add     v0.4s, v14.4s, v8.4s
         add     w27, w5, w22
         add     v1.4s, v17.4s, v9.4s
-        add     w26, w26, w27
-        add     v2.4s, v20.4s, v10.4s
-        neg     w27, w27
-        add     v3.4s, v23.4s, v11.4s
-        ror     w26, w26, w27
-        mov     w11, #0xE065
-        add     v12.4s, v12.4s, v0.4s
-        movk    w11, #0xD7C7, lsl #16
-        add     v15.4s, v15.4s, v1.4s
-        add     w27, w2, w23
-        add     v18.4s, v18.4s, v2.4s
         add     w27, w27, w11
-        add     v21.4s, v21.4s, v3.4s
-        ror     w2, w27, #29
-        and     v4.16b, v0.16b, v24.16b
-        str     w2, [x12, #1184]
-        and     v5.16b, v1.16b, v24.16b
-        add     w27, w2, w23
-        and     v6.16b, v2.16b, v24.16b
-        add     w6, w6, w27
-        and     v7.16b, v3.16b, v24.16b
+        add     v2.4s, v20.4s, v10.4s
+        ror     w5, w27, #29
+        add     v3.4s, v23.4s, v11.4s
+        stp     w4, w5, [x30, #136]
+        add     v12.4s, v12.4s, v0.4s
+        add     w27, w5, w22
+        add     v15.4s, v15.4s, v1.4s
+        add     w26, w26, w27
+        add     v18.4s, v18.4s, v2.4s
         neg     w27, w27
+        add     v21.4s, v21.4s, v3.4s
+        ror     w26, w26, w27
+        and     v4.16b, v0.16b, v24.16b
+        and     v5.16b, v1.16b, v24.16b
+        ldr     w11, [sp, #4104]
+        and     v6.16b, v2.16b, v24.16b
+        add     w27, w2, w23
+        and     v7.16b, v3.16b, v24.16b
+        add     w27, w27, w11
         orr     v0.16b, v0.16b, v25.16b
-        ror     w6, w6, w27
+        ror     w2, w27, #29
         orr     v1.16b, v1.16b, v25.16b
-        add     w28, w3, w24
+        add     w27, w2, w23
         orr     v2.16b, v2.16b, v25.16b
-        add     w28, w28, w11
+        add     w6, w6, w27
         orr     v3.16b, v3.16b, v25.16b
-        ror     w3, w28, #29
+        neg     w27, w27
         ushl    v4.4s, v12.4s, v4.4s
-        str     w3, [x12, #1188]
+        ror     w6, w6, w27
         ushl    v5.4s, v15.4s, v5.4s
         add     w28, w3, w24
         ushl    v6.4s, v18.4s, v6.4s
-        add     w7, w7, w28
+        add     w28, w28, w11
         ushl    v7.4s, v21.4s, v7.4s
-        neg     w28, w28
+        ror     w3, w28, #29
         ushl    v0.4s, v12.4s, v0.4s
-        ror     w7, w7, w28
+        stp     w2, w3, [x30, #192]
         ushl    v1.4s, v15.4s, v1.4s
-        add     w1, w4, w25
+        add     w28, w3, w24
         ushl    v2.4s, v18.4s, v2.4s
-        add     w1, w1, w11
+        add     w7, w7, w28
         ushl    v3.4s, v21.4s, v3.4s
-        ror     w4, w1, #29
+        neg     w28, w28
         orr     v12.16b, v4.16b, v0.16b
-        str     w4, [x12, #1192]
+        ror     w7, w7, w28
         orr     v15.16b, v5.16b, v1.16b
-        add     w1, w4, w25
         orr     v18.16b, v6.16b, v2.16b
-        add     w8, w8, w1
+        add     w1, w4, w25
         orr     v21.16b, v7.16b, v3.16b
-        neg     w1, w1
+        add     w1, w1, w11
         // k=70: A = (A + S[18] + B0) <<< 3; S[18] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
-        ror     w8, w8, w1
+        ror     w4, w1, #29
         ldp     q0, q1, [x10, #320]
-        add     w27, w5, w26
+        add     w1, w4, w25
         ldp     q2, q3, [x10, #352]
-        add     w27, w27, w11
+        add     w8, w8, w1
         add     v0.4s, v0.4s, v8.4s
-        ror     w5, w27, #29
+        neg     w1, w1
         add     v1.4s, v1.4s, v9.4s
-        str     w5, [x12, #1196]
+        ror     w8, w8, w1
         add     v2.4s, v2.4s, v10.4s
         add     w27, w5, w26
         add     v3.4s, v3.4s, v11.4s
-        add     w17, w17, w27
-        add     v0.4s, v0.4s, v12.4s
-        neg     w27, w27
-        ror     w17, w17, w27
-        add     v1.4s, v1.4s, v15.4s
-        mov     w11, #0x5A1E
-        add     v2.4s, v2.4s, v18.4s
-        movk    w11, #0x75FF, lsl #16
-        add     v3.4s, v3.4s, v21.4s
-        add     w27, w2, w6
-        shl     v8.4s, v0.4s, #3
         add     w27, w27, w11
-        shl     v9.4s, v1.4s, #3
-        ror     w2, w27, #29
-        shl     v10.4s, v2.4s, #3
-        str     w2, [x12, #1248]
-        shl     v11.4s, v3.4s, #3
-        add     w27, w2, w6
-        sri     v8.4s, v0.4s, #29
-        add     w19, w19, w27
-        sri     v9.4s, v1.4s, #29
+        add     v0.4s, v0.4s, v12.4s
+        ror     w5, w27, #29
+        add     v1.4s, v1.4s, v15.4s
+        stp     w4, w5, [x30, #200]
+        add     v2.4s, v2.4s, v18.4s
+        add     w27, w5, w26
+        add     v3.4s, v3.4s, v21.4s
+        add     w17, w17, w27
+        shl     v8.4s, v0.4s, #3
         neg     w27, w27
+        shl     v9.4s, v1.4s, #3
+        ror     w17, w17, w27
+        shl     v10.4s, v2.4s, #3
+        shl     v11.4s, v3.4s, #3
+        ldr     w11, [sp, #4108]
+        sri     v8.4s, v0.4s, #29
+        add     w27, w2, w6
+        sri     v9.4s, v1.4s, #29
+        add     w27, w27, w11
         sri     v10.4s, v2.4s, #29
-        ror     w19, w19, w27
+        ror     w2, w27, #29
         sri     v11.4s, v3.4s, #29
-        add     w28, w3, w7
+        add     w27, w2, w6
         stp     q8, q9, [x10, #320]
-        add     w28, w28, w11
+        add     w19, w19, w27
         stp     q10, q11, [x10, #352]
-        ror     w3, w28, #29
+        neg     w27, w27
         add     v0.4s, v12.4s, v8.4s
-        str     w3, [x12, #1252]
+        ror     w19, w19, w27
         add     v1.4s, v15.4s, v9.4s
         add     w28, w3, w7
         add     v2.4s, v18.4s, v10.4s
-        add     w20, w20, w28
+        add     w28, w28, w11
         add     v3.4s, v21.4s, v11.4s
-        neg     w28, w28
+        ror     w3, w28, #29
         add     v13.4s, v13.4s, v0.4s
-        ror     w20, w20, w28
+        add     x30, x12, #1504
         add     v16.4s, v16.4s, v1.4s
-        add     w1, w4, w8
+        stp     w2, w3, [x30, #-256]
         add     v19.4s, v19.4s, v2.4s
-        add     w1, w1, w11
+        add     w28, w3, w7
         add     v22.4s, v22.4s, v3.4s
-        ror     w4, w1, #29
+        add     w20, w20, w28
         and     v4.16b, v0.16b, v24.16b
-        str     w4, [x12, #1256]
+        neg     w28, w28
         and     v5.16b, v1.16b, v24.16b
-        add     w1, w4, w8
         and     v6.16b, v2.16b, v24.16b
-        add     w21, w21, w1
+        ror     w20, w20, w28
         and     v7.16b, v3.16b, v24.16b
-        neg     w1, w1
+        add     w1, w4, w8
         orr     v0.16b, v0.16b, v25.16b
-        ror     w21, w21, w1
+        add     w1, w1, w11
         orr     v1.16b, v1.16b, v25.16b
-        add     w27, w5, w17
+        ror     w4, w1, #29
         orr     v2.16b, v2.16b, v25.16b
-        add     w27, w27, w11
+        add     w1, w4, w8
         orr     v3.16b, v3.16b, v25.16b
-        ror     w5, w27, #29
+        add     w21, w21, w1
         ushl    v4.4s, v13.4s, v4.4s
-        str     w5, [x12, #1260]
+        neg     w1, w1
         ushl    v5.4s, v16.4s, v5.4s
-        add     w27, w5, w17
+        ror     w21, w21, w1
         ushl    v6.4s, v19.4s, v6.4s
-        add     w22, w22, w27
+        add     w27, w5, w17
         ushl    v7.4s, v22.4s, v7.4s
-        neg     w27, w27
-        ror     w22, w22, w27
-        ushl    v0.4s, v13.4s, v0.4s
-        mov     w11, #0xD3D7
-        ushl    v1.4s, v16.4s, v1.4s
-        movk    w11, #0x1436, lsl #16
-        ushl    v2.4s, v19.4s, v2.4s
-        add     w27, w2, w19
-        ushl    v3.4s, v22.4s, v3.4s
         add     w27, w27, w11
+        ushl    v0.4s, v13.4s, v0.4s
+        ror     w5, w27, #29
+        ushl    v1.4s, v16.4s, v1.4s
+        stp     w4, w5, [x30, #-248]
+        ushl    v2.4s, v19.4s, v2.4s
+        add     w27, w5, w17
+        ushl    v3.4s, v22.4s, v3.4s
+        add     w22, w22, w27
         orr     v13.16b, v4.16b, v0.16b
-        ror     w2, w27, #29
+        neg     w27, w27
         orr     v16.16b, v5.16b, v1.16b
-        str     w2, [x12, #1312]
+        ror     w22, w22, w27
         orr     v19.16b, v6.16b, v2.16b
-        add     w27, w2, w19
         orr     v22.16b, v7.16b, v3.16b
-        add     w23, w23, w27
+        ldr     w11, [sp, #4112]
         // k=71: A = (A + S[19] + B1) <<< 3; S[19] = A; B2 = (B2 + B1 + A) <<< (B1 + A)
-        neg     w27, w27
+        add     w27, w2, w19
         ldp     q0, q1, [x10, #384]
-        ror     w23, w23, w27
+        add     w27, w27, w11
         ldp     q2, q3, [x10, #416]
-        add     w28, w3, w20
+        ror     w2, w27, #29
         add     v0.4s, v0.4s, v8.4s
-        add     w28, w28, w11
-        add     v1.4s, v1.4s, v9.4s
-        ror     w3, w28, #29
-        add     v2.4s, v2.4s, v10.4s
-        str     w3, [x12, #1316]
-        add     v3.4s, v3.4s, v11.4s
-        add     w28, w3, w20
-        add     v0.4s, v0.4s, v13.4s
-        add     w24, w24, w28
-        add     v1.4s, v1.4s, v16.4s
-        neg     w28, w28
-        add     v2.4s, v2.4s, v19.4s
-        ror     w24, w24, w28
-        add     v3.4s, v3.4s, v22.4s
-        add     w1, w4, w21
-        shl     v8.4s, v0.4s, #3
-        add     w1, w1, w11
-        shl     v9.4s, v1.4s, #3
-        ror     w4, w1, #29
-        shl     v10.4s, v2.4s, #3
-        str     w4, [x12, #1320]
-        shl     v11.4s, v3.4s, #3
-        add     w1, w4, w21
-        sri     v8.4s, v0.4s, #29
-        add     w25, w25, w1
-        sri     v9.4s, v1.4s, #29
-        neg     w1, w1
-        sri     v10.4s, v2.4s, #29
-        ror     w25, w25, w1
-        sri     v11.4s, v3.4s, #29
-        add     w27, w5, w22
-        stp     q8, q9, [x10, #384]
-        add     w27, w27, w11
-        stp     q10, q11, [x10, #416]
-        ror     w5, w27, #29
-        add     v0.4s, v13.4s, v8.4s
-        str     w5, [x12, #1324]
-        add     v1.4s, v16.4s, v9.4s
-        add     w27, w5, w22
-        add     v2.4s, v19.4s, v10.4s
-        add     w26, w26, w27
-        add     v3.4s, v22.4s, v11.4s
-        neg     w27, w27
-        ror     w26, w26, w27
-        add     v14.4s, v14.4s, v0.4s
-        mov     w11, #0x4D90
-        add     v17.4s, v17.4s, v1.4s
-        movk    w11, #0xB26E, lsl #16
-        add     v20.4s, v20.4s, v2.4s
-        add     w27, w2, w23
-        add     v23.4s, v23.4s, v3.4s
-        add     w27, w27, w11
-        and     v4.16b, v0.16b, v24.16b
-        ror     w2, w27, #29
-        and     v5.16b, v1.16b, v24.16b
-        str     w2, [x12, #1376]
-        and     v6.16b, v2.16b, v24.16b
-        add     w27, w2, w23
-        and     v7.16b, v3.16b, v24.16b
-        add     w6, w6, w27
-        orr     v0.16b, v0.16b, v25.16b
-        neg     w27, w27
-        orr     v1.16b, v1.16b, v25.16b
-        ror     w6, w6, w27
-        orr     v2.16b, v2.16b, v25.16b
-        add     w28, w3, w24
-        orr     v3.16b, v3.16b, v25.16b
-        add     w28, w28, w11
-        ushl    v4.4s, v14.4s, v4.4s
-        ror     w3, w28, #29
-        ushl    v5.4s, v17.4s, v5.4s
-        str     w3, [x12, #1380]
-        ushl    v6.4s, v20.4s, v6.4s
-        add     w28, w3, w24
-        ushl    v7.4s, v23.4s, v7.4s
-        add     w7, w7, w28
-        ushl    v0.4s, v14.4s, v0.4s
-        neg     w28, w28
-        ushl    v1.4s, v17.4s, v1.4s
-        ror     w7, w7, w28
-        ushl    v2.4s, v20.4s, v2.4s
-        add     w1, w4, w25
-        ushl    v3.4s, v23.4s, v3.4s
-        add     w1, w1, w11
-        orr     v14.16b, v4.16b, v0.16b
-        ror     w4, w1, #29
-        orr     v17.16b, v5.16b, v1.16b
-        str     w4, [x12, #1384]
-        orr     v20.16b, v6.16b, v2.16b
-        add     w1, w4, w25
-        orr     v23.16b, v7.16b, v3.16b
-        add     w8, w8, w1
-        // k=72: A = (A + S[20] + B2) <<< 3; S[20] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
-        neg     w1, w1
-        ldp     q0, q1, [x10, #448]
-        ror     w8, w8, w1
-        ldp     q2, q3, [x10, #480]
-        add     w27, w5, w26
-        add     v0.4s, v0.4s, v8.4s
-        add     w27, w27, w11
-        add     v1.4s, v1.4s, v9.4s
-        ror     w5, w27, #29
-        add     v2.4s, v2.4s, v10.4s
-        str     w5, [x12, #1388]
-        add     v3.4s, v3.4s, v11.4s
-        add     w27, w5, w26
-        add     v0.4s, v0.4s, v14.4s
-        add     w17, w17, w27
-        add     v1.4s, v1.4s, v17.4s
-        neg     w27, w27
-        ror     w17, w17, w27
-        add     v2.4s, v2.4s, v20.4s
-        mov     w11, #0xC749
-        add     v3.4s, v3.4s, v23.4s
-        movk    w11, #0x50A5, lsl #16
-        shl     v8.4s, v0.4s, #3
-        add     w27, w2, w6
-        shl     v9.4s, v1.4s, #3
-        add     w27, w27, w11
-        shl     v10.4s, v2.4s, #3
-        ror     w2, w27, #29
-        shl     v11.4s, v3.4s, #3
-        str     w2, [x12, #1440]
-        sri     v8.4s, v0.4s, #29
-        add     w27, w2, w6
-        sri     v9.4s, v1.4s, #29
-        add     w19, w19, w27
-        sri     v10.4s, v2.4s, #29
-        neg     w27, w27
-        sri     v11.4s, v3.4s, #29
-        ror     w19, w19, w27
-        stp     q8, q9, [x10, #448]
-        add     w28, w3, w7
-        stp     q10, q11, [x10, #480]
-        add     w28, w28, w11
-        add     v0.4s, v14.4s, v8.4s
-        ror     w3, w28, #29
-        add     v1.4s, v17.4s, v9.4s
-        str     w3, [x12, #1444]
-        add     v2.4s, v20.4s, v10.4s
-        add     w28, w3, w7
-        add     v3.4s, v23.4s, v11.4s
-        add     w20, w20, w28
-        add     v12.4s, v12.4s, v0.4s
-        neg     w28, w28
-        add     v15.4s, v15.4s, v1.4s
-        ror     w20, w20, w28
-        add     v18.4s, v18.4s, v2.4s
-        add     w1, w4, w8
-        add     v21.4s, v21.4s, v3.4s
-        add     w1, w1, w11
-        and     v4.16b, v0.16b, v24.16b
-        ror     w4, w1, #29
-        and     v5.16b, v1.16b, v24.16b
-        str     w4, [x12, #1448]
-        and     v6.16b, v2.16b, v24.16b
-        add     w1, w4, w8
-        and     v7.16b, v3.16b, v24.16b
-        add     w21, w21, w1
-        orr     v0.16b, v0.16b, v25.16b
-        neg     w1, w1
-        orr     v1.16b, v1.16b, v25.16b
-        ror     w21, w21, w1
-        orr     v2.16b, v2.16b, v25.16b
-        add     w27, w5, w17
-        orr     v3.16b, v3.16b, v25.16b
-        add     w27, w27, w11
-        ushl    v4.4s, v12.4s, v4.4s
-        ror     w5, w27, #29
-        ushl    v5.4s, v15.4s, v5.4s
-        str     w5, [x12, #1452]
-        ushl    v6.4s, v18.4s, v6.4s
-        add     w27, w5, w17
-        ushl    v7.4s, v21.4s, v7.4s
-        add     w22, w22, w27
-        ushl    v0.4s, v12.4s, v0.4s
-        neg     w27, w27
-        ror     w22, w22, w27
-        ushl    v1.4s, v15.4s, v1.4s
-        mov     w11, #0x4102
-        ushl    v2.4s, v18.4s, v2.4s
-        movk    w11, #0xEEDD, lsl #16
-        ushl    v3.4s, v21.4s, v3.4s
         add     w27, w2, w19
-        orr     v12.16b, v4.16b, v0.16b
-        add     w27, w27, w11
-        orr     v15.16b, v5.16b, v1.16b
-        ror     w2, w27, #29
-        orr     v18.16b, v6.16b, v2.16b
-        str     w2, [x12, #1504]
-        orr     v21.16b, v7.16b, v3.16b
-        add     w27, w2, w19
-        // k=73: A = (A + S[21] + B0) <<< 3; S[21] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
+        add     v1.4s, v1.4s, v9.4s
         add     w23, w23, w27
-        ldp     q0, q1, [x10, #512]
+        add     v2.4s, v2.4s, v10.4s
         neg     w27, w27
-        ldp     q2, q3, [x10, #544]
+        add     v3.4s, v3.4s, v11.4s
         ror     w23, w23, w27
-        add     v0.4s, v0.4s, v8.4s
-        add     w28, w3, w20
-        add     v1.4s, v1.4s, v9.4s
-        add     w28, w28, w11
-        add     v2.4s, v2.4s, v10.4s
-        ror     w3, w28, #29
-        add     v3.4s, v3.4s, v11.4s
-        str     w3, [x12, #1508]
-        add     v0.4s, v0.4s, v12.4s
-        add     w28, w3, w20
-        add     v1.4s, v1.4s, v15.4s
-        add     w24, w24, w28
-        add     v2.4s, v2.4s, v18.4s
-        neg     w28, w28
-        add     v3.4s, v3.4s, v21.4s
-        ror     w24, w24, w28
-        shl     v8.4s, v0.4s, #3
-        add     w1, w4, w21
-        shl     v9.4s, v1.4s, #3
-        add     w1, w1, w11
-        shl     v10.4s, v2.4s, #3
-        ror     w4, w1, #29
-        shl     v11.4s, v3.4s, #3
-        str     w4, [x12, #1512]
-        sri     v8.4s, v0.4s, #29
-        add     w1, w4, w21
-        sri     v9.4s, v1.4s, #29
-        add     w25, w25, w1
-        sri     v10.4s, v2.4s, #29
-        neg     w1, w1
-        sri     v11.4s, v3.4s, #29
-        ror     w25, w25, w1
-        stp     q8, q9, [x10, #512]
-        add     w27, w5, w22
-        stp     q10, q11, [x10, #544]
-        add     w27, w27, w11
-        add     v0.4s, v12.4s, v8.4s
-        ror     w5, w27, #29
-        add     v1.4s, v15.4s, v9.4s
-        str     w5, [x12, #1516]
-        add     v2.4s, v18.4s, v10.4s
-        add     w27, w5, w22
-        add     v3.4s, v21.4s, v11.4s
-        add     w26, w26, w27
-        add     v13.4s, v13.4s, v0.4s
-        neg     w27, w27
-        ror     w26, w26, w27
-        add     v16.4s, v16.4s, v1.4s
-        mov     w11, #0xBABB
-        add     v19.4s, v19.4s, v2.4s
-        movk    w11, #0x8D14, lsl #16
-        add     v22.4s, v22.4s, v3.4s
-        add     w27, w2, w23
-        and     v4.16b, v0.16b, v24.16b
-        add     w27, w27, w11
-        and     v5.16b, v1.16b, v24.16b
-        ror     w2, w27, #29
-        and     v6.16b, v2.16b, v24.16b
-        str     w2, [x12, #1568]
-        and     v7.16b, v3.16b, v24.16b
-        add     w27, w2, w23
-        orr     v0.16b, v0.16b, v25.16b
-        add     w6, w6, w27
-        orr     v1.16b, v1.16b, v25.16b
-        neg     w27, w27
-        orr     v2.16b, v2.16b, v25.16b
-        ror     w6, w6, w27
-        orr     v3.16b, v3.16b, v25.16b
-        add     w28, w3, w24
-        ushl    v4.4s, v13.4s, v4.4s
-        add     w28, w28, w11
-        ushl    v5.4s, v16.4s, v5.4s
-        ror     w3, w28, #29
-        ushl    v6.4s, v19.4s, v6.4s
-        str     w3, [x12, #1572]
-        ushl    v7.4s, v22.4s, v7.4s
-        add     w28, w3, w24
-        ushl    v0.4s, v13.4s, v0.4s
-        add     w7, w7, w28
-        ushl    v1.4s, v16.4s, v1.4s
-        neg     w28, w28
-        ushl    v2.4s, v19.4s, v2.4s
-        ror     w7, w7, w28
-        ushl    v3.4s, v22.4s, v3.4s
-        add     w1, w4, w25
-        orr     v13.16b, v4.16b, v0.16b
-        add     w1, w1, w11
-        orr     v16.16b, v5.16b, v1.16b
-        ror     w4, w1, #29
-        orr     v19.16b, v6.16b, v2.16b
-        str     w4, [x12, #1576]
-        orr     v22.16b, v7.16b, v3.16b
-        add     w1, w4, w25
-        // k=74: A = (A + S[22] + B1) <<< 3; S[22] = A; B2 = (B2 + B1 + A) <<< (B1 + A)
-        add     w8, w8, w1
-        ldp     q0, q1, [x10, #576]
-        neg     w1, w1
-        ldp     q2, q3, [x10, #608]
-        ror     w8, w8, w1
-        add     v0.4s, v0.4s, v8.4s
-        add     w27, w5, w26
-        add     v1.4s, v1.4s, v9.4s
-        add     w27, w27, w11
-        add     v2.4s, v2.4s, v10.4s
-        ror     w5, w27, #29
-        add     v3.4s, v3.4s, v11.4s
-        str     w5, [x12, #1580]
         add     v0.4s, v0.4s, v13.4s
-        add     w27, w5, w26
+        add     w28, w3, w20
         add     v1.4s, v1.4s, v16.4s
-        add     w17, w17, w27
-        add     v2.4s, v2.4s, v19.4s
-        neg     w27, w27
-        ror     w17, w17, w27
-        add     v3.4s, v3.4s, v22.4s
-        mov     w11, #0x3474
-        shl     v8.4s, v0.4s, #3
-        movk    w11, #0x2B4C, lsl #16
-        shl     v9.4s, v1.4s, #3
-        add     w27, w2, w6
-        shl     v10.4s, v2.4s, #3
-        add     w27, w27, w11
-        shl     v11.4s, v3.4s, #3
-        ror     w2, w27, #29
-        sri     v8.4s, v0.4s, #29
-        str     w2, [x12, #1632]
-        sri     v9.4s, v1.4s, #29
-        add     w27, w2, w6
-        sri     v10.4s, v2.4s, #29
-        add     w19, w19, w27
-        sri     v11.4s, v3.4s, #29
-        neg     w27, w27
-        stp     q8, q9, [x10, #576]
-        ror     w19, w19, w27
-        stp     q10, q11, [x10, #608]
-        add     w28, w3, w7
-        add     v0.4s, v13.4s, v8.4s
         add     w28, w28, w11
-        add     v1.4s, v16.4s, v9.4s
+        add     v2.4s, v2.4s, v19.4s
         ror     w3, w28, #29
-        add     v2.4s, v19.4s, v10.4s
-        str     w3, [x12, #1636]
-        add     v3.4s, v22.4s, v11.4s
-        add     w28, w3, w7
-        add     v14.4s, v14.4s, v0.4s
-        add     w20, w20, w28
-        add     v17.4s, v17.4s, v1.4s
+        add     v3.4s, v3.4s, v22.4s
+        stp     w2, w3, [x30, #-192]
+        shl     v8.4s, v0.4s, #3
+        add     w28, w3, w20
+        shl     v9.4s, v1.4s, #3
+        add     w24, w24, w28
+        shl     v10.4s, v2.4s, #3
         neg     w28, w28
-        add     v20.4s, v20.4s, v2.4s
-        ror     w20, w20, w28
-        add     v23.4s, v23.4s, v3.4s
-        add     w1, w4, w8
-        and     v4.16b, v0.16b, v24.16b
+        shl     v11.4s, v3.4s, #3
+        sri     v8.4s, v0.4s, #29
+        ror     w24, w24, w28
+        sri     v9.4s, v1.4s, #29
+        add     w1, w4, w21
+        sri     v10.4s, v2.4s, #29
         add     w1, w1, w11
-        and     v5.16b, v1.16b, v24.16b
+        sri     v11.4s, v3.4s, #29
         ror     w4, w1, #29
-        and     v6.16b, v2.16b, v24.16b
-        str     w4, [x12, #1640]
-        and     v7.16b, v3.16b, v24.16b
-        add     w1, w4, w8
-        orr     v0.16b, v0.16b, v25.16b
-        add     w21, w21, w1
-        orr     v1.16b, v1.16b, v25.16b
+        stp     q8, q9, [x10, #384]
+        add     w1, w4, w21
+        stp     q10, q11, [x10, #416]
+        add     w25, w25, w1
+        add     v0.4s, v13.4s, v8.4s
         neg     w1, w1
-        orr     v2.16b, v2.16b, v25.16b
-        ror     w21, w21, w1
-        orr     v3.16b, v3.16b, v25.16b
-        add     w27, w5, w17
-        ushl    v4.4s, v14.4s, v4.4s
+        add     v1.4s, v16.4s, v9.4s
+        ror     w25, w25, w1
+        add     v2.4s, v19.4s, v10.4s
+        add     w27, w5, w22
+        add     v3.4s, v22.4s, v11.4s
         add     w27, w27, w11
-        ushl    v5.4s, v17.4s, v5.4s
+        add     v14.4s, v14.4s, v0.4s
         ror     w5, w27, #29
-        ushl    v6.4s, v20.4s, v6.4s
-        str     w5, [x12, #1644]
-        ushl    v7.4s, v23.4s, v7.4s
-        add     w27, w5, w17
-        ushl    v0.4s, v14.4s, v0.4s
-        add     w22, w22, w27
-        ushl    v1.4s, v17.4s, v1.4s
+        add     v17.4s, v17.4s, v1.4s
+        stp     w4, w5, [x30, #-184]
+        add     v20.4s, v20.4s, v2.4s
+        add     w27, w5, w22
+        add     v23.4s, v23.4s, v3.4s
+        add     w26, w26, w27
+        and     v4.16b, v0.16b, v24.16b
         neg     w27, w27
-        ror     w22, w22, w27
+        and     v5.16b, v1.16b, v24.16b
+        ror     w26, w26, w27
+        and     v6.16b, v2.16b, v24.16b
+        and     v7.16b, v3.16b, v24.16b
+        ldr     w11, [sp, #4116]
+        orr     v0.16b, v0.16b, v25.16b
+        add     w27, w2, w23
+        orr     v1.16b, v1.16b, v25.16b
+        add     w27, w27, w11
+        orr     v2.16b, v2.16b, v25.16b
+        ror     w2, w27, #29
+        orr     v3.16b, v3.16b, v25.16b
+        add     w27, w2, w23
+        ushl    v4.4s, v14.4s, v4.4s
+        add     w6, w6, w27
+        ushl    v5.4s, v17.4s, v5.4s
+        neg     w27, w27
+        ushl    v6.4s, v20.4s, v6.4s
+        ror     w6, w6, w27
+        ushl    v7.4s, v23.4s, v7.4s
+        add     w28, w3, w24
+        ushl    v0.4s, v14.4s, v0.4s
+        add     w28, w28, w11
+        ushl    v1.4s, v17.4s, v1.4s
+        ror     w3, w28, #29
         ushl    v2.4s, v20.4s, v2.4s
-        // handoff: A and L0..L2, transposed
+        stp     w2, w3, [x30, #-128]
         ushl    v3.4s, v23.4s, v3.4s
-        str     w2, [x12, #1696]
+        add     w28, w3, w24
         orr     v14.16b, v4.16b, v0.16b
-        str     w3, [x12, #1700]
+        add     w7, w7, w28
         orr     v17.16b, v5.16b, v1.16b
-        str     w4, [x12, #1704]
+        neg     w28, w28
         orr     v20.16b, v6.16b, v2.16b
-        str     w5, [x12, #1708]
         orr     v23.16b, v7.16b, v3.16b
-        str     w6, [x12, #1760]
-        // k=75: A = (A + S[23] + B2) <<< 3; S[23] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
-        str     w7, [x12, #1764]
-        ldp     q0, q1, [x10, #640]
-        str     w8, [x12, #1768]
-        ldp     q2, q3, [x10, #672]
-        str     w17, [x12, #1772]
+        ror     w7, w7, w28
+        // k=72: A = (A + S[20] + B2) <<< 3; S[20] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
+        add     w1, w4, w25
+        ldp     q0, q1, [x10, #448]
+        add     w1, w1, w11
+        ldp     q2, q3, [x10, #480]
+        ror     w4, w1, #29
         add     v0.4s, v0.4s, v8.4s
-        str     w19, [x12, #1824]
+        add     w1, w4, w25
         add     v1.4s, v1.4s, v9.4s
-        str     w20, [x12, #1828]
+        add     w8, w8, w1
         add     v2.4s, v2.4s, v10.4s
-        str     w21, [x12, #1832]
+        neg     w1, w1
         add     v3.4s, v3.4s, v11.4s
-        str     w22, [x12, #1836]
+        ror     w8, w8, w1
         add     v0.4s, v0.4s, v14.4s
-        str     w23, [x12, #1888]
+        add     w27, w5, w26
         add     v1.4s, v1.4s, v17.4s
-        str     w24, [x12, #1892]
+        add     w27, w27, w11
         add     v2.4s, v2.4s, v20.4s
-        str     w25, [x12, #1896]
+        ror     w5, w27, #29
         add     v3.4s, v3.4s, v23.4s
-        str     w26, [x12, #1900]
+        stp     w4, w5, [x30, #-120]
+        shl     v8.4s, v0.4s, #3
+        add     w27, w5, w26
+        shl     v9.4s, v1.4s, #3
+        add     w17, w17, w27
+        shl     v10.4s, v2.4s, #3
+        neg     w27, w27
+        shl     v11.4s, v3.4s, #3
+        ror     w17, w17, w27
+        sri     v8.4s, v0.4s, #29
+        sri     v9.4s, v1.4s, #29
+        ldr     w11, [sp, #4120]
+        sri     v10.4s, v2.4s, #29
+        add     w27, w2, w6
+        sri     v11.4s, v3.4s, #29
+        add     w27, w27, w11
+        stp     q8, q9, [x10, #448]
+        ror     w2, w27, #29
+        stp     q10, q11, [x10, #480]
+        add     w27, w2, w6
+        add     v0.4s, v14.4s, v8.4s
+        add     w19, w19, w27
+        add     v1.4s, v17.4s, v9.4s
+        neg     w27, w27
+        add     v2.4s, v20.4s, v10.4s
+        ror     w19, w19, w27
+        add     v3.4s, v23.4s, v11.4s
+        add     w28, w3, w7
+        add     v12.4s, v12.4s, v0.4s
+        add     w28, w28, w11
+        add     v15.4s, v15.4s, v1.4s
+        ror     w3, w28, #29
+        add     v18.4s, v18.4s, v2.4s
+        stp     w2, w3, [x30, #-64]
+        add     v21.4s, v21.4s, v3.4s
+        add     w28, w3, w7
+        and     v4.16b, v0.16b, v24.16b
+        add     w20, w20, w28
+        and     v5.16b, v1.16b, v24.16b
+        neg     w28, w28
+        and     v6.16b, v2.16b, v24.16b
+        ror     w20, w20, w28
+        and     v7.16b, v3.16b, v24.16b
+        orr     v0.16b, v0.16b, v25.16b
+        add     w1, w4, w8
+        orr     v1.16b, v1.16b, v25.16b
+        add     w1, w1, w11
+        orr     v2.16b, v2.16b, v25.16b
+        ror     w4, w1, #29
+        orr     v3.16b, v3.16b, v25.16b
+        add     w1, w4, w8
+        ushl    v4.4s, v12.4s, v4.4s
+        add     w21, w21, w1
+        ushl    v5.4s, v15.4s, v5.4s
+        neg     w1, w1
+        ushl    v6.4s, v18.4s, v6.4s
+        ror     w21, w21, w1
+        ushl    v7.4s, v21.4s, v7.4s
+        add     w27, w5, w17
+        ushl    v0.4s, v12.4s, v0.4s
+        add     w27, w27, w11
+        ushl    v1.4s, v15.4s, v1.4s
+        ror     w5, w27, #29
+        ushl    v2.4s, v18.4s, v2.4s
+        stp     w4, w5, [x30, #-56]
+        ushl    v3.4s, v21.4s, v3.4s
+        add     w27, w5, w17
+        orr     v12.16b, v4.16b, v0.16b
+        add     w22, w22, w27
+        orr     v15.16b, v5.16b, v1.16b
+        neg     w27, w27
+        orr     v18.16b, v6.16b, v2.16b
+        ror     w22, w22, w27
+        orr     v21.16b, v7.16b, v3.16b
+        // k=73: A = (A + S[21] + B0) <<< 3; S[21] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
+        ldr     w11, [sp, #4124]
+        ldp     q0, q1, [x10, #512]
+        add     w27, w2, w19
+        ldp     q2, q3, [x10, #544]
+        add     w27, w27, w11
+        add     v0.4s, v0.4s, v8.4s
+        ror     w2, w27, #29
+        add     v1.4s, v1.4s, v9.4s
+        add     w27, w2, w19
+        add     v2.4s, v2.4s, v10.4s
+        add     w23, w23, w27
+        add     v3.4s, v3.4s, v11.4s
+        neg     w27, w27
+        add     v0.4s, v0.4s, v12.4s
+        ror     w23, w23, w27
+        add     v1.4s, v1.4s, v15.4s
+        add     w28, w3, w20
+        add     v2.4s, v2.4s, v18.4s
+        add     w28, w28, w11
+        add     v3.4s, v3.4s, v21.4s
+        ror     w3, w28, #29
+        shl     v8.4s, v0.4s, #3
+        stp     w2, w3, [x30, #0]
+        shl     v9.4s, v1.4s, #3
+        add     w28, w3, w20
+        shl     v10.4s, v2.4s, #3
+        add     w24, w24, w28
+        shl     v11.4s, v3.4s, #3
+        neg     w28, w28
+        sri     v8.4s, v0.4s, #29
+        ror     w24, w24, w28
+        sri     v9.4s, v1.4s, #29
+        sri     v10.4s, v2.4s, #29
+        add     w1, w4, w21
+        sri     v11.4s, v3.4s, #29
+        add     w1, w1, w11
+        stp     q8, q9, [x10, #512]
+        ror     w4, w1, #29
+        stp     q10, q11, [x10, #544]
+        add     w1, w4, w21
+        add     v0.4s, v12.4s, v8.4s
+        add     w25, w25, w1
+        add     v1.4s, v15.4s, v9.4s
+        neg     w1, w1
+        add     v2.4s, v18.4s, v10.4s
+        ror     w25, w25, w1
+        add     v3.4s, v21.4s, v11.4s
+        add     w27, w5, w22
+        add     v13.4s, v13.4s, v0.4s
+        add     w27, w27, w11
+        add     v16.4s, v16.4s, v1.4s
+        ror     w5, w27, #29
+        add     v19.4s, v19.4s, v2.4s
+        stp     w4, w5, [x30, #8]
+        add     v22.4s, v22.4s, v3.4s
+        add     w27, w5, w22
+        and     v4.16b, v0.16b, v24.16b
+        add     w26, w26, w27
+        and     v5.16b, v1.16b, v24.16b
+        neg     w27, w27
+        and     v6.16b, v2.16b, v24.16b
+        ror     w26, w26, w27
+        and     v7.16b, v3.16b, v24.16b
+        ldr     w11, [sp, #4128]
+        orr     v0.16b, v0.16b, v25.16b
+        orr     v1.16b, v1.16b, v25.16b
+        add     w27, w2, w23
+        orr     v2.16b, v2.16b, v25.16b
+        add     w27, w27, w11
+        orr     v3.16b, v3.16b, v25.16b
+        ror     w2, w27, #29
+        ushl    v4.4s, v13.4s, v4.4s
+        add     w27, w2, w23
+        ushl    v5.4s, v16.4s, v5.4s
+        add     w6, w6, w27
+        ushl    v6.4s, v19.4s, v6.4s
+        neg     w27, w27
+        ushl    v7.4s, v22.4s, v7.4s
+        ror     w6, w6, w27
+        ushl    v0.4s, v13.4s, v0.4s
+        add     w28, w3, w24
+        ushl    v1.4s, v16.4s, v1.4s
+        add     w28, w28, w11
+        ushl    v2.4s, v19.4s, v2.4s
+        ror     w3, w28, #29
+        ushl    v3.4s, v22.4s, v3.4s
+        stp     w2, w3, [x30, #64]
+        orr     v13.16b, v4.16b, v0.16b
+        add     w28, w3, w24
+        orr     v16.16b, v5.16b, v1.16b
+        add     w7, w7, w28
+        orr     v19.16b, v6.16b, v2.16b
+        neg     w28, w28
+        orr     v22.16b, v7.16b, v3.16b
+        ror     w7, w7, w28
+        // k=74: A = (A + S[22] + B1) <<< 3; S[22] = A; B2 = (B2 + B1 + A) <<< (B1 + A)
+        ldp     q0, q1, [x10, #576]
+        add     w1, w4, w25
+        ldp     q2, q3, [x10, #608]
+        add     w1, w1, w11
+        add     v0.4s, v0.4s, v8.4s
+        ror     w4, w1, #29
+        add     v1.4s, v1.4s, v9.4s
+        add     w1, w4, w25
+        add     v2.4s, v2.4s, v10.4s
+        add     w8, w8, w1
+        add     v3.4s, v3.4s, v11.4s
+        neg     w1, w1
+        add     v0.4s, v0.4s, v13.4s
+        ror     w8, w8, w1
+        add     v1.4s, v1.4s, v16.4s
+        add     w27, w5, w26
+        add     v2.4s, v2.4s, v19.4s
+        add     w27, w27, w11
+        add     v3.4s, v3.4s, v22.4s
+        ror     w5, w27, #29
+        shl     v8.4s, v0.4s, #3
+        stp     w4, w5, [x30, #72]
+        shl     v9.4s, v1.4s, #3
+        add     w27, w5, w26
+        shl     v10.4s, v2.4s, #3
+        add     w17, w17, w27
+        shl     v11.4s, v3.4s, #3
+        neg     w27, w27
+        sri     v8.4s, v0.4s, #29
+        ror     w17, w17, w27
+        sri     v9.4s, v1.4s, #29
+        ldr     w11, [sp, #4132]
+        sri     v10.4s, v2.4s, #29
+        sri     v11.4s, v3.4s, #29
+        add     w27, w2, w6
+        stp     q8, q9, [x10, #576]
+        add     w27, w27, w11
+        stp     q10, q11, [x10, #608]
+        ror     w2, w27, #29
+        add     v0.4s, v13.4s, v8.4s
+        add     w27, w2, w6
+        add     v1.4s, v16.4s, v9.4s
+        add     w19, w19, w27
+        add     v2.4s, v19.4s, v10.4s
+        neg     w27, w27
+        add     v3.4s, v22.4s, v11.4s
+        ror     w19, w19, w27
+        add     v14.4s, v14.4s, v0.4s
+        add     w28, w3, w7
+        add     v17.4s, v17.4s, v1.4s
+        add     w28, w28, w11
+        add     v20.4s, v20.4s, v2.4s
+        ror     w3, w28, #29
+        add     v23.4s, v23.4s, v3.4s
+        stp     w2, w3, [x30, #128]
+        and     v4.16b, v0.16b, v24.16b
+        add     w28, w3, w7
+        and     v5.16b, v1.16b, v24.16b
+        add     w20, w20, w28
+        and     v6.16b, v2.16b, v24.16b
+        neg     w28, w28
+        and     v7.16b, v3.16b, v24.16b
+        ror     w20, w20, w28
+        orr     v0.16b, v0.16b, v25.16b
+        add     w1, w4, w8
+        orr     v1.16b, v1.16b, v25.16b
+        orr     v2.16b, v2.16b, v25.16b
+        add     w1, w1, w11
+        orr     v3.16b, v3.16b, v25.16b
+        ror     w4, w1, #29
+        ushl    v4.4s, v14.4s, v4.4s
+        add     w1, w4, w8
+        ushl    v5.4s, v17.4s, v5.4s
+        add     w21, w21, w1
+        ushl    v6.4s, v20.4s, v6.4s
+        neg     w1, w1
+        ushl    v7.4s, v23.4s, v7.4s
+        ror     w21, w21, w1
+        ushl    v0.4s, v14.4s, v0.4s
+        add     w27, w5, w17
+        ushl    v1.4s, v17.4s, v1.4s
+        add     w27, w27, w11
+        ushl    v2.4s, v20.4s, v2.4s
+        ror     w5, w27, #29
+        ushl    v3.4s, v23.4s, v3.4s
+        stp     w4, w5, [x30, #136]
+        orr     v14.16b, v4.16b, v0.16b
+        add     w27, w5, w17
+        orr     v17.16b, v5.16b, v1.16b
+        add     w22, w22, w27
+        orr     v20.16b, v6.16b, v2.16b
+        neg     w27, w27
+        orr     v23.16b, v7.16b, v3.16b
+        ror     w22, w22, w27
+        // k=75: A = (A + S[23] + B2) <<< 3; S[23] = A; B0 = (B0 + B2 + A) <<< (B2 + A)
+        // handoff: A and L0..L2, transposed
+        ldp     q0, q1, [x10, #640]
+        ldp     q2, q3, [x10, #672]
+        stp     w2, w3, [x30, #192]
+        add     v0.4s, v0.4s, v8.4s
+        stp     w4, w5, [x30, #200]
+        add     v1.4s, v1.4s, v9.4s
+        add     x30, x12, #2016
+        add     v2.4s, v2.4s, v10.4s
+        stp     w6, w7, [x30, #-256]
+        add     v3.4s, v3.4s, v11.4s
+        stp     w8, w17, [x30, #-248]
+        add     v0.4s, v0.4s, v14.4s
+        stp     w19, w20, [x30, #-192]
+        add     v1.4s, v1.4s, v17.4s
+        stp     w21, w22, [x30, #-184]
+        add     v2.4s, v2.4s, v20.4s
+        stp     w23, w24, [x30, #-128]
+        add     v3.4s, v3.4s, v23.4s
+        stp     w25, w26, [x30, #-120]
         shl     v8.4s, v0.4s, #3
         // ---- scalar subgroup 3: keys 12..15 of the next batch
         shl     v9.4s, v1.4s, #3
@@ -5057,1628 +4909,1555 @@ L(batch_loop):
         sri     v10.4s, v2.4s, #29
         ldr     w11, [sp, #160]
         sri     v11.4s, v3.4s, #29
-        mov     w6, w11
         stp     q8, q9, [x10, #640]
-        mov     w7, w11
+        mov     w6, w11
         stp     q10, q11, [x10, #672]
-        mov     w8, w11
+        mov     w7, w11
         add     v0.4s, v14.4s, v8.4s
-        mov     w17, w11
+        mov     w8, w11
         add     v1.4s, v17.4s, v9.4s
-        ldr     w11, [sp, #168]
+        mov     w17, w11
         add     v2.4s, v20.4s, v10.4s
-        mov     w19, w11
+        ldr     w11, [sp, #168]
         add     v3.4s, v23.4s, v11.4s
-        mov     w20, w11
+        mov     w19, w11
         add     v12.4s, v12.4s, v0.4s
-        mov     w21, w11
+        mov     w20, w11
         add     v15.4s, v15.4s, v1.4s
-        mov     w22, w11
-        // L2_i = (L0hi + 12+i + pre_B_2) <<< pre_B_2
+        mov     w21, w11
         add     v18.4s, v18.4s, v2.4s
-        ldr     w11, [sp, #180]
+        mov     w22, w11
         add     v21.4s, v21.4s, v3.4s
-        add     w23, w11, #12
+        // L2_i = (L0hi + 12+i + pre_B_2) <<< pre_B_2
         and     v4.16b, v0.16b, v24.16b
-        add     w24, w11, #13
+        ldr     w11, [sp, #180]
         and     v5.16b, v1.16b, v24.16b
-        add     w25, w11, #14
+        add     w23, w11, #12
         and     v6.16b, v2.16b, v24.16b
-        add     w26, w11, #15
+        add     w24, w11, #13
         and     v7.16b, v3.16b, v24.16b
-        ldr     w11, [sp, #176]
+        add     w25, w11, #14
         orr     v0.16b, v0.16b, v25.16b
-        neg     w27, w11
+        add     w26, w11, #15
         orr     v1.16b, v1.16b, v25.16b
-        add     w23, w23, w11
         orr     v2.16b, v2.16b, v25.16b
-        ror     w23, w23, w27
+        ldr     w11, [sp, #176]
         orr     v3.16b, v3.16b, v25.16b
-        add     w24, w24, w11
+        neg     w27, w11
         ushl    v4.4s, v12.4s, v4.4s
-        ror     w24, w24, w27
+        add     w23, w23, w11
         ushl    v5.4s, v15.4s, v5.4s
-        add     w25, w25, w11
+        ror     w23, w23, w27
         ushl    v6.4s, v18.4s, v6.4s
-        ror     w25, w25, w27
+        add     w24, w24, w11
         ushl    v7.4s, v21.4s, v7.4s
-        add     w26, w26, w11
+        ror     w24, w24, w27
         ushl    v0.4s, v12.4s, v0.4s
-        ror     w26, w26, w27
+        add     w25, w25, w11
         ushl    v1.4s, v15.4s, v1.4s
-        mov     w11, #0xBE8E
+        ror     w25, w25, w27
         ushl    v2.4s, v18.4s, v2.4s
-        movk    w11, #0x9287, lsl #16
+        add     w26, w26, w11
         ushl    v3.4s, v21.4s, v3.4s
-        add     w27, w2, w23
+        ror     w26, w26, w27
         orr     v12.16b, v4.16b, v0.16b
-        add     w27, w27, w11
+        ldr     w11, [sp, #4044]
         orr     v15.16b, v5.16b, v1.16b
-        ror     w2, w27, #29
-        orr     v18.16b, v6.16b, v2.16b
-        str     w2, [x12, #240]
-        orr     v21.16b, v7.16b, v3.16b
         add     w27, w2, w23
+        orr     v18.16b, v6.16b, v2.16b
+        add     w27, w27, w11
+        orr     v21.16b, v7.16b, v3.16b
+        ror     w2, w27, #29
         // k=76: A = (A + S[24] + B0) <<< 3; S[24] = A; B1 = (B1 + B0 + A) <<< (B0 + A)
-        add     w6, w6, w27
+        add     w27, w2, w23
         ldp     q0, q1, [x10, #704]
-        neg     w27, w27
+        add     w6, w6, w27
         ldp     q2, q3, [x10, #736]
-        ror     w6, w6, w27
         add     v0.4s, v0.4s, v8.4s
-        add     w28, w3, w24
+        neg     w27, w27
         add     v1.4s, v1.4s, v9.4s
-        add     w28, w28, w11
+        ror     w6, w6, w27
         add     v2.4s, v2.4s, v10.4s
-        ror     w3, w28, #29
-        add     v3.4s, v3.4s, v11.4s
-        str     w3, [x12, #244]
-        add     v0.4s, v0.4s, v12.4s
         add     w28, w3, w24
+        add     v3.4s, v3.4s, v11.4s
+        add     w28, w28, w11
+        add     v0.4s, v0.4s, v12.4s
+        ror     w3, w28, #29
         add     v1.4s, v1.4s, v15.4s
-        add     w7, w7, w28
+        add     x30, x12, #496
         add     v2.4s, v2.4s, v18.4s
-        neg     w28, w28
+        stp     w2, w3, [x30, #-256]
         add     v3.4s, v3.4s, v21.4s
-        ror     w7, w7, w28
-        add     w1, w4, w25
+        add     w28, w3, w24
         shl     v8.4s, v0.4s, #3
-        add     w1, w1, w11
+        add     w7, w7, w28
         shl     v9.4s, v1.4s, #3
-        ror     w4, w1, #29
+        neg     w28, w28
         shl     v10.4s, v2.4s, #3
-        str     w4, [x12, #248]
+        ror     w7, w7, w28
         shl     v11.4s, v3.4s, #3
         add     w1, w4, w25
         sri     v8.4s, v0.4s, #29
-        add     w8, w8, w1
+        add     w1, w1, w11
         sri     v9.4s, v1.4s, #29
-        neg     w1, w1
+        ror     w4, w1, #29
         sri     v10.4s, v2.4s, #29
-        ror     w8, w8, w1
+        add     w1, w4, w25
         sri     v11.4s, v3.4s, #29
-        add     w27, w5, w26
+        add     w8, w8, w1
         stp     q8, q9, [x10, #704]
-        add     w27, w27, w11
         stp     q10, q11, [x10, #736]
-        ror     w5, w27, #29
+        neg     w1, w1
         add     v0.4s, v12.4s, v8.4s
-        str     w5, [x12, #252]
+        ror     w8, w8, w1
         add     v1.4s, v15.4s, v9.4s
         add     w27, w5, w26
         add     v2.4s, v18.4s, v10.4s
-        add     w17, w17, w27
-        add     v3.4s, v21.4s, v11.4s
-        neg     w27, w27
-        add     v13.4s, v13.4s, v0.4s
-        ror     w17, w17, w27
-        add     v16.4s, v16.4s, v1.4s
-        mov     w11, #0x3847
-        add     v19.4s, v19.4s, v2.4s
-        movk    w11, #0x30BF, lsl #16
-        add     v22.4s, v22.4s, v3.4s
-        add     w27, w2, w6
-        and     v4.16b, v0.16b, v24.16b
         add     w27, w27, w11
-        and     v5.16b, v1.16b, v24.16b
-        ror     w2, w27, #29
-        and     v6.16b, v2.16b, v24.16b
-        str     w2, [x12, #304]
-        and     v7.16b, v3.16b, v24.16b
-        add     w27, w2, w6
-        orr     v0.16b, v0.16b, v25.16b
-        add     w19, w19, w27
-        orr     v1.16b, v1.16b, v25.16b
+        add     v3.4s, v21.4s, v11.4s
+        ror     w5, w27, #29
+        add     v13.4s, v13.4s, v0.4s
+        stp     w4, w5, [x30, #-248]
+        add     v16.4s, v16.4s, v1.4s
+        add     w27, w5, w26
+        add     v19.4s, v19.4s, v2.4s
+        add     w17, w17, w27
+        add     v22.4s, v22.4s, v3.4s
         neg     w27, w27
+        and     v4.16b, v0.16b, v24.16b
+        ror     w17, w17, w27
+        and     v5.16b, v1.16b, v24.16b
+        ldr     w11, [sp, #4048]
+        and     v6.16b, v2.16b, v24.16b
+        add     w27, w2, w6
+        and     v7.16b, v3.16b, v24.16b
+        add     w27, w27, w11
+        orr     v0.16b, v0.16b, v25.16b
+        ror     w2, w27, #29
+        orr     v1.16b, v1.16b, v25.16b
+        add     w27, w2, w6
         orr     v2.16b, v2.16b, v25.16b
-        ror     w19, w19, w27
         orr     v3.16b, v3.16b, v25.16b
-        add     w28, w3, w7
+        add     w19, w19, w27
         ushl    v4.4s, v13.4s, v4.4s
-        add     w28, w28, w11
+        neg     w27, w27
         ushl    v5.4s, v16.4s, v5.4s
-        ror     w3, w28, #29
+        ror     w19, w19, w27
         ushl    v6.4s, v19.4s, v6.4s
-        str     w3, [x12, #308]
-        ushl    v7.4s, v22.4s, v7.4s
         add     w28, w3, w7
+        ushl    v7.4s, v22.4s, v7.4s
+        add     w28, w28, w11
         ushl    v0.4s, v13.4s, v0.4s
-        add     w20, w20, w28
+        ror     w3, w28, #29
         ushl    v1.4s, v16.4s, v1.4s
-        neg     w28, w28
+        stp     w2, w3, [x30, #-192]
         ushl    v2.4s, v19.4s, v2.4s
-        ror     w20, w20, w28
-        add     w1, w4, w8
+        add     w28, w3, w7
         ushl    v3.4s, v22.4s, v3.4s
-        add     w1, w1, w11
+        add     w20, w20, w28
         orr     v13.16b, v4.16b, v0.16b
-        ror     w4, w1, #29
+        neg     w28, w28
         orr     v16.16b, v5.16b, v1.16b
-        str     w4, [x12, #312]
+        ror     w20, w20, w28
         orr     v19.16b, v6.16b, v2.16b
         add     w1, w4, w8
         orr     v22.16b, v7.16b, v3.16b
-        add     w21, w21, w1
+        add     w1, w1, w11
         // encryption: C = plain.lo + S[0], D = plain.hi + S[1]
-        neg     w1, w1
+        ror     w4, w1, #29
         ldr     w16, [x0, #4]
-        ror     w21, w21, w1
+        add     w1, w4, w8
         dup     v4.4s, w16
-        add     w27, w5, w17
+        add     w21, w21, w1
         ldr     w16, [x0, #0]
-        add     w27, w27, w11
         dup     v5.4s, w16
-        ror     w5, w27, #29
+        neg     w1, w1
         ldp     q0, q1, [x10, #-832]
-        str     w5, [x12, #316]
+        ror     w21, w21, w1
         ldp     q2, q3, [x10, #-800]
         add     w27, w5, w17
         add     v12.4s, v0.4s, v4.4s
-        add     w22, w22, w27
-        add     v14.4s, v1.4s, v4.4s
-        neg     w27, w27
-        add     v15.4s, v2.4s, v4.4s
-        ror     w22, w22, w27
-        add     v17.4s, v3.4s, v4.4s
-        mov     w11, #0xB200
-        ldp     q0, q1, [x10, #-768]
-        movk    w11, #0xCEF6, lsl #16
-        ldp     q2, q3, [x10, #-736]
-        add     w27, w2, w19
-        add     v18.4s, v0.4s, v5.4s
         add     w27, w27, w11
-        add     v20.4s, v1.4s, v5.4s
-        ror     w2, w27, #29
-        add     v21.4s, v2.4s, v5.4s
-        str     w2, [x12, #368]
-        add     v23.4s, v3.4s, v5.4s
-        add     w27, w2, w19
-        // round 1: C = ((C ^ D) <<< D) + S[2]; D = ((D ^ C) <<< C) + S[3]
-        add     w23, w23, w27
-        eor     v12.16b, v12.16b, v18.16b
+        add     v14.4s, v1.4s, v4.4s
+        ror     w5, w27, #29
+        add     v15.4s, v2.4s, v4.4s
+        stp     w4, w5, [x30, #-184]
+        add     v17.4s, v3.4s, v4.4s
+        add     w27, w5, w17
+        ldp     q0, q1, [x10, #-768]
+        add     w22, w22, w27
+        ldp     q2, q3, [x10, #-736]
         neg     w27, w27
+        add     v18.4s, v0.4s, v5.4s
+        ror     w22, w22, w27
+        add     v20.4s, v1.4s, v5.4s
+        ldr     w11, [sp, #4052]
+        add     v21.4s, v2.4s, v5.4s
+        add     w27, w2, w19
+        add     v23.4s, v3.4s, v5.4s
+        add     w27, w27, w11
+        // round 1: C = ((C ^ D) <<< D) + S[2]; D = ((D ^ C) <<< C) + S[3]
+        ror     w2, w27, #29
+        eor     v12.16b, v12.16b, v18.16b
+        add     w27, w2, w19
         eor     v14.16b, v14.16b, v20.16b
-        ror     w23, w23, w27
+        add     w23, w23, w27
         eor     v15.16b, v15.16b, v21.16b
-        add     w28, w3, w20
         eor     v17.16b, v17.16b, v23.16b
-        add     w28, w28, w11
+        neg     w27, w27
         and     v4.16b, v18.16b, v24.16b
-        ror     w3, w28, #29
+        ror     w23, w23, w27
         and     v5.16b, v20.16b, v24.16b
-        str     w3, [x12, #372]
-        and     v6.16b, v21.16b, v24.16b
         add     w28, w3, w20
+        and     v6.16b, v21.16b, v24.16b
+        add     w28, w28, w11
         and     v7.16b, v23.16b, v24.16b
-        add     w24, w24, w28
+        ror     w3, w28, #29
         orr     v0.16b, v18.16b, v25.16b
-        neg     w28, w28
+        stp     w2, w3, [x30, #-128]
         orr     v1.16b, v20.16b, v25.16b
-        ror     w24, w24, w28
-        add     w1, w4, w21
+        add     w28, w3, w20
         orr     v2.16b, v21.16b, v25.16b
-        add     w1, w1, w11
+        add     w24, w24, w28
         orr     v3.16b, v23.16b, v25.16b
-        ror     w4, w1, #29
+        neg     w28, w28
         ushl    v4.4s, v12.4s, v4.4s
-        str     w4, [x12, #376]
+        ror     w24, w24, w28
         ushl    v5.4s, v14.4s, v5.4s
         add     w1, w4, w21
         ushl    v6.4s, v15.4s, v6.4s
-        add     w25, w25, w1
+        add     w1, w1, w11
         ushl    v7.4s, v17.4s, v7.4s
-        neg     w1, w1
+        ror     w4, w1, #29
         ushl    v0.4s, v12.4s, v0.4s
-        ror     w25, w25, w1
+        add     w1, w4, w21
         ushl    v1.4s, v14.4s, v1.4s
-        add     w27, w5, w22
+        add     w25, w25, w1
         ushl    v2.4s, v15.4s, v2.4s
-        add     w27, w27, w11
         ushl    v3.4s, v17.4s, v3.4s
-        ror     w5, w27, #29
+        neg     w1, w1
         orr     v12.16b, v4.16b, v0.16b
-        str     w5, [x12, #380]
+        ror     w25, w25, w1
         orr     v14.16b, v5.16b, v1.16b
         add     w27, w5, w22
         orr     v15.16b, v6.16b, v2.16b
-        add     w26, w26, w27
-        orr     v17.16b, v7.16b, v3.16b
-        neg     w27, w27
-        ldp     q0, q1, [x10, #-704]
-        ror     w26, w26, w27
-        ldp     q2, q3, [x10, #-672]
-        mov     w11, #0x2BB9
-        add     v12.4s, v12.4s, v0.4s
-        movk    w11, #0x6D2E, lsl #16
-        add     v14.4s, v14.4s, v1.4s
-        add     w27, w2, w23
-        add     v15.4s, v15.4s, v2.4s
         add     w27, w27, w11
-        add     v17.4s, v17.4s, v3.4s
-        ror     w2, w27, #29
-        eor     v18.16b, v18.16b, v12.16b
-        str     w2, [x12, #432]
-        eor     v20.16b, v20.16b, v14.16b
-        add     w27, w2, w23
-        eor     v21.16b, v21.16b, v15.16b
-        add     w6, w6, w27
-        eor     v23.16b, v23.16b, v17.16b
+        orr     v17.16b, v7.16b, v3.16b
+        ror     w5, w27, #29
+        ldp     q0, q1, [x10, #-704]
+        stp     w4, w5, [x30, #-120]
+        ldp     q2, q3, [x10, #-672]
+        add     w27, w5, w22
+        add     v12.4s, v12.4s, v0.4s
+        add     w26, w26, w27
+        add     v14.4s, v14.4s, v1.4s
         neg     w27, w27
+        add     v15.4s, v15.4s, v2.4s
+        ror     w26, w26, w27
+        add     v17.4s, v17.4s, v3.4s
+        ldr     w11, [sp, #4056]
+        eor     v18.16b, v18.16b, v12.16b
+        add     w27, w2, w23
+        eor     v20.16b, v20.16b, v14.16b
+        add     w27, w27, w11
+        eor     v21.16b, v21.16b, v15.16b
+        ror     w2, w27, #29
+        eor     v23.16b, v23.16b, v17.16b
+        add     w27, w2, w23
         and     v4.16b, v12.16b, v24.16b
-        ror     w6, w6, w27
+        add     w6, w6, w27
         and     v5.16b, v14.16b, v24.16b
-        add     w28, w3, w24
         and     v6.16b, v15.16b, v24.16b
-        add     w28, w28, w11
+        neg     w27, w27
         and     v7.16b, v17.16b, v24.16b
-        ror     w3, w28, #29
+        ror     w6, w6, w27
         orr     v0.16b, v12.16b, v25.16b
-        str     w3, [x12, #436]
-        orr     v1.16b, v14.16b, v25.16b
         add     w28, w3, w24
+        orr     v1.16b, v14.16b, v25.16b
+        add     w28, w28, w11
         orr     v2.16b, v15.16b, v25.16b
-        add     w7, w7, w28
+        ror     w3, w28, #29
         orr     v3.16b, v17.16b, v25.16b
-        neg     w28, w28
+        stp     w2, w3, [x30, #-64]
         ushl    v4.4s, v18.4s, v4.4s
-        ror     w7, w7, w28
-        add     w1, w4, w25
+        add     w28, w3, w24
         ushl    v5.4s, v20.4s, v5.4s
-        add     w1, w1, w11
+        add     w7, w7, w28
         ushl    v6.4s, v21.4s, v6.4s
-        ror     w4, w1, #29
+        neg     w28, w28
         ushl    v7.4s, v23.4s, v7.4s
-        str     w4, [x12, #440]
+        ror     w7, w7, w28
         ushl    v0.4s, v18.4s, v0.4s
         add     w1, w4, w25
         ushl    v1.4s, v20.4s, v1.4s
-        add     w8, w8, w1
+        add     w1, w1, w11
         ushl    v2.4s, v21.4s, v2.4s
-        neg     w1, w1
+        ror     w4, w1, #29
         ushl    v3.4s, v23.4s, v3.4s
-        ror     w8, w8, w1
+        add     w1, w4, w25
         orr     v18.16b, v4.16b, v0.16b
-        add     w27, w5, w26
+        add     w8, w8, w1
         orr     v20.16b, v5.16b, v1.16b
-        add     w27, w27, w11
+        neg     w1, w1
         orr     v21.16b, v6.16b, v2.16b
-        ror     w5, w27, #29
         orr     v23.16b, v7.16b, v3.16b
-        str     w5, [x12, #444]
+        ror     w8, w8, w1
         ldp     q0, q1, [x10, #-640]
         add     w27, w5, w26
         ldp     q2, q3, [x10, #-608]
-        add     w17, w17, w27
-        add     v18.4s, v18.4s, v0.4s
-        neg     w27, w27
-        add     v20.4s, v20.4s, v1.4s
-        ror     w17, w17, w27
-        add     v21.4s, v21.4s, v2.4s
-        mov     w11, #0xA572
-        add     v23.4s, v23.4s, v3.4s
-        movk    w11, #0x0B65, lsl #16
-        // round 2: C = ((C ^ D) <<< D) + S[4]; D = ((D ^ C) <<< C) + S[5]
-        add     w27, w2, w6
-        eor     v12.16b, v12.16b, v18.16b
         add     w27, w27, w11
-        eor     v14.16b, v14.16b, v20.16b
-        ror     w2, w27, #29
-        eor     v15.16b, v15.16b, v21.16b
-        str     w2, [x12, #496]
-        eor     v17.16b, v17.16b, v23.16b
-        add     w27, w2, w6
-        and     v4.16b, v18.16b, v24.16b
-        add     w19, w19, w27
-        and     v5.16b, v20.16b, v24.16b
+        add     v18.4s, v18.4s, v0.4s
+        ror     w5, w27, #29
+        add     v20.4s, v20.4s, v1.4s
+        stp     w4, w5, [x30, #-56]
+        add     v21.4s, v21.4s, v2.4s
+        add     w27, w5, w26
+        add     v23.4s, v23.4s, v3.4s
+        add     w17, w17, w27
+        // round 2: C = ((C ^ D) <<< D) + S[4]; D = ((D ^ C) <<< C) + S[5]
         neg     w27, w27
+        eor     v12.16b, v12.16b, v18.16b
+        ror     w17, w17, w27
+        eor     v14.16b, v14.16b, v20.16b
+        ldr     w11, [sp, #4060]
+        eor     v15.16b, v15.16b, v21.16b
+        add     w27, w2, w6
+        eor     v17.16b, v17.16b, v23.16b
+        add     w27, w27, w11
+        and     v4.16b, v18.16b, v24.16b
+        ror     w2, w27, #29
+        and     v5.16b, v20.16b, v24.16b
+        add     w27, w2, w6
         and     v6.16b, v21.16b, v24.16b
-        ror     w19, w19, w27
+        add     w19, w19, w27
         and     v7.16b, v23.16b, v24.16b
-        add     w28, w3, w7
         orr     v0.16b, v18.16b, v25.16b
-        add     w28, w28, w11
+        neg     w27, w27
         orr     v1.16b, v20.16b, v25.16b
-        ror     w3, w28, #29
+        ror     w19, w19, w27
         orr     v2.16b, v21.16b, v25.16b
-        str     w3, [x12, #500]
-        orr     v3.16b, v23.16b, v25.16b
         add     w28, w3, w7
+        orr     v3.16b, v23.16b, v25.16b
+        add     w28, w28, w11
         ushl    v4.4s, v12.4s, v4.4s
-        add     w20, w20, w28
+        ror     w3, w28, #29
         ushl    v5.4s, v14.4s, v5.4s
-        neg     w28, w28
+        stp     w2, w3, [x30, #0]
         ushl    v6.4s, v15.4s, v6.4s
-        ror     w20, w20, w28
-        add     w1, w4, w8
+        add     w28, w3, w7
         ushl    v7.4s, v17.4s, v7.4s
-        add     w1, w1, w11
+        add     w20, w20, w28
         ushl    v0.4s, v12.4s, v0.4s
-        ror     w4, w1, #29
+        neg     w28, w28
         ushl    v1.4s, v14.4s, v1.4s
-        str     w4, [x12, #504]
+        ror     w20, w20, w28
         ushl    v2.4s, v15.4s, v2.4s
         add     w1, w4, w8
         ushl    v3.4s, v17.4s, v3.4s
-        add     w21, w21, w1
+        add     w1, w1, w11
         orr     v12.16b, v4.16b, v0.16b
-        neg     w1, w1
+        ror     w4, w1, #29
         orr     v14.16b, v5.16b, v1.16b
-        ror     w21, w21, w1
+        add     w1, w4, w8
         orr     v15.16b, v6.16b, v2.16b
-        add     w27, w5, w17
+        add     w21, w21, w1
         orr     v17.16b, v7.16b, v3.16b
-        add     w27, w27, w11
+        neg     w1, w1
         ldp     q0, q1, [x10, #-576]
-        ror     w5, w27, #29
         ldp     q2, q3, [x10, #-544]
-        str     w5, [x12, #508]
+        ror     w21, w21, w1
         add     v12.4s, v12.4s, v0.4s
         add     w27, w5, w17
         add     v14.4s, v14.4s, v1.4s
-        add     w22, w22, w27
-        add     v15.4s, v15.4s, v2.4s
-        neg     w27, w27
-        add     v17.4s, v17.4s, v3.4s
-        ror     w22, w22, w27
-        eor     v18.16b, v18.16b, v12.16b
-        mov     w11, #0x1F2B
-        eor     v20.16b, v20.16b, v14.16b
-        movk    w11, #0xA99D, lsl #16
-        eor     v21.16b, v21.16b, v15.16b
-        add     w27, w2, w19
-        eor     v23.16b, v23.16b, v17.16b
         add     w27, w27, w11
-        and     v4.16b, v12.16b, v24.16b
-        ror     w2, w27, #29
-        and     v5.16b, v14.16b, v24.16b
-        str     w2, [x12, #560]
-        and     v6.16b, v15.16b, v24.16b
-        add     w27, w2, w19
-        and     v7.16b, v17.16b, v24.16b
-        add     w23, w23, w27
-        orr     v0.16b, v12.16b, v25.16b
+        add     v15.4s, v15.4s, v2.4s
+        ror     w5, w27, #29
+        add     v17.4s, v17.4s, v3.4s
+        stp     w4, w5, [x30, #8]
+        eor     v18.16b, v18.16b, v12.16b
+        add     w27, w5, w17
+        eor     v20.16b, v20.16b, v14.16b
+        add     w22, w22, w27
+        eor     v21.16b, v21.16b, v15.16b
         neg     w27, w27
+        eor     v23.16b, v23.16b, v17.16b
+        ror     w22, w22, w27
+        and     v4.16b, v12.16b, v24.16b
+        ldr     w11, [sp, #4064]
+        and     v5.16b, v14.16b, v24.16b
+        add     w27, w2, w19
+        and     v6.16b, v15.16b, v24.16b
+        add     w27, w27, w11
+        and     v7.16b, v17.16b, v24.16b
+        ror     w2, w27, #29
+        orr     v0.16b, v12.16b, v25.16b
+        add     w27, w2, w19
         orr     v1.16b, v14.16b, v25.16b
-        ror     w23, w23, w27
+        add     w23, w23, w27
         orr     v2.16b, v15.16b, v25.16b
-        add     w28, w3, w20
         orr     v3.16b, v17.16b, v25.16b
-        add     w28, w28, w11
+        neg     w27, w27
         ushl    v4.4s, v18.4s, v4.4s
-        ror     w3, w28, #29
+        ror     w23, w23, w27
         ushl    v5.4s, v20.4s, v5.4s
-        str     w3, [x12, #564]
-        ushl    v6.4s, v21.4s, v6.4s
         add     w28, w3, w20
+        ushl    v6.4s, v21.4s, v6.4s
+        add     w28, w28, w11
         ushl    v7.4s, v23.4s, v7.4s
-        add     w24, w24, w28
+        ror     w3, w28, #29
         ushl    v0.4s, v18.4s, v0.4s
-        neg     w28, w28
+        stp     w2, w3, [x30, #64]
         ushl    v1.4s, v20.4s, v1.4s
-        ror     w24, w24, w28
-        add     w1, w4, w21
+        add     w28, w3, w20
         ushl    v2.4s, v21.4s, v2.4s
-        add     w1, w1, w11
+        add     w24, w24, w28
         ushl    v3.4s, v23.4s, v3.4s
-        ror     w4, w1, #29
+        neg     w28, w28
         orr     v18.16b, v4.16b, v0.16b
-        str     w4, [x12, #568]
+        ror     w24, w24, w28
         orr     v20.16b, v5.16b, v1.16b
         add     w1, w4, w21
         orr     v21.16b, v6.16b, v2.16b
-        add     w25, w25, w1
+        add     w1, w1, w11
         orr     v23.16b, v7.16b, v3.16b
-        neg     w1, w1
+        ror     w4, w1, #29
         ldp     q0, q1, [x10, #-512]
-        ror     w25, w25, w1
+        add     w1, w4, w21
         ldp     q2, q3, [x10, #-480]
-        add     w27, w5, w22
+        add     w25, w25, w1
         add     v18.4s, v18.4s, v0.4s
-        add     w27, w27, w11
+        neg     w1, w1
         add     v20.4s, v20.4s, v1.4s
-        ror     w5, w27, #29
         add     v21.4s, v21.4s, v2.4s
-        str     w5, [x12, #572]
+        ror     w25, w25, w1
         add     v23.4s, v23.4s, v3.4s
         add     w27, w5, w22
         // round 3: C = ((C ^ D) <<< D) + S[6]; D = ((D ^ C) <<< C) + S[7]
-        add     w26, w26, w27
-        eor     v12.16b, v12.16b, v18.16b
-        neg     w27, w27
-        eor     v14.16b, v14.16b, v20.16b
-        ror     w26, w26, w27
-        eor     v15.16b, v15.16b, v21.16b
-        mov     w11, #0x98E4
-        eor     v17.16b, v17.16b, v23.16b
-        movk    w11, #0x47D4, lsl #16
-        and     v4.16b, v18.16b, v24.16b
-        add     w27, w2, w23
-        and     v5.16b, v20.16b, v24.16b
         add     w27, w27, w11
-        and     v6.16b, v21.16b, v24.16b
-        ror     w2, w27, #29
-        and     v7.16b, v23.16b, v24.16b
-        str     w2, [x12, #624]
-        orr     v0.16b, v18.16b, v25.16b
-        add     w27, w2, w23
-        orr     v1.16b, v20.16b, v25.16b
-        add     w6, w6, w27
-        orr     v2.16b, v21.16b, v25.16b
+        eor     v12.16b, v12.16b, v18.16b
+        ror     w5, w27, #29
+        eor     v14.16b, v14.16b, v20.16b
+        stp     w4, w5, [x30, #72]
+        eor     v15.16b, v15.16b, v21.16b
+        add     w27, w5, w22
+        eor     v17.16b, v17.16b, v23.16b
+        add     w26, w26, w27
+        and     v4.16b, v18.16b, v24.16b
         neg     w27, w27
+        and     v5.16b, v20.16b, v24.16b
+        ror     w26, w26, w27
+        and     v6.16b, v21.16b, v24.16b
+        ldr     w11, [sp, #4068]
+        and     v7.16b, v23.16b, v24.16b
+        add     w27, w2, w23
+        orr     v0.16b, v18.16b, v25.16b
+        add     w27, w27, w11
+        orr     v1.16b, v20.16b, v25.16b
+        ror     w2, w27, #29
+        orr     v2.16b, v21.16b, v25.16b
+        add     w27, w2, w23
         orr     v3.16b, v23.16b, v25.16b
-        ror     w6, w6, w27
+        add     w6, w6, w27
         ushl    v4.4s, v12.4s, v4.4s
-        add     w28, w3, w24
+        neg     w27, w27
         ushl    v5.4s, v14.4s, v5.4s
-        add     w28, w28, w11
         ushl    v6.4s, v15.4s, v6.4s
-        ror     w3, w28, #29
+        ror     w6, w6, w27
         ushl    v7.4s, v17.4s, v7.4s
-        str     w3, [x12, #628]
-        ushl    v0.4s, v12.4s, v0.4s
         add     w28, w3, w24
+        ushl    v0.4s, v12.4s, v0.4s
+        add     w28, w28, w11
         ushl    v1.4s, v14.4s, v1.4s
-        add     w7, w7, w28
+        ror     w3, w28, #29
         ushl    v2.4s, v15.4s, v2.4s
-        neg     w28, w28
+        stp     w2, w3, [x30, #128]
         ushl    v3.4s, v17.4s, v3.4s
-        ror     w7, w7, w28
-        add     w1, w4, w25
+        add     w28, w3, w24
         orr     v12.16b, v4.16b, v0.16b
-        add     w1, w1, w11
+        add     w7, w7, w28
         orr     v14.16b, v5.16b, v1.16b
-        ror     w4, w1, #29
+        neg     w28, w28
         orr     v15.16b, v6.16b, v2.16b
-        str     w4, [x12, #632]
+        ror     w7, w7, w28
         orr     v17.16b, v7.16b, v3.16b
         add     w1, w4, w25
         ldp     q0, q1, [x10, #-448]
-        add     w8, w8, w1
+        add     w1, w1, w11
         ldp     q2, q3, [x10, #-416]
-        neg     w1, w1
+        ror     w4, w1, #29
         add     v12.4s, v12.4s, v0.4s
-        ror     w8, w8, w1
+        add     w1, w4, w25
         add     v14.4s, v14.4s, v1.4s
-        add     w27, w5, w26
+        add     w8, w8, w1
         add     v15.4s, v15.4s, v2.4s
-        add     w27, w27, w11
+        neg     w1, w1
         add     v17.4s, v17.4s, v3.4s
-        ror     w5, w27, #29
         eor     v18.16b, v18.16b, v12.16b
-        str     w5, [x12, #636]
+        ror     w8, w8, w1
         eor     v20.16b, v20.16b, v14.16b
         add     w27, w5, w26
         eor     v21.16b, v21.16b, v15.16b
-        add     w17, w17, w27
-        eor     v23.16b, v23.16b, v17.16b
-        neg     w27, w27
-        and     v4.16b, v12.16b, v24.16b
-        ror     w17, w17, w27
-        and     v5.16b, v14.16b, v24.16b
-        mov     w11, #0x129D
-        and     v6.16b, v15.16b, v24.16b
-        movk    w11, #0xE60C, lsl #16
-        and     v7.16b, v17.16b, v24.16b
-        add     w27, w2, w6
-        orr     v0.16b, v12.16b, v25.16b
         add     w27, w27, w11
-        orr     v1.16b, v14.16b, v25.16b
-        ror     w2, w27, #29
-        orr     v2.16b, v15.16b, v25.16b
-        str     w2, [x12, #688]
-        orr     v3.16b, v17.16b, v25.16b
-        add     w27, w2, w6
-        ushl    v4.4s, v18.4s, v4.4s
-        add     w19, w19, w27
-        ushl    v5.4s, v20.4s, v5.4s
+        eor     v23.16b, v23.16b, v17.16b
+        ror     w5, w27, #29
+        and     v4.16b, v12.16b, v24.16b
+        stp     w4, w5, [x30, #136]
+        and     v5.16b, v14.16b, v24.16b
+        add     w27, w5, w26
+        and     v6.16b, v15.16b, v24.16b
+        add     w17, w17, w27
+        and     v7.16b, v17.16b, v24.16b
         neg     w27, w27
+        orr     v0.16b, v12.16b, v25.16b
+        ror     w17, w17, w27
+        orr     v1.16b, v14.16b, v25.16b
+        ldr     w11, [sp, #4072]
+        orr     v2.16b, v15.16b, v25.16b
+        add     w27, w2, w6
+        orr     v3.16b, v17.16b, v25.16b
+        add     w27, w27, w11
+        ushl    v4.4s, v18.4s, v4.4s
+        ror     w2, w27, #29
+        ushl    v5.4s, v20.4s, v5.4s
+        add     w27, w2, w6
         ushl    v6.4s, v21.4s, v6.4s
-        ror     w19, w19, w27
+        add     w19, w19, w27
         ushl    v7.4s, v23.4s, v7.4s
-        add     w28, w3, w7
+        neg     w27, w27
         ushl    v0.4s, v18.4s, v0.4s
-        add     w28, w28, w11
         ushl    v1.4s, v20.4s, v1.4s
-        ror     w3, w28, #29
+        ror     w19, w19, w27
         ushl    v2.4s, v21.4s, v2.4s
-        str     w3, [x12, #692]
-        ushl    v3.4s, v23.4s, v3.4s
         add     w28, w3, w7
+        ushl    v3.4s, v23.4s, v3.4s
+        add     w28, w28, w11
         orr     v18.16b, v4.16b, v0.16b
-        add     w20, w20, w28
+        ror     w3, w28, #29
         orr     v20.16b, v5.16b, v1.16b
-        neg     w28, w28
-        ror     w20, w20, w28
+        stp     w2, w3, [x30, #192]
         orr     v21.16b, v6.16b, v2.16b
-        add     w1, w4, w8
+        add     w28, w3, w7
         orr     v23.16b, v7.16b, v3.16b
-        add     w1, w1, w11
+        add     w20, w20, w28
         ldp     q0, q1, [x10, #-384]
-        ror     w4, w1, #29
+        neg     w28, w28
         ldp     q2, q3, [x10, #-352]
-        str     w4, [x12, #696]
+        ror     w20, w20, w28
         add     v18.4s, v18.4s, v0.4s
         add     w1, w4, w8
         add     v20.4s, v20.4s, v1.4s
-        add     w21, w21, w1
+        add     w1, w1, w11
         add     v21.4s, v21.4s, v2.4s
-        neg     w1, w1
+        ror     w4, w1, #29
         add     v23.4s, v23.4s, v3.4s
-        ror     w21, w21, w1
+        add     w1, w4, w8
         // round 4: C = ((C ^ D) <<< D) + S[8]; D = ((D ^ C) <<< C) + S[9]
-        add     w27, w5, w17
+        add     w21, w21, w1
         eor     v12.16b, v12.16b, v18.16b
-        add     w27, w27, w11
+        neg     w1, w1
         eor     v14.16b, v14.16b, v20.16b
-        ror     w5, w27, #29
+        ror     w21, w21, w1
         eor     v15.16b, v15.16b, v21.16b
-        str     w5, [x12, #700]
         eor     v17.16b, v17.16b, v23.16b
         add     w27, w5, w17
         and     v4.16b, v18.16b, v24.16b
-        add     w22, w22, w27
+        add     w27, w27, w11
         and     v5.16b, v20.16b, v24.16b
-        neg     w27, w27
-        and     v6.16b, v21.16b, v24.16b
-        ror     w22, w22, w27
-        and     v7.16b, v23.16b, v24.16b
-        mov     w11, #0x8C56
-        orr     v0.16b, v18.16b, v25.16b
-        movk    w11, #0x8443, lsl #16
-        orr     v1.16b, v20.16b, v25.16b
-        add     w27, w2, w19
-        orr     v2.16b, v21.16b, v25.16b
-        add     w27, w27, w11
-        orr     v3.16b, v23.16b, v25.16b
-        ror     w2, w27, #29
-        ushl    v4.4s, v12.4s, v4.4s
-        str     w2, [x12, #752]
-        ushl    v5.4s, v14.4s, v5.4s
-        add     w27, w2, w19
-        ushl    v6.4s, v15.4s, v6.4s
-        add     w23, w23, w27
-        ushl    v7.4s, v17.4s, v7.4s
-        neg     w27, w27
-        ushl    v0.4s, v12.4s, v0.4s
-        ror     w23, w23, w27
-        ushl    v1.4s, v14.4s, v1.4s
-        add     w28, w3, w20
-        ushl    v2.4s, v15.4s, v2.4s
-        add     w28, w28, w11
-        ushl    v3.4s, v17.4s, v3.4s
-        ror     w3, w28, #29
-        orr     v12.16b, v4.16b, v0.16b
-        str     w3, [x12, #756]
-        orr     v14.16b, v5.16b, v1.16b
-        add     w28, w3, w20
-        orr     v15.16b, v6.16b, v2.16b
-        add     w24, w24, w28
-        orr     v17.16b, v7.16b, v3.16b
-        neg     w28, w28
-        ror     w24, w24, w28
-        ldp     q0, q1, [x10, #-320]
-        add     w1, w4, w21
-        ldp     q2, q3, [x10, #-288]
-        add     w1, w1, w11
-        add     v12.4s, v12.4s, v0.4s
-        ror     w4, w1, #29
-        add     v14.4s, v14.4s, v1.4s
-        str     w4, [x12, #760]
-        add     v15.4s, v15.4s, v2.4s
-        add     w1, w4, w21
-        add     v17.4s, v17.4s, v3.4s
-        add     w25, w25, w1
-        eor     v18.16b, v18.16b, v12.16b
-        neg     w1, w1
-        eor     v20.16b, v20.16b, v14.16b
-        ror     w25, w25, w1
-        eor     v21.16b, v21.16b, v15.16b
-        add     w27, w5, w22
-        eor     v23.16b, v23.16b, v17.16b
-        add     w27, w27, w11
-        and     v4.16b, v12.16b, v24.16b
         ror     w5, w27, #29
-        and     v5.16b, v14.16b, v24.16b
-        str     w5, [x12, #764]
-        and     v6.16b, v15.16b, v24.16b
-        add     w27, w5, w22
-        and     v7.16b, v17.16b, v24.16b
-        add     w26, w26, w27
-        orr     v0.16b, v12.16b, v25.16b
+        and     v6.16b, v21.16b, v24.16b
+        stp     w4, w5, [x30, #200]
+        and     v7.16b, v23.16b, v24.16b
+        add     w27, w5, w17
+        orr     v0.16b, v18.16b, v25.16b
+        add     w22, w22, w27
+        orr     v1.16b, v20.16b, v25.16b
         neg     w27, w27
-        orr     v1.16b, v14.16b, v25.16b
-        ror     w26, w26, w27
-        orr     v2.16b, v15.16b, v25.16b
-        mov     w11, #0x060F
-        orr     v3.16b, v17.16b, v25.16b
-        movk    w11, #0x227B, lsl #16
-        ushl    v4.4s, v18.4s, v4.4s
-        add     w27, w2, w23
-        ushl    v5.4s, v20.4s, v5.4s
+        orr     v2.16b, v21.16b, v25.16b
+        ror     w22, w22, w27
+        orr     v3.16b, v23.16b, v25.16b
+        ldr     w11, [sp, #4076]
+        ushl    v4.4s, v12.4s, v4.4s
+        add     w27, w2, w19
+        ushl    v5.4s, v14.4s, v5.4s
         add     w27, w27, w11
-        ushl    v6.4s, v21.4s, v6.4s
+        ushl    v6.4s, v15.4s, v6.4s
         ror     w2, w27, #29
+        ushl    v7.4s, v17.4s, v7.4s
+        add     w27, w2, w19
+        ushl    v0.4s, v12.4s, v0.4s
+        add     w23, w23, w27
+        ushl    v1.4s, v14.4s, v1.4s
+        neg     w27, w27
+        ushl    v2.4s, v15.4s, v2.4s
+        ushl    v3.4s, v17.4s, v3.4s
+        ror     w23, w23, w27
+        orr     v12.16b, v4.16b, v0.16b
+        add     w28, w3, w20
+        orr     v14.16b, v5.16b, v1.16b
+        add     w28, w28, w11
+        orr     v15.16b, v6.16b, v2.16b
+        ror     w3, w28, #29
+        orr     v17.16b, v7.16b, v3.16b
+        add     x30, x12, #1008
+        ldp     q0, q1, [x10, #-320]
+        stp     w2, w3, [x30, #-256]
+        ldp     q2, q3, [x10, #-288]
+        add     w28, w3, w20
+        add     v12.4s, v12.4s, v0.4s
+        add     w24, w24, w28
+        add     v14.4s, v14.4s, v1.4s
+        neg     w28, w28
+        add     v15.4s, v15.4s, v2.4s
+        ror     w24, w24, w28
+        add     v17.4s, v17.4s, v3.4s
+        add     w1, w4, w21
+        eor     v18.16b, v18.16b, v12.16b
+        add     w1, w1, w11
+        eor     v20.16b, v20.16b, v14.16b
+        ror     w4, w1, #29
+        eor     v21.16b, v21.16b, v15.16b
+        add     w1, w4, w21
+        eor     v23.16b, v23.16b, v17.16b
+        add     w25, w25, w1
+        and     v4.16b, v12.16b, v24.16b
+        neg     w1, w1
+        and     v5.16b, v14.16b, v24.16b
+        and     v6.16b, v15.16b, v24.16b
+        ror     w25, w25, w1
+        and     v7.16b, v17.16b, v24.16b
+        add     w27, w5, w22
+        orr     v0.16b, v12.16b, v25.16b
+        add     w27, w27, w11
+        orr     v1.16b, v14.16b, v25.16b
+        ror     w5, w27, #29
+        orr     v2.16b, v15.16b, v25.16b
+        stp     w4, w5, [x30, #-248]
+        orr     v3.16b, v17.16b, v25.16b
+        add     w27, w5, w22
+        ushl    v4.4s, v18.4s, v4.4s
+        add     w26, w26, w27
+        ushl    v5.4s, v20.4s, v5.4s
+        neg     w27, w27
+        ushl    v6.4s, v21.4s, v6.4s
+        ror     w26, w26, w27
         ushl    v7.4s, v23.4s, v7.4s
-        str     w2, [x12, #816]
+        ldr     w11, [sp, #4080]
         ushl    v0.4s, v18.4s, v0.4s
         add     w27, w2, w23
         ushl    v1.4s, v20.4s, v1.4s
-        add     w6, w6, w27
+        add     w27, w27, w11
         ushl    v2.4s, v21.4s, v2.4s
-        neg     w27, w27
+        ror     w2, w27, #29
         ushl    v3.4s, v23.4s, v3.4s
-        ror     w6, w6, w27
+        add     w27, w2, w23
         orr     v18.16b, v4.16b, v0.16b
-        add     w28, w3, w24
+        add     w6, w6, w27
         orr     v20.16b, v5.16b, v1.16b
-        add     w28, w28, w11
+        neg     w27, w27
         orr     v21.16b, v6.16b, v2.16b
-        ror     w3, w28, #29
         orr     v23.16b, v7.16b, v3.16b
-        str     w3, [x12, #820]
+        ror     w6, w6, w27
         ldp     q0, q1, [x10, #-256]
         add     w28, w3, w24
         ldp     q2, q3, [x10, #-224]
-        add     w7, w7, w28
+        add     w28, w28, w11
         add     v18.4s, v18.4s, v0.4s
-        neg     w28, w28
-        ror     w7, w7, w28
+        ror     w3, w28, #29
         add     v20.4s, v20.4s, v1.4s
-        add     w1, w4, w25
+        stp     w2, w3, [x30, #-192]
         add     v21.4s, v21.4s, v2.4s
-        add     w1, w1, w11
+        add     w28, w3, w24
         add     v23.4s, v23.4s, v3.4s
-        ror     w4, w1, #29
+        add     w7, w7, w28
         // round 5: C = ((C ^ D) <<< D) + S[10]; D = ((D ^ C) <<< C) + S[11]
-        str     w4, [x12, #824]
+        neg     w28, w28
         eor     v12.16b, v12.16b, v18.16b
-        add     w1, w4, w25
+        ror     w7, w7, w28
         eor     v14.16b, v14.16b, v20.16b
-        add     w8, w8, w1
+        add     w1, w4, w25
         eor     v15.16b, v15.16b, v21.16b
-        neg     w1, w1
+        add     w1, w1, w11
         eor     v17.16b, v17.16b, v23.16b
-        ror     w8, w8, w1
+        ror     w4, w1, #29
         and     v4.16b, v18.16b, v24.16b
-        add     w27, w5, w26
+        add     w1, w4, w25
         and     v5.16b, v20.16b, v24.16b
-        add     w27, w27, w11
+        add     w8, w8, w1
         and     v6.16b, v21.16b, v24.16b
-        ror     w5, w27, #29
+        neg     w1, w1
         and     v7.16b, v23.16b, v24.16b
-        str     w5, [x12, #828]
         orr     v0.16b, v18.16b, v25.16b
-        add     w27, w5, w26
+        ror     w8, w8, w1
         orr     v1.16b, v20.16b, v25.16b
-        add     w17, w17, w27
+        add     w27, w5, w26
         orr     v2.16b, v21.16b, v25.16b
-        neg     w27, w27
-        orr     v3.16b, v23.16b, v25.16b
-        ror     w17, w17, w27
-        ushl    v4.4s, v12.4s, v4.4s
-        mov     w11, #0x7FC8
-        ushl    v5.4s, v14.4s, v5.4s
-        movk    w11, #0xC0B2, lsl #16
-        ushl    v6.4s, v15.4s, v6.4s
-        add     w27, w2, w6
-        ushl    v7.4s, v17.4s, v7.4s
         add     w27, w27, w11
+        orr     v3.16b, v23.16b, v25.16b
+        ror     w5, w27, #29
+        ushl    v4.4s, v12.4s, v4.4s
+        stp     w4, w5, [x30, #-184]
+        ushl    v5.4s, v14.4s, v5.4s
+        add     w27, w5, w26
+        ushl    v6.4s, v15.4s, v6.4s
+        add     w17, w17, w27
+        ushl    v7.4s, v17.4s, v7.4s
+        neg     w27, w27
         ushl    v0.4s, v12.4s, v0.4s
-        ror     w2, w27, #29
+        ror     w17, w17, w27
         ushl    v1.4s, v14.4s, v1.4s
-        str     w2, [x12, #880]
+        ldr     w11, [sp, #4084]
         ushl    v2.4s, v15.4s, v2.4s
         add     w27, w2, w6
         ushl    v3.4s, v17.4s, v3.4s
-        add     w19, w19, w27
+        add     w27, w27, w11
         orr     v12.16b, v4.16b, v0.16b
-        neg     w27, w27
+        ror     w2, w27, #29
         orr     v14.16b, v5.16b, v1.16b
-        ror     w19, w19, w27
+        add     w27, w2, w6
         orr     v15.16b, v6.16b, v2.16b
-        add     w28, w3, w7
+        add     w19, w19, w27
         orr     v17.16b, v7.16b, v3.16b
-        add     w28, w28, w11
+        neg     w27, w27
         ldp     q0, q1, [x10, #-192]
-        ror     w3, w28, #29
         ldp     q2, q3, [x10, #-160]
-        str     w3, [x12, #884]
+        ror     w19, w19, w27
         add     v12.4s, v12.4s, v0.4s
         add     w28, w3, w7
         add     v14.4s, v14.4s, v1.4s
-        add     w20, w20, w28
+        add     w28, w28, w11
         add     v15.4s, v15.4s, v2.4s
-        neg     w28, w28
-        ror     w20, w20, w28
+        ror     w3, w28, #29
         add     v17.4s, v17.4s, v3.4s
-        add     w1, w4, w8
+        stp     w2, w3, [x30, #-128]
         eor     v18.16b, v18.16b, v12.16b
-        add     w1, w1, w11
+        add     w28, w3, w7
         eor     v20.16b, v20.16b, v14.16b
-        ror     w4, w1, #29
+        add     w20, w20, w28
         eor     v21.16b, v21.16b, v15.16b
-        str     w4, [x12, #888]
+        neg     w28, w28
         eor     v23.16b, v23.16b, v17.16b
-        add     w1, w4, w8
+        ror     w20, w20, w28
         and     v4.16b, v12.16b, v24.16b
-        add     w21, w21, w1
+        add     w1, w4, w8
         and     v5.16b, v14.16b, v24.16b
-        neg     w1, w1
+        add     w1, w1, w11
         and     v6.16b, v15.16b, v24.16b
-        ror     w21, w21, w1
+        ror     w4, w1, #29
         and     v7.16b, v17.16b, v24.16b
-        add     w27, w5, w17
+        add     w1, w4, w8
         orr     v0.16b, v12.16b, v25.16b
-        add     w27, w27, w11
+        add     w21, w21, w1
         orr     v1.16b, v14.16b, v25.16b
-        ror     w5, w27, #29
+        neg     w1, w1
         orr     v2.16b, v15.16b, v25.16b
-        str     w5, [x12, #892]
+        ror     w21, w21, w1
         orr     v3.16b, v17.16b, v25.16b
-        add     w27, w5, w17
         ushl    v4.4s, v18.4s, v4.4s
-        add     w22, w22, w27
+        add     w27, w5, w17
         ushl    v5.4s, v20.4s, v5.4s
-        neg     w27, w27
-        ushl    v6.4s, v21.4s, v6.4s
-        ror     w22, w22, w27
-        ushl    v7.4s, v23.4s, v7.4s
-        mov     w11, #0xF981
-        ushl    v0.4s, v18.4s, v0.4s
-        movk    w11, #0x5EE9, lsl #16
-        ushl    v1.4s, v20.4s, v1.4s
-        add     w27, w2, w19
-        ushl    v2.4s, v21.4s, v2.4s
         add     w27, w27, w11
+        ushl    v6.4s, v21.4s, v6.4s
+        ror     w5, w27, #29
+        ushl    v7.4s, v23.4s, v7.4s
+        stp     w4, w5, [x30, #-120]
+        ushl    v0.4s, v18.4s, v0.4s
+        add     w27, w5, w17
+        ushl    v1.4s, v20.4s, v1.4s
+        add     w22, w22, w27
+        ushl    v2.4s, v21.4s, v2.4s
+        neg     w27, w27
         ushl    v3.4s, v23.4s, v3.4s
-        ror     w2, w27, #29
+        ror     w22, w22, w27
         orr     v18.16b, v4.16b, v0.16b
-        str     w2, [x12, #944]
+        ldr     w11, [sp, #4088]
         orr     v20.16b, v5.16b, v1.16b
         add     w27, w2, w19
         orr     v21.16b, v6.16b, v2.16b
-        add     w23, w23, w27
+        add     w27, w27, w11
         orr     v23.16b, v7.16b, v3.16b
-        neg     w27, w27
+        ror     w2, w27, #29
         ldp     q0, q1, [x10, #-128]
-        ror     w23, w23, w27
+        add     w27, w2, w19
         ldp     q2, q3, [x10, #-96]
-        add     w28, w3, w20
+        add     w23, w23, w27
         add     v18.4s, v18.4s, v0.4s
-        add     w28, w28, w11
+        neg     w27, w27
         add     v20.4s, v20.4s, v1.4s
-        ror     w3, w28, #29
         add     v21.4s, v21.4s, v2.4s
-        str     w3, [x12, #948]
+        ror     w23, w23, w27
         add     v23.4s, v23.4s, v3.4s
         add     w28, w3, w20
         // round 6: C = ((C ^ D) <<< D) + S[12]; D = ((D ^ C) <<< C) + S[13]
-        add     w24, w24, w28
+        add     w28, w28, w11
         eor     v12.16b, v12.16b, v18.16b
-        neg     w28, w28
-        ror     w24, w24, w28
+        ror     w3, w28, #29
         eor     v14.16b, v14.16b, v20.16b
-        add     w1, w4, w21
+        stp     w2, w3, [x30, #-64]
         eor     v15.16b, v15.16b, v21.16b
-        add     w1, w1, w11
+        add     w28, w3, w20
         eor     v17.16b, v17.16b, v23.16b
-        ror     w4, w1, #29
+        add     w24, w24, w28
         and     v4.16b, v18.16b, v24.16b
-        str     w4, [x12, #952]
+        neg     w28, w28
         and     v5.16b, v20.16b, v24.16b
-        add     w1, w4, w21
+        ror     w24, w24, w28
         and     v6.16b, v21.16b, v24.16b
-        add     w25, w25, w1
+        add     w1, w4, w21
         and     v7.16b, v23.16b, v24.16b
-        neg     w1, w1
+        add     w1, w1, w11
         orr     v0.16b, v18.16b, v25.16b
-        ror     w25, w25, w1
+        ror     w4, w1, #29
         orr     v1.16b, v20.16b, v25.16b
-        add     w27, w5, w22
+        add     w1, w4, w21
         orr     v2.16b, v21.16b, v25.16b
-        add     w27, w27, w11
+        add     w25, w25, w1
         orr     v3.16b, v23.16b, v25.16b
-        ror     w5, w27, #29
+        neg     w1, w1
         ushl    v4.4s, v12.4s, v4.4s
-        str     w5, [x12, #956]
+        ror     w25, w25, w1
         ushl    v5.4s, v14.4s, v5.4s
-        add     w27, w5, w22
         ushl    v6.4s, v15.4s, v6.4s
-        add     w26, w26, w27
+        add     w27, w5, w22
         ushl    v7.4s, v17.4s, v7.4s
-        neg     w27, w27
-        ushl    v0.4s, v12.4s, v0.4s
-        ror     w26, w26, w27
-        ushl    v1.4s, v14.4s, v1.4s
-        mov     w11, #0x733A
-        ushl    v2.4s, v15.4s, v2.4s
-        movk    w11, #0xFD21, lsl #16
-        ushl    v3.4s, v17.4s, v3.4s
-        add     w27, w2, w23
-        orr     v12.16b, v4.16b, v0.16b
         add     w27, w27, w11
+        ushl    v0.4s, v12.4s, v0.4s
+        ror     w5, w27, #29
+        ushl    v1.4s, v14.4s, v1.4s
+        stp     w4, w5, [x30, #-56]
+        ushl    v2.4s, v15.4s, v2.4s
+        add     w27, w5, w22
+        ushl    v3.4s, v17.4s, v3.4s
+        add     w26, w26, w27
+        orr     v12.16b, v4.16b, v0.16b
+        neg     w27, w27
         orr     v14.16b, v5.16b, v1.16b
-        ror     w2, w27, #29
+        ror     w26, w26, w27
         orr     v15.16b, v6.16b, v2.16b
-        str     w2, [x12, #1008]
+        ldr     w11, [sp, #4092]
         orr     v17.16b, v7.16b, v3.16b
         add     w27, w2, w23
         ldp     q0, q1, [x10, #-64]
-        add     w6, w6, w27
+        add     w27, w27, w11
         ldp     q2, q3, [x10, #-32]
-        neg     w27, w27
+        ror     w2, w27, #29
         add     v12.4s, v12.4s, v0.4s
-        ror     w6, w6, w27
-        add     v14.4s, v14.4s, v1.4s
-        add     w28, w3, w24
-        add     v15.4s, v15.4s, v2.4s
-        add     w28, w28, w11
-        add     v17.4s, v17.4s, v3.4s
-        ror     w3, w28, #29
-        eor     v18.16b, v18.16b, v12.16b
-        str     w3, [x12, #1012]
-        eor     v20.16b, v20.16b, v14.16b
-        add     w28, w3, w24
-        eor     v21.16b, v21.16b, v15.16b
-        add     w7, w7, w28
-        eor     v23.16b, v23.16b, v17.16b
-        neg     w28, w28
-        ror     w7, w7, w28
-        and     v4.16b, v12.16b, v24.16b
-        add     w1, w4, w25
-        and     v5.16b, v14.16b, v24.16b
-        add     w1, w1, w11
-        and     v6.16b, v15.16b, v24.16b
-        ror     w4, w1, #29
-        and     v7.16b, v17.16b, v24.16b
-        str     w4, [x12, #1016]
-        orr     v0.16b, v12.16b, v25.16b
-        add     w1, w4, w25
-        orr     v1.16b, v14.16b, v25.16b
-        add     w8, w8, w1
-        orr     v2.16b, v15.16b, v25.16b
-        neg     w1, w1
-        orr     v3.16b, v17.16b, v25.16b
-        ror     w8, w8, w1
-        ushl    v4.4s, v18.4s, v4.4s
-        add     w27, w5, w26
-        ushl    v5.4s, v20.4s, v5.4s
-        add     w27, w27, w11
-        ushl    v6.4s, v21.4s, v6.4s
-        ror     w5, w27, #29
-        ushl    v7.4s, v23.4s, v7.4s
-        str     w5, [x12, #1020]
-        ushl    v0.4s, v18.4s, v0.4s
-        add     w27, w5, w26
-        ushl    v1.4s, v20.4s, v1.4s
-        add     w17, w17, w27
-        ushl    v2.4s, v21.4s, v2.4s
-        neg     w27, w27
-        ushl    v3.4s, v23.4s, v3.4s
-        ror     w17, w17, w27
-        orr     v18.16b, v4.16b, v0.16b
-        mov     w11, #0xECF3
-        orr     v20.16b, v5.16b, v1.16b
-        movk    w11, #0x9B58, lsl #16
-        orr     v21.16b, v6.16b, v2.16b
-        add     w27, w2, w6
-        orr     v23.16b, v7.16b, v3.16b
-        add     w27, w27, w11
-        ldp     q0, q1, [x10, #0]
-        ror     w2, w27, #29
-        ldp     q2, q3, [x10, #32]
-        str     w2, [x12, #1072]
-        add     v18.4s, v18.4s, v0.4s
-        add     w27, w2, w6
-        add     v20.4s, v20.4s, v1.4s
-        add     w19, w19, w27
-        add     v21.4s, v21.4s, v2.4s
-        neg     w27, w27
-        add     v23.4s, v23.4s, v3.4s
-        ror     w19, w19, w27
-        // round 7: C = ((C ^ D) <<< D) + S[14]; D = ((D ^ C) <<< C) + S[15]
-        add     w28, w3, w7
-        eor     v12.16b, v12.16b, v18.16b
-        add     w28, w28, w11
-        eor     v14.16b, v14.16b, v20.16b
-        ror     w3, w28, #29
-        eor     v15.16b, v15.16b, v21.16b
-        str     w3, [x12, #1076]
-        eor     v17.16b, v17.16b, v23.16b
-        add     w28, w3, w7
-        and     v4.16b, v18.16b, v24.16b
-        add     w20, w20, w28
-        and     v5.16b, v20.16b, v24.16b
-        neg     w28, w28
-        ror     w20, w20, w28
-        and     v6.16b, v21.16b, v24.16b
-        add     w1, w4, w8
-        and     v7.16b, v23.16b, v24.16b
-        add     w1, w1, w11
-        orr     v0.16b, v18.16b, v25.16b
-        ror     w4, w1, #29
-        orr     v1.16b, v20.16b, v25.16b
-        str     w4, [x12, #1080]
-        orr     v2.16b, v21.16b, v25.16b
-        add     w1, w4, w8
-        orr     v3.16b, v23.16b, v25.16b
-        add     w21, w21, w1
-        ushl    v4.4s, v12.4s, v4.4s
-        neg     w1, w1
-        ushl    v5.4s, v14.4s, v5.4s
-        ror     w21, w21, w1
-        ushl    v6.4s, v15.4s, v6.4s
-        add     w27, w5, w17
-        ushl    v7.4s, v17.4s, v7.4s
-        add     w27, w27, w11
-        ushl    v0.4s, v12.4s, v0.4s
-        ror     w5, w27, #29
-        ushl    v1.4s, v14.4s, v1.4s
-        str     w5, [x12, #1084]
-        ushl    v2.4s, v15.4s, v2.4s
-        add     w27, w5, w17
-        ushl    v3.4s, v17.4s, v3.4s
-        add     w22, w22, w27
-        orr     v12.16b, v4.16b, v0.16b
-        neg     w27, w27
-        orr     v14.16b, v5.16b, v1.16b
-        ror     w22, w22, w27
-        orr     v15.16b, v6.16b, v2.16b
-        mov     w11, #0x66AC
-        orr     v17.16b, v7.16b, v3.16b
-        movk    w11, #0x3990, lsl #16
-        ldp     q0, q1, [x10, #64]
-        add     w27, w2, w19
-        ldp     q2, q3, [x10, #96]
-        add     w27, w27, w11
-        add     v12.4s, v12.4s, v0.4s
-        ror     w2, w27, #29
-        add     v14.4s, v14.4s, v1.4s
-        str     w2, [x12, #1136]
-        add     v15.4s, v15.4s, v2.4s
-        add     w27, w2, w19
-        add     v17.4s, v17.4s, v3.4s
-        add     w23, w23, w27
-        eor     v18.16b, v18.16b, v12.16b
-        neg     w27, w27
-        eor     v20.16b, v20.16b, v14.16b
-        ror     w23, w23, w27
-        eor     v21.16b, v21.16b, v15.16b
-        add     w28, w3, w20
-        eor     v23.16b, v23.16b, v17.16b
-        add     w28, w28, w11
-        and     v4.16b, v12.16b, v24.16b
-        ror     w3, w28, #29
-        and     v5.16b, v14.16b, v24.16b
-        str     w3, [x12, #1140]
-        and     v6.16b, v15.16b, v24.16b
-        add     w28, w3, w20
-        and     v7.16b, v17.16b, v24.16b
-        add     w24, w24, w28
-        orr     v0.16b, v12.16b, v25.16b
-        neg     w28, w28
-        ror     w24, w24, w28
-        orr     v1.16b, v14.16b, v25.16b
-        add     w1, w4, w21
-        orr     v2.16b, v15.16b, v25.16b
-        add     w1, w1, w11
-        orr     v3.16b, v17.16b, v25.16b
-        ror     w4, w1, #29
-        ushl    v4.4s, v18.4s, v4.4s
-        str     w4, [x12, #1144]
-        ushl    v5.4s, v20.4s, v5.4s
-        add     w1, w4, w21
-        ushl    v6.4s, v21.4s, v6.4s
-        add     w25, w25, w1
-        ushl    v7.4s, v23.4s, v7.4s
-        neg     w1, w1
-        ushl    v0.4s, v18.4s, v0.4s
-        ror     w25, w25, w1
-        ushl    v1.4s, v20.4s, v1.4s
-        add     w27, w5, w22
-        ushl    v2.4s, v21.4s, v2.4s
-        add     w27, w27, w11
-        ushl    v3.4s, v23.4s, v3.4s
-        ror     w5, w27, #29
-        orr     v18.16b, v4.16b, v0.16b
-        str     w5, [x12, #1148]
-        orr     v20.16b, v5.16b, v1.16b
-        add     w27, w5, w22
-        orr     v21.16b, v6.16b, v2.16b
-        add     w26, w26, w27
-        orr     v23.16b, v7.16b, v3.16b
-        neg     w27, w27
-        ldp     q0, q1, [x10, #128]
-        ror     w26, w26, w27
-        ldp     q2, q3, [x10, #160]
-        mov     w11, #0xE065
-        add     v18.4s, v18.4s, v0.4s
-        movk    w11, #0xD7C7, lsl #16
-        add     v20.4s, v20.4s, v1.4s
         add     w27, w2, w23
-        add     v21.4s, v21.4s, v2.4s
-        add     w27, w27, w11
-        add     v23.4s, v23.4s, v3.4s
-        ror     w2, w27, #29
-        // round 8: C = ((C ^ D) <<< D) + S[16]; D = ((D ^ C) <<< C) + S[17]
-        str     w2, [x12, #1200]
-        eor     v12.16b, v12.16b, v18.16b
-        add     w27, w2, w23
-        eor     v14.16b, v14.16b, v20.16b
+        add     v14.4s, v14.4s, v1.4s
         add     w6, w6, w27
-        eor     v15.16b, v15.16b, v21.16b
+        add     v15.4s, v15.4s, v2.4s
         neg     w27, w27
-        eor     v17.16b, v17.16b, v23.16b
+        add     v17.4s, v17.4s, v3.4s
+        eor     v18.16b, v18.16b, v12.16b
         ror     w6, w6, w27
-        and     v4.16b, v18.16b, v24.16b
+        eor     v20.16b, v20.16b, v14.16b
         add     w28, w3, w24
-        and     v5.16b, v20.16b, v24.16b
+        eor     v21.16b, v21.16b, v15.16b
         add     w28, w28, w11
-        and     v6.16b, v21.16b, v24.16b
+        eor     v23.16b, v23.16b, v17.16b
         ror     w3, w28, #29
-        and     v7.16b, v23.16b, v24.16b
-        str     w3, [x12, #1204]
-        orr     v0.16b, v18.16b, v25.16b
+        and     v4.16b, v12.16b, v24.16b
+        stp     w2, w3, [x30, #0]
+        and     v5.16b, v14.16b, v24.16b
         add     w28, w3, w24
-        orr     v1.16b, v20.16b, v25.16b
+        and     v6.16b, v15.16b, v24.16b
         add     w7, w7, w28
-        orr     v2.16b, v21.16b, v25.16b
+        and     v7.16b, v17.16b, v24.16b
         neg     w28, w28
+        orr     v0.16b, v12.16b, v25.16b
         ror     w7, w7, w28
-        orr     v3.16b, v23.16b, v25.16b
+        orr     v1.16b, v14.16b, v25.16b
         add     w1, w4, w25
+        orr     v2.16b, v15.16b, v25.16b
+        add     w1, w1, w11
+        orr     v3.16b, v17.16b, v25.16b
+        ror     w4, w1, #29
+        ushl    v4.4s, v18.4s, v4.4s
+        add     w1, w4, w25
+        ushl    v5.4s, v20.4s, v5.4s
+        add     w8, w8, w1
+        ushl    v6.4s, v21.4s, v6.4s
+        neg     w1, w1
+        ushl    v7.4s, v23.4s, v7.4s
+        ror     w8, w8, w1
+        ushl    v0.4s, v18.4s, v0.4s
+        ushl    v1.4s, v20.4s, v1.4s
+        add     w27, w5, w26
+        ushl    v2.4s, v21.4s, v2.4s
+        add     w27, w27, w11
+        ushl    v3.4s, v23.4s, v3.4s
+        ror     w5, w27, #29
+        orr     v18.16b, v4.16b, v0.16b
+        stp     w4, w5, [x30, #8]
+        orr     v20.16b, v5.16b, v1.16b
+        add     w27, w5, w26
+        orr     v21.16b, v6.16b, v2.16b
+        add     w17, w17, w27
+        orr     v23.16b, v7.16b, v3.16b
+        neg     w27, w27
+        ldp     q0, q1, [x10, #0]
+        ror     w17, w17, w27
+        ldp     q2, q3, [x10, #32]
+        ldr     w11, [sp, #4096]
+        add     v18.4s, v18.4s, v0.4s
+        add     w27, w2, w6
+        add     v20.4s, v20.4s, v1.4s
+        add     w27, w27, w11
+        add     v21.4s, v21.4s, v2.4s
+        ror     w2, w27, #29
+        add     v23.4s, v23.4s, v3.4s
+        add     w27, w2, w6
+        // round 7: C = ((C ^ D) <<< D) + S[14]; D = ((D ^ C) <<< C) + S[15]
+        add     w19, w19, w27
+        eor     v12.16b, v12.16b, v18.16b
+        neg     w27, w27
+        eor     v14.16b, v14.16b, v20.16b
+        ror     w19, w19, w27
+        eor     v15.16b, v15.16b, v21.16b
+        eor     v17.16b, v17.16b, v23.16b
+        add     w28, w3, w7
+        and     v4.16b, v18.16b, v24.16b
+        add     w28, w28, w11
+        and     v5.16b, v20.16b, v24.16b
+        ror     w3, w28, #29
+        and     v6.16b, v21.16b, v24.16b
+        stp     w2, w3, [x30, #64]
+        and     v7.16b, v23.16b, v24.16b
+        add     w28, w3, w7
+        orr     v0.16b, v18.16b, v25.16b
+        add     w20, w20, w28
+        orr     v1.16b, v20.16b, v25.16b
+        neg     w28, w28
+        orr     v2.16b, v21.16b, v25.16b
+        ror     w20, w20, w28
+        orr     v3.16b, v23.16b, v25.16b
+        add     w1, w4, w8
         ushl    v4.4s, v12.4s, v4.4s
         add     w1, w1, w11
         ushl    v5.4s, v14.4s, v5.4s
         ror     w4, w1, #29
         ushl    v6.4s, v15.4s, v6.4s
-        str     w4, [x12, #1208]
+        add     w1, w4, w8
         ushl    v7.4s, v17.4s, v7.4s
-        add     w1, w4, w25
+        add     w21, w21, w1
         ushl    v0.4s, v12.4s, v0.4s
-        add     w8, w8, w1
-        ushl    v1.4s, v14.4s, v1.4s
         neg     w1, w1
+        ushl    v1.4s, v14.4s, v1.4s
+        ror     w21, w21, w1
         ushl    v2.4s, v15.4s, v2.4s
-        ror     w8, w8, w1
         ushl    v3.4s, v17.4s, v3.4s
-        add     w27, w5, w26
+        add     w27, w5, w17
         orr     v12.16b, v4.16b, v0.16b
         add     w27, w27, w11
         orr     v14.16b, v5.16b, v1.16b
         ror     w5, w27, #29
         orr     v15.16b, v6.16b, v2.16b
-        str     w5, [x12, #1212]
+        stp     w4, w5, [x30, #72]
+        orr     v17.16b, v7.16b, v3.16b
+        add     w27, w5, w17
+        ldp     q0, q1, [x10, #64]
+        add     w22, w22, w27
+        ldp     q2, q3, [x10, #96]
+        neg     w27, w27
+        add     v12.4s, v12.4s, v0.4s
+        ror     w22, w22, w27
+        add     v14.4s, v14.4s, v1.4s
+        ldr     w11, [sp, #4100]
+        add     v15.4s, v15.4s, v2.4s
+        add     w27, w2, w19
+        add     v17.4s, v17.4s, v3.4s
+        add     w27, w27, w11
+        eor     v18.16b, v18.16b, v12.16b
+        ror     w2, w27, #29
+        eor     v20.16b, v20.16b, v14.16b
+        add     w27, w2, w19
+        eor     v21.16b, v21.16b, v15.16b
+        add     w23, w23, w27
+        eor     v23.16b, v23.16b, v17.16b
+        neg     w27, w27
+        and     v4.16b, v12.16b, v24.16b
+        ror     w23, w23, w27
+        and     v5.16b, v14.16b, v24.16b
+        and     v6.16b, v15.16b, v24.16b
+        add     w28, w3, w20
+        and     v7.16b, v17.16b, v24.16b
+        add     w28, w28, w11
+        orr     v0.16b, v12.16b, v25.16b
+        ror     w3, w28, #29
+        orr     v1.16b, v14.16b, v25.16b
+        stp     w2, w3, [x30, #128]
+        orr     v2.16b, v15.16b, v25.16b
+        add     w28, w3, w20
+        orr     v3.16b, v17.16b, v25.16b
+        add     w24, w24, w28
+        ushl    v4.4s, v18.4s, v4.4s
+        neg     w28, w28
+        ushl    v5.4s, v20.4s, v5.4s
+        ror     w24, w24, w28
+        ushl    v6.4s, v21.4s, v6.4s
+        add     w1, w4, w21
+        ushl    v7.4s, v23.4s, v7.4s
+        add     w1, w1, w11
+        ushl    v0.4s, v18.4s, v0.4s
+        ror     w4, w1, #29
+        ushl    v1.4s, v20.4s, v1.4s
+        add     w1, w4, w21
+        ushl    v2.4s, v21.4s, v2.4s
+        add     w25, w25, w1
+        ushl    v3.4s, v23.4s, v3.4s
+        neg     w1, w1
+        orr     v18.16b, v4.16b, v0.16b
+        ror     w25, w25, w1
+        orr     v20.16b, v5.16b, v1.16b
+        add     w27, w5, w22
+        orr     v21.16b, v6.16b, v2.16b
+        orr     v23.16b, v7.16b, v3.16b
+        add     w27, w27, w11
+        ldp     q0, q1, [x10, #128]
+        ror     w5, w27, #29
+        ldp     q2, q3, [x10, #160]
+        stp     w4, w5, [x30, #136]
+        add     v18.4s, v18.4s, v0.4s
+        add     w27, w5, w22
+        add     v20.4s, v20.4s, v1.4s
+        add     w26, w26, w27
+        add     v21.4s, v21.4s, v2.4s
+        neg     w27, w27
+        add     v23.4s, v23.4s, v3.4s
+        ror     w26, w26, w27
+        // round 8: C = ((C ^ D) <<< D) + S[16]; D = ((D ^ C) <<< C) + S[17]
+        ldr     w11, [sp, #4104]
+        eor     v12.16b, v12.16b, v18.16b
+        add     w27, w2, w23
+        eor     v14.16b, v14.16b, v20.16b
+        add     w27, w27, w11
+        eor     v15.16b, v15.16b, v21.16b
+        ror     w2, w27, #29
+        eor     v17.16b, v17.16b, v23.16b
+        add     w27, w2, w23
+        and     v4.16b, v18.16b, v24.16b
+        add     w6, w6, w27
+        and     v5.16b, v20.16b, v24.16b
+        neg     w27, w27
+        and     v6.16b, v21.16b, v24.16b
+        ror     w6, w6, w27
+        and     v7.16b, v23.16b, v24.16b
+        orr     v0.16b, v18.16b, v25.16b
+        add     w28, w3, w24
+        orr     v1.16b, v20.16b, v25.16b
+        add     w28, w28, w11
+        orr     v2.16b, v21.16b, v25.16b
+        ror     w3, w28, #29
+        orr     v3.16b, v23.16b, v25.16b
+        stp     w2, w3, [x30, #192]
+        ushl    v4.4s, v12.4s, v4.4s
+        add     w28, w3, w24
+        ushl    v5.4s, v14.4s, v5.4s
+        add     w7, w7, w28
+        ushl    v6.4s, v15.4s, v6.4s
+        neg     w28, w28
+        ushl    v7.4s, v17.4s, v7.4s
+        ror     w7, w7, w28
+        ushl    v0.4s, v12.4s, v0.4s
+        add     w1, w4, w25
+        ushl    v1.4s, v14.4s, v1.4s
+        add     w1, w1, w11
+        ushl    v2.4s, v15.4s, v2.4s
+        ror     w4, w1, #29
+        ushl    v3.4s, v17.4s, v3.4s
+        add     w1, w4, w25
+        orr     v12.16b, v4.16b, v0.16b
+        add     w8, w8, w1
+        orr     v14.16b, v5.16b, v1.16b
+        neg     w1, w1
+        orr     v15.16b, v6.16b, v2.16b
+        ror     w8, w8, w1
         orr     v17.16b, v7.16b, v3.16b
         add     w27, w5, w26
         ldp     q0, q1, [x10, #192]
-        add     w17, w17, w27
         ldp     q2, q3, [x10, #224]
-        neg     w27, w27
-        add     v12.4s, v12.4s, v0.4s
-        ror     w17, w17, w27
-        add     v14.4s, v14.4s, v1.4s
-        mov     w11, #0x5A1E
-        add     v15.4s, v15.4s, v2.4s
-        movk    w11, #0x75FF, lsl #16
-        add     v17.4s, v17.4s, v3.4s
-        add     w27, w2, w6
-        eor     v18.16b, v18.16b, v12.16b
-        add     w27, w27, w11
-        eor     v20.16b, v20.16b, v14.16b
-        ror     w2, w27, #29
-        eor     v21.16b, v21.16b, v15.16b
-        str     w2, [x12, #1264]
-        eor     v23.16b, v23.16b, v17.16b
-        add     w27, w2, w6
-        and     v4.16b, v12.16b, v24.16b
-        add     w19, w19, w27
-        and     v5.16b, v14.16b, v24.16b
-        neg     w27, w27
-        and     v6.16b, v15.16b, v24.16b
-        ror     w19, w19, w27
-        and     v7.16b, v17.16b, v24.16b
-        add     w28, w3, w7
-        orr     v0.16b, v12.16b, v25.16b
-        add     w28, w28, w11
-        orr     v1.16b, v14.16b, v25.16b
-        ror     w3, w28, #29
-        orr     v2.16b, v15.16b, v25.16b
-        str     w3, [x12, #1268]
-        orr     v3.16b, v17.16b, v25.16b
-        add     w28, w3, w7
-        ushl    v4.4s, v18.4s, v4.4s
-        add     w20, w20, w28
-        ushl    v5.4s, v20.4s, v5.4s
-        neg     w28, w28
-        ror     w20, w20, w28
-        ushl    v6.4s, v21.4s, v6.4s
-        add     w1, w4, w8
-        ushl    v7.4s, v23.4s, v7.4s
-        add     w1, w1, w11
-        ushl    v0.4s, v18.4s, v0.4s
-        ror     w4, w1, #29
-        ushl    v1.4s, v20.4s, v1.4s
-        str     w4, [x12, #1272]
-        ushl    v2.4s, v21.4s, v2.4s
-        add     w1, w4, w8
-        ushl    v3.4s, v23.4s, v3.4s
-        add     w21, w21, w1
-        orr     v18.16b, v4.16b, v0.16b
-        neg     w1, w1
-        orr     v20.16b, v5.16b, v1.16b
-        ror     w21, w21, w1
-        orr     v21.16b, v6.16b, v2.16b
-        add     w27, w5, w17
-        orr     v23.16b, v7.16b, v3.16b
-        add     w27, w27, w11
-        ldp     q0, q1, [x10, #256]
-        ror     w5, w27, #29
-        ldp     q2, q3, [x10, #288]
-        str     w5, [x12, #1276]
-        add     v18.4s, v18.4s, v0.4s
-        add     w27, w5, w17
-        add     v20.4s, v20.4s, v1.4s
-        add     w22, w22, w27
-        add     v21.4s, v21.4s, v2.4s
-        neg     w27, w27
-        add     v23.4s, v23.4s, v3.4s
-        ror     w22, w22, w27
-        // round 9: C = ((C ^ D) <<< D) + S[18]; D = ((D ^ C) <<< C) + S[19]
-        mov     w11, #0xD3D7
-        eor     v12.16b, v12.16b, v18.16b
-        movk    w11, #0x1436, lsl #16
-        eor     v14.16b, v14.16b, v20.16b
-        add     w27, w2, w19
-        eor     v15.16b, v15.16b, v21.16b
-        add     w27, w27, w11
-        eor     v17.16b, v17.16b, v23.16b
-        ror     w2, w27, #29
-        and     v4.16b, v18.16b, v24.16b
-        str     w2, [x12, #1328]
-        and     v5.16b, v20.16b, v24.16b
-        add     w27, w2, w19
-        and     v6.16b, v21.16b, v24.16b
-        add     w23, w23, w27
-        and     v7.16b, v23.16b, v24.16b
-        neg     w27, w27
-        orr     v0.16b, v18.16b, v25.16b
-        ror     w23, w23, w27
-        orr     v1.16b, v20.16b, v25.16b
-        add     w28, w3, w20
-        orr     v2.16b, v21.16b, v25.16b
-        add     w28, w28, w11
-        orr     v3.16b, v23.16b, v25.16b
-        ror     w3, w28, #29
-        ushl    v4.4s, v12.4s, v4.4s
-        str     w3, [x12, #1332]
-        ushl    v5.4s, v14.4s, v5.4s
-        add     w28, w3, w20
-        ushl    v6.4s, v15.4s, v6.4s
-        add     w24, w24, w28
-        ushl    v7.4s, v17.4s, v7.4s
-        neg     w28, w28
-        ror     w24, w24, w28
-        ushl    v0.4s, v12.4s, v0.4s
-        add     w1, w4, w21
-        ushl    v1.4s, v14.4s, v1.4s
-        add     w1, w1, w11
-        ushl    v2.4s, v15.4s, v2.4s
-        ror     w4, w1, #29
-        ushl    v3.4s, v17.4s, v3.4s
-        str     w4, [x12, #1336]
-        orr     v12.16b, v4.16b, v0.16b
-        add     w1, w4, w21
-        orr     v14.16b, v5.16b, v1.16b
-        add     w25, w25, w1
-        orr     v15.16b, v6.16b, v2.16b
-        neg     w1, w1
-        orr     v17.16b, v7.16b, v3.16b
-        ror     w25, w25, w1
-        ldp     q0, q1, [x10, #320]
-        add     w27, w5, w22
-        ldp     q2, q3, [x10, #352]
         add     w27, w27, w11
         add     v12.4s, v12.4s, v0.4s
         ror     w5, w27, #29
         add     v14.4s, v14.4s, v1.4s
-        str     w5, [x12, #1340]
+        stp     w4, w5, [x30, #200]
         add     v15.4s, v15.4s, v2.4s
-        add     w27, w5, w22
+        add     w27, w5, w26
         add     v17.4s, v17.4s, v3.4s
-        add     w26, w26, w27
-        eor     v18.16b, v18.16b, v12.16b
-        neg     w27, w27
-        eor     v20.16b, v20.16b, v14.16b
-        ror     w26, w26, w27
-        eor     v21.16b, v21.16b, v15.16b
-        mov     w11, #0x4D90
-        eor     v23.16b, v23.16b, v17.16b
-        movk    w11, #0xB26E, lsl #16
-        and     v4.16b, v12.16b, v24.16b
-        add     w27, w2, w23
-        and     v5.16b, v14.16b, v24.16b
-        add     w27, w27, w11
-        and     v6.16b, v15.16b, v24.16b
-        ror     w2, w27, #29
-        and     v7.16b, v17.16b, v24.16b
-        str     w2, [x12, #1392]
-        orr     v0.16b, v12.16b, v25.16b
-        add     w27, w2, w23
-        orr     v1.16b, v14.16b, v25.16b
-        add     w6, w6, w27
-        orr     v2.16b, v15.16b, v25.16b
-        neg     w27, w27
-        orr     v3.16b, v17.16b, v25.16b
-        ror     w6, w6, w27
-        ushl    v4.4s, v18.4s, v4.4s
-        add     w28, w3, w24
-        ushl    v5.4s, v20.4s, v5.4s
-        add     w28, w28, w11
-        ushl    v6.4s, v21.4s, v6.4s
-        ror     w3, w28, #29
-        ushl    v7.4s, v23.4s, v7.4s
-        str     w3, [x12, #1396]
-        ushl    v0.4s, v18.4s, v0.4s
-        add     w28, w3, w24
-        ushl    v1.4s, v20.4s, v1.4s
-        add     w7, w7, w28
-        ushl    v2.4s, v21.4s, v2.4s
-        neg     w28, w28
-        ror     w7, w7, w28
-        ushl    v3.4s, v23.4s, v3.4s
-        add     w1, w4, w25
-        orr     v18.16b, v4.16b, v0.16b
-        add     w1, w1, w11
-        orr     v20.16b, v5.16b, v1.16b
-        ror     w4, w1, #29
-        orr     v21.16b, v6.16b, v2.16b
-        str     w4, [x12, #1400]
-        orr     v23.16b, v7.16b, v3.16b
-        add     w1, w4, w25
-        ldp     q0, q1, [x10, #384]
-        add     w8, w8, w1
-        ldp     q2, q3, [x10, #416]
-        neg     w1, w1
-        add     v18.4s, v18.4s, v0.4s
-        ror     w8, w8, w1
-        add     v20.4s, v20.4s, v1.4s
-        add     w27, w5, w26
-        add     v21.4s, v21.4s, v2.4s
-        add     w27, w27, w11
-        add     v23.4s, v23.4s, v3.4s
-        ror     w5, w27, #29
-        // round 10: C = ((C ^ D) <<< D) + S[20]; D = ((D ^ C) <<< C) + S[21]
-        str     w5, [x12, #1404]
-        eor     v12.16b, v12.16b, v18.16b
-        add     w27, w5, w26
-        eor     v14.16b, v14.16b, v20.16b
         add     w17, w17, w27
-        eor     v15.16b, v15.16b, v21.16b
+        eor     v18.16b, v18.16b, v12.16b
         neg     w27, w27
-        eor     v17.16b, v17.16b, v23.16b
+        eor     v20.16b, v20.16b, v14.16b
         ror     w17, w17, w27
-        and     v4.16b, v18.16b, v24.16b
-        mov     w11, #0xC749
-        and     v5.16b, v20.16b, v24.16b
-        movk    w11, #0x50A5, lsl #16
-        and     v6.16b, v21.16b, v24.16b
+        eor     v21.16b, v21.16b, v15.16b
+        ldr     w11, [sp, #4108]
+        eor     v23.16b, v23.16b, v17.16b
         add     w27, w2, w6
+        and     v4.16b, v12.16b, v24.16b
+        add     w27, w27, w11
+        and     v5.16b, v14.16b, v24.16b
+        ror     w2, w27, #29
+        and     v6.16b, v15.16b, v24.16b
+        add     w27, w2, w6
+        and     v7.16b, v17.16b, v24.16b
+        add     w19, w19, w27
+        orr     v0.16b, v12.16b, v25.16b
+        neg     w27, w27
+        orr     v1.16b, v14.16b, v25.16b
+        ror     w19, w19, w27
+        orr     v2.16b, v15.16b, v25.16b
+        add     w28, w3, w7
+        orr     v3.16b, v17.16b, v25.16b
+        ushl    v4.4s, v18.4s, v4.4s
+        add     w28, w28, w11
+        ushl    v5.4s, v20.4s, v5.4s
+        ror     w3, w28, #29
+        ushl    v6.4s, v21.4s, v6.4s
+        add     x30, x12, #1520
+        ushl    v7.4s, v23.4s, v7.4s
+        stp     w2, w3, [x30, #-256]
+        ushl    v0.4s, v18.4s, v0.4s
+        add     w28, w3, w7
+        ushl    v1.4s, v20.4s, v1.4s
+        add     w20, w20, w28
+        ushl    v2.4s, v21.4s, v2.4s
+        neg     w28, w28
+        ushl    v3.4s, v23.4s, v3.4s
+        ror     w20, w20, w28
+        orr     v18.16b, v4.16b, v0.16b
+        add     w1, w4, w8
+        orr     v20.16b, v5.16b, v1.16b
+        add     w1, w1, w11
+        orr     v21.16b, v6.16b, v2.16b
+        ror     w4, w1, #29
+        orr     v23.16b, v7.16b, v3.16b
+        add     w1, w4, w8
+        ldp     q0, q1, [x10, #256]
+        add     w21, w21, w1
+        ldp     q2, q3, [x10, #288]
+        neg     w1, w1
+        add     v18.4s, v18.4s, v0.4s
+        ror     w21, w21, w1
+        add     v20.4s, v20.4s, v1.4s
+        add     v21.4s, v21.4s, v2.4s
+        add     w27, w5, w17
+        add     v23.4s, v23.4s, v3.4s
+        add     w27, w27, w11
+        // round 9: C = ((C ^ D) <<< D) + S[18]; D = ((D ^ C) <<< C) + S[19]
+        ror     w5, w27, #29
+        eor     v12.16b, v12.16b, v18.16b
+        stp     w4, w5, [x30, #-248]
+        eor     v14.16b, v14.16b, v20.16b
+        add     w27, w5, w17
+        eor     v15.16b, v15.16b, v21.16b
+        add     w22, w22, w27
+        eor     v17.16b, v17.16b, v23.16b
+        neg     w27, w27
+        and     v4.16b, v18.16b, v24.16b
+        ror     w22, w22, w27
+        and     v5.16b, v20.16b, v24.16b
+        ldr     w11, [sp, #4112]
+        and     v6.16b, v21.16b, v24.16b
+        add     w27, w2, w19
         and     v7.16b, v23.16b, v24.16b
         add     w27, w27, w11
         orr     v0.16b, v18.16b, v25.16b
         ror     w2, w27, #29
         orr     v1.16b, v20.16b, v25.16b
-        str     w2, [x12, #1456]
+        add     w27, w2, w19
         orr     v2.16b, v21.16b, v25.16b
-        add     w27, w2, w6
+        add     w23, w23, w27
         orr     v3.16b, v23.16b, v25.16b
-        add     w19, w19, w27
-        ushl    v4.4s, v12.4s, v4.4s
         neg     w27, w27
+        ushl    v4.4s, v12.4s, v4.4s
+        ror     w23, w23, w27
         ushl    v5.4s, v14.4s, v5.4s
-        ror     w19, w19, w27
         ushl    v6.4s, v15.4s, v6.4s
-        add     w28, w3, w7
+        add     w28, w3, w20
         ushl    v7.4s, v17.4s, v7.4s
         add     w28, w28, w11
         ushl    v0.4s, v12.4s, v0.4s
         ror     w3, w28, #29
         ushl    v1.4s, v14.4s, v1.4s
-        str     w3, [x12, #1460]
+        stp     w2, w3, [x30, #-192]
         ushl    v2.4s, v15.4s, v2.4s
-        add     w28, w3, w7
+        add     w28, w3, w20
         ushl    v3.4s, v17.4s, v3.4s
-        add     w20, w20, w28
+        add     w24, w24, w28
         orr     v12.16b, v4.16b, v0.16b
         neg     w28, w28
-        ror     w20, w20, w28
         orr     v14.16b, v5.16b, v1.16b
-        add     w1, w4, w8
+        ror     w24, w24, w28
         orr     v15.16b, v6.16b, v2.16b
-        add     w1, w1, w11
+        add     w1, w4, w21
         orr     v17.16b, v7.16b, v3.16b
+        add     w1, w1, w11
+        ldp     q0, q1, [x10, #320]
         ror     w4, w1, #29
-        ldp     q0, q1, [x10, #448]
-        str     w4, [x12, #1464]
-        ldp     q2, q3, [x10, #480]
-        add     w1, w4, w8
+        ldp     q2, q3, [x10, #352]
+        add     w1, w4, w21
         add     v12.4s, v12.4s, v0.4s
-        add     w21, w21, w1
+        add     w25, w25, w1
         add     v14.4s, v14.4s, v1.4s
         neg     w1, w1
         add     v15.4s, v15.4s, v2.4s
-        ror     w21, w21, w1
+        ror     w25, w25, w1
         add     v17.4s, v17.4s, v3.4s
-        add     w27, w5, w17
         eor     v18.16b, v18.16b, v12.16b
-        add     w27, w27, w11
+        add     w27, w5, w22
         eor     v20.16b, v20.16b, v14.16b
-        ror     w5, w27, #29
+        add     w27, w27, w11
         eor     v21.16b, v21.16b, v15.16b
-        str     w5, [x12, #1468]
+        ror     w5, w27, #29
         eor     v23.16b, v23.16b, v17.16b
-        add     w27, w5, w17
+        stp     w4, w5, [x30, #-184]
         and     v4.16b, v12.16b, v24.16b
-        add     w22, w22, w27
+        add     w27, w5, w22
         and     v5.16b, v14.16b, v24.16b
-        neg     w27, w27
+        add     w26, w26, w27
         and     v6.16b, v15.16b, v24.16b
-        ror     w22, w22, w27
+        neg     w27, w27
         and     v7.16b, v17.16b, v24.16b
-        mov     w11, #0x4102
+        ror     w26, w26, w27
         orr     v0.16b, v12.16b, v25.16b
-        movk    w11, #0xEEDD, lsl #16
+        ldr     w11, [sp, #4116]
         orr     v1.16b, v14.16b, v25.16b
-        add     w27, w2, w19
+        add     w27, w2, w23
         orr     v2.16b, v15.16b, v25.16b
         add     w27, w27, w11
         orr     v3.16b, v17.16b, v25.16b
         ror     w2, w27, #29
         ushl    v4.4s, v18.4s, v4.4s
-        str     w2, [x12, #1520]
+        add     w27, w2, w23
         ushl    v5.4s, v20.4s, v5.4s
-        add     w27, w2, w19
+        add     w6, w6, w27
         ushl    v6.4s, v21.4s, v6.4s
-        add     w23, w23, w27
-        ushl    v7.4s, v23.4s, v7.4s
         neg     w27, w27
+        ushl    v7.4s, v23.4s, v7.4s
+        ror     w6, w6, w27
         ushl    v0.4s, v18.4s, v0.4s
-        ror     w23, w23, w27
         ushl    v1.4s, v20.4s, v1.4s
-        add     w28, w3, w20
+        add     w28, w3, w24
         ushl    v2.4s, v21.4s, v2.4s
         add     w28, w28, w11
         ushl    v3.4s, v23.4s, v3.4s
         ror     w3, w28, #29
         orr     v18.16b, v4.16b, v0.16b
-        str     w3, [x12, #1524]
+        stp     w2, w3, [x30, #-128]
         orr     v20.16b, v5.16b, v1.16b
-        add     w28, w3, w20
+        add     w28, w3, w24
         orr     v21.16b, v6.16b, v2.16b
-        add     w24, w24, w28
+        add     w7, w7, w28
         orr     v23.16b, v7.16b, v3.16b
         neg     w28, w28
-        ror     w24, w24, w28
-        ldp     q0, q1, [x10, #512]
-        add     w1, w4, w21
-        ldp     q2, q3, [x10, #544]
-        add     w1, w1, w11
+        ldp     q0, q1, [x10, #384]
+        ror     w7, w7, w28
+        ldp     q2, q3, [x10, #416]
+        add     w1, w4, w25
         add     v18.4s, v18.4s, v0.4s
-        ror     w4, w1, #29
+        add     w1, w1, w11
         add     v20.4s, v20.4s, v1.4s
-        str     w4, [x12, #1528]
+        ror     w4, w1, #29
         add     v21.4s, v21.4s, v2.4s
-        add     w1, w4, w21
+        add     w1, w4, w25
         add     v23.4s, v23.4s, v3.4s
-        add     w25, w25, w1
-        // round 11: C = ((C ^ D) <<< D) + S[22]; D = ((D ^ C) <<< C) + S[23]
+        add     w8, w8, w1
+        // round 10: C = ((C ^ D) <<< D) + S[20]; D = ((D ^ C) <<< C) + S[21]
         neg     w1, w1
         eor     v12.16b, v12.16b, v18.16b
-        ror     w25, w25, w1
+        ror     w8, w8, w1
         eor     v14.16b, v14.16b, v20.16b
-        add     w27, w5, w22
+        add     w27, w5, w26
         eor     v15.16b, v15.16b, v21.16b
-        add     w27, w27, w11
         eor     v17.16b, v17.16b, v23.16b
-        ror     w5, w27, #29
+        add     w27, w27, w11
         and     v4.16b, v18.16b, v24.16b
-        str     w5, [x12, #1532]
+        ror     w5, w27, #29
         and     v5.16b, v20.16b, v24.16b
-        add     w27, w5, w22
+        stp     w4, w5, [x30, #-120]
         and     v6.16b, v21.16b, v24.16b
-        add     w26, w26, w27
+        add     w27, w5, w26
         and     v7.16b, v23.16b, v24.16b
-        neg     w27, w27
+        add     w17, w17, w27
         orr     v0.16b, v18.16b, v25.16b
-        ror     w26, w26, w27
+        neg     w27, w27
         orr     v1.16b, v20.16b, v25.16b
-        mov     w11, #0xBABB
+        ror     w17, w17, w27
         orr     v2.16b, v21.16b, v25.16b
-        movk    w11, #0x8D14, lsl #16
+        ldr     w11, [sp, #4120]
         orr     v3.16b, v23.16b, v25.16b
-        add     w27, w2, w23
+        add     w27, w2, w6
         ushl    v4.4s, v12.4s, v4.4s
         add     w27, w27, w11
         ushl    v5.4s, v14.4s, v5.4s
         ror     w2, w27, #29
         ushl    v6.4s, v15.4s, v6.4s
-        str     w2, [x12, #1584]
+        add     w27, w2, w6
         ushl    v7.4s, v17.4s, v7.4s
-        add     w27, w2, w23
+        add     w19, w19, w27
         ushl    v0.4s, v12.4s, v0.4s
-        add     w6, w6, w27
-        ushl    v1.4s, v14.4s, v1.4s
         neg     w27, w27
+        ushl    v1.4s, v14.4s, v1.4s
+        ror     w19, w19, w27
         ushl    v2.4s, v15.4s, v2.4s
-        ror     w6, w6, w27
         ushl    v3.4s, v17.4s, v3.4s
-        add     w28, w3, w24
+        add     w28, w3, w7
         orr     v12.16b, v4.16b, v0.16b
         add     w28, w28, w11
         orr     v14.16b, v5.16b, v1.16b
         ror     w3, w28, #29
         orr     v15.16b, v6.16b, v2.16b
-        str     w3, [x12, #1588]
+        stp     w2, w3, [x30, #-64]
+        orr     v17.16b, v7.16b, v3.16b
+        add     w28, w3, w7
+        ldp     q0, q1, [x10, #448]
+        add     w20, w20, w28
+        ldp     q2, q3, [x10, #480]
+        neg     w28, w28
+        add     v12.4s, v12.4s, v0.4s
+        ror     w20, w20, w28
+        add     v14.4s, v14.4s, v1.4s
+        add     w1, w4, w8
+        add     v15.4s, v15.4s, v2.4s
+        add     w1, w1, w11
+        add     v17.4s, v17.4s, v3.4s
+        ror     w4, w1, #29
+        eor     v18.16b, v18.16b, v12.16b
+        add     w1, w4, w8
+        eor     v20.16b, v20.16b, v14.16b
+        add     w21, w21, w1
+        eor     v21.16b, v21.16b, v15.16b
+        neg     w1, w1
+        eor     v23.16b, v23.16b, v17.16b
+        ror     w21, w21, w1
+        and     v4.16b, v12.16b, v24.16b
+        add     w27, w5, w17
+        and     v5.16b, v14.16b, v24.16b
+        and     v6.16b, v15.16b, v24.16b
+        add     w27, w27, w11
+        and     v7.16b, v17.16b, v24.16b
+        ror     w5, w27, #29
+        orr     v0.16b, v12.16b, v25.16b
+        stp     w4, w5, [x30, #-56]
+        orr     v1.16b, v14.16b, v25.16b
+        add     w27, w5, w17
+        orr     v2.16b, v15.16b, v25.16b
+        add     w22, w22, w27
+        orr     v3.16b, v17.16b, v25.16b
+        neg     w27, w27
+        ushl    v4.4s, v18.4s, v4.4s
+        ror     w22, w22, w27
+        ushl    v5.4s, v20.4s, v5.4s
+        ldr     w11, [sp, #4124]
+        ushl    v6.4s, v21.4s, v6.4s
+        add     w27, w2, w19
+        ushl    v7.4s, v23.4s, v7.4s
+        add     w27, w27, w11
+        ushl    v0.4s, v18.4s, v0.4s
+        ror     w2, w27, #29
+        ushl    v1.4s, v20.4s, v1.4s
+        add     w27, w2, w19
+        ushl    v2.4s, v21.4s, v2.4s
+        add     w23, w23, w27
+        ushl    v3.4s, v23.4s, v3.4s
+        neg     w27, w27
+        orr     v18.16b, v4.16b, v0.16b
+        ror     w23, w23, w27
+        orr     v20.16b, v5.16b, v1.16b
+        add     w28, w3, w20
+        orr     v21.16b, v6.16b, v2.16b
+        orr     v23.16b, v7.16b, v3.16b
+        add     w28, w28, w11
+        ldp     q0, q1, [x10, #512]
+        ror     w3, w28, #29
+        ldp     q2, q3, [x10, #544]
+        stp     w2, w3, [x30, #0]
+        add     v18.4s, v18.4s, v0.4s
+        add     w28, w3, w20
+        add     v20.4s, v20.4s, v1.4s
+        add     w24, w24, w28
+        add     v21.4s, v21.4s, v2.4s
+        neg     w28, w28
+        add     v23.4s, v23.4s, v3.4s
+        ror     w24, w24, w28
+        // round 11: C = ((C ^ D) <<< D) + S[22]; D = ((D ^ C) <<< C) + S[23]
+        add     w1, w4, w21
+        eor     v12.16b, v12.16b, v18.16b
+        add     w1, w1, w11
+        eor     v14.16b, v14.16b, v20.16b
+        ror     w4, w1, #29
+        eor     v15.16b, v15.16b, v21.16b
+        add     w1, w4, w21
+        eor     v17.16b, v17.16b, v23.16b
+        add     w25, w25, w1
+        and     v4.16b, v18.16b, v24.16b
+        neg     w1, w1
+        and     v5.16b, v20.16b, v24.16b
+        ror     w25, w25, w1
+        and     v6.16b, v21.16b, v24.16b
+        add     w27, w5, w22
+        and     v7.16b, v23.16b, v24.16b
+        orr     v0.16b, v18.16b, v25.16b
+        add     w27, w27, w11
+        orr     v1.16b, v20.16b, v25.16b
+        ror     w5, w27, #29
+        orr     v2.16b, v21.16b, v25.16b
+        stp     w4, w5, [x30, #8]
+        orr     v3.16b, v23.16b, v25.16b
+        add     w27, w5, w22
+        ushl    v4.4s, v12.4s, v4.4s
+        add     w26, w26, w27
+        ushl    v5.4s, v14.4s, v5.4s
+        neg     w27, w27
+        ushl    v6.4s, v15.4s, v6.4s
+        ror     w26, w26, w27
+        ushl    v7.4s, v17.4s, v7.4s
+        ldr     w11, [sp, #4128]
+        ushl    v0.4s, v12.4s, v0.4s
+        add     w27, w2, w23
+        ushl    v1.4s, v14.4s, v1.4s
+        add     w27, w27, w11
+        ushl    v2.4s, v15.4s, v2.4s
+        ror     w2, w27, #29
+        ushl    v3.4s, v17.4s, v3.4s
+        add     w27, w2, w23
+        orr     v12.16b, v4.16b, v0.16b
+        add     w6, w6, w27
+        orr     v14.16b, v5.16b, v1.16b
+        neg     w27, w27
+        orr     v15.16b, v6.16b, v2.16b
+        ror     w6, w6, w27
         orr     v17.16b, v7.16b, v3.16b
         add     w28, w3, w24
         ldp     q0, q1, [x10, #576]
-        add     w7, w7, w28
         ldp     q2, q3, [x10, #608]
-        neg     w28, w28
-        ror     w7, w7, w28
-        add     v12.4s, v12.4s, v0.4s
-        add     w1, w4, w25
-        add     v14.4s, v14.4s, v1.4s
-        add     w1, w1, w11
-        add     v15.4s, v15.4s, v2.4s
-        ror     w4, w1, #29
-        add     v17.4s, v17.4s, v3.4s
-        str     w4, [x12, #1592]
-        eor     v18.16b, v18.16b, v12.16b
-        add     w1, w4, w25
-        eor     v20.16b, v20.16b, v14.16b
-        add     w8, w8, w1
-        eor     v21.16b, v21.16b, v15.16b
-        neg     w1, w1
-        eor     v23.16b, v23.16b, v17.16b
-        ror     w8, w8, w1
-        and     v4.16b, v12.16b, v24.16b
-        add     w27, w5, w26
-        and     v5.16b, v14.16b, v24.16b
-        add     w27, w27, w11
-        and     v6.16b, v15.16b, v24.16b
-        ror     w5, w27, #29
-        and     v7.16b, v17.16b, v24.16b
-        str     w5, [x12, #1596]
-        orr     v0.16b, v12.16b, v25.16b
-        add     w27, w5, w26
-        orr     v1.16b, v14.16b, v25.16b
-        add     w17, w17, w27
-        orr     v2.16b, v15.16b, v25.16b
-        neg     w27, w27
-        orr     v3.16b, v17.16b, v25.16b
-        ror     w17, w17, w27
-        ushl    v4.4s, v18.4s, v4.4s
-        mov     w11, #0x3474
-        ushl    v5.4s, v20.4s, v5.4s
-        movk    w11, #0x2B4C, lsl #16
-        ushl    v6.4s, v21.4s, v6.4s
-        add     w27, w2, w6
-        ushl    v7.4s, v23.4s, v7.4s
-        add     w27, w27, w11
-        ushl    v0.4s, v18.4s, v0.4s
-        ror     w2, w27, #29
-        ushl    v1.4s, v20.4s, v1.4s
-        str     w2, [x12, #1648]
-        ushl    v2.4s, v21.4s, v2.4s
-        add     w27, w2, w6
-        ushl    v3.4s, v23.4s, v3.4s
-        add     w19, w19, w27
-        orr     v18.16b, v4.16b, v0.16b
-        neg     w27, w27
-        orr     v20.16b, v5.16b, v1.16b
-        ror     w19, w19, w27
-        orr     v21.16b, v6.16b, v2.16b
-        add     w28, w3, w7
-        orr     v23.16b, v7.16b, v3.16b
         add     w28, w28, w11
-        ldp     q0, q1, [x10, #640]
+        add     v12.4s, v12.4s, v0.4s
         ror     w3, w28, #29
+        add     v14.4s, v14.4s, v1.4s
+        stp     w2, w3, [x30, #64]
+        add     v15.4s, v15.4s, v2.4s
+        add     w28, w3, w24
+        add     v17.4s, v17.4s, v3.4s
+        add     w7, w7, w28
+        eor     v18.16b, v18.16b, v12.16b
+        neg     w28, w28
+        eor     v20.16b, v20.16b, v14.16b
+        ror     w7, w7, w28
+        eor     v21.16b, v21.16b, v15.16b
+        add     w1, w4, w25
+        eor     v23.16b, v23.16b, v17.16b
+        add     w1, w1, w11
+        and     v4.16b, v12.16b, v24.16b
+        ror     w4, w1, #29
+        and     v5.16b, v14.16b, v24.16b
+        add     w1, w4, w25
+        and     v6.16b, v15.16b, v24.16b
+        add     w8, w8, w1
+        and     v7.16b, v17.16b, v24.16b
+        neg     w1, w1
+        orr     v0.16b, v12.16b, v25.16b
+        ror     w8, w8, w1
+        orr     v1.16b, v14.16b, v25.16b
+        add     w27, w5, w26
+        orr     v2.16b, v15.16b, v25.16b
+        add     w27, w27, w11
+        orr     v3.16b, v17.16b, v25.16b
+        ushl    v4.4s, v18.4s, v4.4s
+        ror     w5, w27, #29
+        ushl    v5.4s, v20.4s, v5.4s
+        stp     w4, w5, [x30, #72]
+        ushl    v6.4s, v21.4s, v6.4s
+        add     w27, w5, w26
+        ushl    v7.4s, v23.4s, v7.4s
+        add     w17, w17, w27
+        ushl    v0.4s, v18.4s, v0.4s
+        neg     w27, w27
+        ushl    v1.4s, v20.4s, v1.4s
+        ror     w17, w17, w27
+        ushl    v2.4s, v21.4s, v2.4s
+        ldr     w11, [sp, #4132]
+        ushl    v3.4s, v23.4s, v3.4s
+        add     w27, w2, w6
+        orr     v18.16b, v4.16b, v0.16b
+        add     w27, w27, w11
+        orr     v20.16b, v5.16b, v1.16b
+        ror     w2, w27, #29
+        orr     v21.16b, v6.16b, v2.16b
+        add     w27, w2, w6
+        orr     v23.16b, v7.16b, v3.16b
+        add     w19, w19, w27
+        ldp     q0, q1, [x10, #640]
+        neg     w27, w27
         ldp     q2, q3, [x10, #672]
-        str     w3, [x12, #1652]
+        ror     w19, w19, w27
         add     v18.4s, v18.4s, v0.4s
         add     w28, w3, w7
         add     v20.4s, v20.4s, v1.4s
-        add     w20, w20, w28
         add     v21.4s, v21.4s, v2.4s
-        neg     w28, w28
-        ror     w20, w20, w28
+        add     w28, w28, w11
         add     v23.4s, v23.4s, v3.4s
-        add     w1, w4, w8
+        ror     w3, w28, #29
         // final half-round; D only on the rare path
-        add     w1, w1, w11
+        stp     w2, w3, [x30, #128]
         eor     v12.16b, v12.16b, v18.16b
-        ror     w4, w1, #29
+        add     w28, w3, w7
         eor     v14.16b, v14.16b, v20.16b
-        str     w4, [x12, #1656]
+        add     w20, w20, w28
         eor     v15.16b, v15.16b, v21.16b
-        add     w1, w4, w8
+        neg     w28, w28
         eor     v17.16b, v17.16b, v23.16b
-        add     w21, w21, w1
+        ror     w20, w20, w28
         and     v4.16b, v18.16b, v24.16b
-        neg     w1, w1
+        add     w1, w4, w8
         and     v5.16b, v20.16b, v24.16b
-        ror     w21, w21, w1
+        add     w1, w1, w11
         and     v6.16b, v21.16b, v24.16b
-        add     w27, w5, w17
+        ror     w4, w1, #29
         and     v7.16b, v23.16b, v24.16b
-        add     w27, w27, w11
+        add     w1, w4, w8
         orr     v0.16b, v18.16b, v25.16b
-        ror     w5, w27, #29
+        add     w21, w21, w1
         orr     v1.16b, v20.16b, v25.16b
-        str     w5, [x12, #1660]
+        neg     w1, w1
         orr     v2.16b, v21.16b, v25.16b
-        add     w27, w5, w17
+        ror     w21, w21, w1
         orr     v3.16b, v23.16b, v25.16b
-        add     w22, w22, w27
+        add     w27, w5, w17
         ushl    v4.4s, v12.4s, v4.4s
-        neg     w27, w27
+        add     w27, w27, w11
         ushl    v5.4s, v14.4s, v5.4s
-        ror     w22, w22, w27
         ushl    v6.4s, v15.4s, v6.4s
-        // handoff: A and L0..L2, transposed
+        ror     w5, w27, #29
         ushl    v7.4s, v17.4s, v7.4s
-        str     w2, [x12, #1712]
+        stp     w4, w5, [x30, #136]
         ushl    v0.4s, v12.4s, v0.4s
-        str     w3, [x12, #1716]
+        add     w27, w5, w17
         ushl    v1.4s, v14.4s, v1.4s
-        str     w4, [x12, #1720]
+        add     w22, w22, w27
         ushl    v2.4s, v15.4s, v2.4s
-        str     w5, [x12, #1724]
+        neg     w27, w27
         ushl    v3.4s, v17.4s, v3.4s
-        str     w6, [x12, #1776]
+        ror     w22, w22, w27
         orr     v12.16b, v4.16b, v0.16b
-        str     w7, [x12, #1780]
+        // handoff: A and L0..L2, transposed
         orr     v14.16b, v5.16b, v1.16b
-        str     w8, [x12, #1784]
+        stp     w2, w3, [x30, #192]
         orr     v15.16b, v6.16b, v2.16b
-        str     w17, [x12, #1788]
+        stp     w4, w5, [x30, #200]
         orr     v17.16b, v7.16b, v3.16b
-        str     w19, [x12, #1840]
+        add     x30, x12, #2032
         ldp     q0, q1, [x10, #704]
-        str     w20, [x12, #1844]
+        stp     w6, w7, [x30, #-256]
         ldp     q2, q3, [x10, #736]
-        str     w21, [x12, #1848]
+        stp     w8, w17, [x30, #-248]
         add     v12.4s, v12.4s, v0.4s
-        str     w22, [x12, #1852]
+        stp     w19, w20, [x30, #-192]
         add     v14.4s, v14.4s, v1.4s
-        str     w23, [x12, #1904]
+        stp     w21, w22, [x30, #-184]
         add     v15.4s, v15.4s, v2.4s
-        str     w24, [x12, #1908]
+        stp     w23, w24, [x30, #-128]
         add     v17.4s, v17.4s, v3.4s
-        str     w25, [x12, #1912]
-        str     w26, [x12, #1916]
+        stp     w25, w26, [x30, #-120]
 
 L(check_key):
         cmeq    v0.4s, v12.4s, v26.4s
@@ -6921,6 +6700,7 @@ L(finished):
         // standalone scalar prep: the pipeline prologue, and the redo after an
         // L0hi byte carry. In: x12 = target table base, [sp, SP_HI] = prep L0hi.
 L(scalar_prep):
+        str     x30, [sp, #184]
         // ---- scalar subgroup 0: keys 0..3 of the next batch
         ldr     w11, [sp, #172]
         mov     w2, w11
@@ -6953,12 +6733,10 @@ L(scalar_prep):
         ror     w25, w25, w27
         add     w26, w26, w11
         ror     w26, w26, w27
-        mov     w11, #0xBE8E
-        movk    w11, #0x9287, lsl #16
+        ldr     w11, [sp, #4044]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #192]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -6966,7 +6744,8 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #196]
+        add     x30, x12, #448
+        stp     w2, w3, [x30, #-256]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -6974,7 +6753,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #200]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -6982,17 +6760,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #204]
+        stp     w4, w5, [x30, #-248]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0x3847
-        movk    w11, #0x30BF, lsl #16
+        ldr     w11, [sp, #4048]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #256]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -7000,7 +6776,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #260]
+        stp     w2, w3, [x30, #-192]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -7008,7 +6784,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #264]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -7016,17 +6791,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #268]
+        stp     w4, w5, [x30, #-184]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0xB200
-        movk    w11, #0xCEF6, lsl #16
+        ldr     w11, [sp, #4052]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #320]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -7034,7 +6807,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #324]
+        stp     w2, w3, [x30, #-128]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -7042,7 +6815,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #328]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -7050,17 +6822,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #332]
+        stp     w4, w5, [x30, #-120]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0x2BB9
-        movk    w11, #0x6D2E, lsl #16
+        ldr     w11, [sp, #4056]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #384]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -7068,7 +6838,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #388]
+        stp     w2, w3, [x30, #-64]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -7076,7 +6846,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #392]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -7084,17 +6853,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #396]
+        stp     w4, w5, [x30, #-56]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0xA572
-        movk    w11, #0x0B65, lsl #16
+        ldr     w11, [sp, #4060]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #448]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -7102,7 +6869,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #452]
+        stp     w2, w3, [x30, #0]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -7110,7 +6877,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #456]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -7118,17 +6884,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #460]
+        stp     w4, w5, [x30, #8]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0x1F2B
-        movk    w11, #0xA99D, lsl #16
+        ldr     w11, [sp, #4064]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #512]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -7136,7 +6900,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #516]
+        stp     w2, w3, [x30, #64]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -7144,7 +6908,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #520]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -7152,17 +6915,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #524]
+        stp     w4, w5, [x30, #72]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0x98E4
-        movk    w11, #0x47D4, lsl #16
+        ldr     w11, [sp, #4068]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #576]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -7170,7 +6931,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #580]
+        stp     w2, w3, [x30, #128]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -7178,7 +6939,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #584]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -7186,17 +6946,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #588]
+        stp     w4, w5, [x30, #136]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0x129D
-        movk    w11, #0xE60C, lsl #16
+        ldr     w11, [sp, #4072]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #640]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -7204,7 +6962,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #644]
+        stp     w2, w3, [x30, #192]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -7212,7 +6970,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #648]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -7220,17 +6977,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #652]
+        stp     w4, w5, [x30, #200]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0x8C56
-        movk    w11, #0x8443, lsl #16
+        ldr     w11, [sp, #4076]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #704]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -7238,7 +6993,8 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #708]
+        add     x30, x12, #960
+        stp     w2, w3, [x30, #-256]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -7246,7 +7002,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #712]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -7254,17 +7009,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #716]
+        stp     w4, w5, [x30, #-248]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0x060F
-        movk    w11, #0x227B, lsl #16
+        ldr     w11, [sp, #4080]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #768]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -7272,7 +7025,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #772]
+        stp     w2, w3, [x30, #-192]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -7280,7 +7033,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #776]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -7288,17 +7040,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #780]
+        stp     w4, w5, [x30, #-184]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0x7FC8
-        movk    w11, #0xC0B2, lsl #16
+        ldr     w11, [sp, #4084]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #832]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -7306,7 +7056,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #836]
+        stp     w2, w3, [x30, #-128]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -7314,7 +7064,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #840]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -7322,17 +7071,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #844]
+        stp     w4, w5, [x30, #-120]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0xF981
-        movk    w11, #0x5EE9, lsl #16
+        ldr     w11, [sp, #4088]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #896]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -7340,7 +7087,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #900]
+        stp     w2, w3, [x30, #-64]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -7348,7 +7095,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #904]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -7356,17 +7102,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #908]
+        stp     w4, w5, [x30, #-56]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0x733A
-        movk    w11, #0xFD21, lsl #16
+        ldr     w11, [sp, #4092]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #960]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -7374,7 +7118,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #964]
+        stp     w2, w3, [x30, #0]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -7382,7 +7126,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #968]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -7390,17 +7133,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #972]
+        stp     w4, w5, [x30, #8]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0xECF3
-        movk    w11, #0x9B58, lsl #16
+        ldr     w11, [sp, #4096]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1024]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -7408,7 +7149,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1028]
+        stp     w2, w3, [x30, #64]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -7416,7 +7157,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1032]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -7424,17 +7164,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1036]
+        stp     w4, w5, [x30, #72]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0x66AC
-        movk    w11, #0x3990, lsl #16
+        ldr     w11, [sp, #4100]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1088]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -7442,7 +7180,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1092]
+        stp     w2, w3, [x30, #128]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -7450,7 +7188,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1096]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -7458,17 +7195,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1100]
+        stp     w4, w5, [x30, #136]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0xE065
-        movk    w11, #0xD7C7, lsl #16
+        ldr     w11, [sp, #4104]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1152]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -7476,7 +7211,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1156]
+        stp     w2, w3, [x30, #192]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -7484,7 +7219,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1160]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -7492,17 +7226,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1164]
+        stp     w4, w5, [x30, #200]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0x5A1E
-        movk    w11, #0x75FF, lsl #16
+        ldr     w11, [sp, #4108]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1216]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -7510,7 +7242,8 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1220]
+        add     x30, x12, #1472
+        stp     w2, w3, [x30, #-256]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -7518,7 +7251,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1224]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -7526,17 +7258,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1228]
+        stp     w4, w5, [x30, #-248]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0xD3D7
-        movk    w11, #0x1436, lsl #16
+        ldr     w11, [sp, #4112]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1280]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -7544,7 +7274,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1284]
+        stp     w2, w3, [x30, #-192]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -7552,7 +7282,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1288]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -7560,17 +7289,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1292]
+        stp     w4, w5, [x30, #-184]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0x4D90
-        movk    w11, #0xB26E, lsl #16
+        ldr     w11, [sp, #4116]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1344]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -7578,7 +7305,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1348]
+        stp     w2, w3, [x30, #-128]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -7586,7 +7313,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1352]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -7594,17 +7320,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1356]
+        stp     w4, w5, [x30, #-120]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0xC749
-        movk    w11, #0x50A5, lsl #16
+        ldr     w11, [sp, #4120]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1408]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -7612,7 +7336,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1412]
+        stp     w2, w3, [x30, #-64]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -7620,7 +7344,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1416]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -7628,17 +7351,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1420]
+        stp     w4, w5, [x30, #-56]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0x4102
-        movk    w11, #0xEEDD, lsl #16
+        ldr     w11, [sp, #4124]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1472]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -7646,7 +7367,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1476]
+        stp     w2, w3, [x30, #0]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -7654,7 +7375,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1480]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -7662,17 +7382,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1484]
+        stp     w4, w5, [x30, #8]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0xBABB
-        movk    w11, #0x8D14, lsl #16
+        ldr     w11, [sp, #4128]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1536]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -7680,7 +7398,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1540]
+        stp     w2, w3, [x30, #64]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -7688,7 +7406,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1544]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -7696,17 +7413,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1548]
+        stp     w4, w5, [x30, #72]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0x3474
-        movk    w11, #0x2B4C, lsl #16
+        ldr     w11, [sp, #4132]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1600]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -7714,7 +7429,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1604]
+        stp     w2, w3, [x30, #128]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -7722,7 +7437,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1608]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -7730,28 +7444,21 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1612]
+        stp     w4, w5, [x30, #136]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
         // handoff: A and L0..L2, transposed
-        str     w2, [x12, #1664]
-        str     w3, [x12, #1668]
-        str     w4, [x12, #1672]
-        str     w5, [x12, #1676]
-        str     w6, [x12, #1728]
-        str     w7, [x12, #1732]
-        str     w8, [x12, #1736]
-        str     w17, [x12, #1740]
-        str     w19, [x12, #1792]
-        str     w20, [x12, #1796]
-        str     w21, [x12, #1800]
-        str     w22, [x12, #1804]
-        str     w23, [x12, #1856]
-        str     w24, [x12, #1860]
-        str     w25, [x12, #1864]
-        str     w26, [x12, #1868]
+        stp     w2, w3, [x30, #192]
+        stp     w4, w5, [x30, #200]
+        add     x30, x12, #1984
+        stp     w6, w7, [x30, #-256]
+        stp     w8, w17, [x30, #-248]
+        stp     w19, w20, [x30, #-192]
+        stp     w21, w22, [x30, #-184]
+        stp     w23, w24, [x30, #-128]
+        stp     w25, w26, [x30, #-120]
         // ---- scalar subgroup 1: keys 4..7 of the next batch
         ldr     w11, [sp, #172]
         mov     w2, w11
@@ -7784,12 +7491,10 @@ L(scalar_prep):
         ror     w25, w25, w27
         add     w26, w26, w11
         ror     w26, w26, w27
-        mov     w11, #0xBE8E
-        movk    w11, #0x9287, lsl #16
+        ldr     w11, [sp, #4044]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #208]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -7797,7 +7502,8 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #212]
+        add     x30, x12, #464
+        stp     w2, w3, [x30, #-256]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -7805,7 +7511,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #216]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -7813,17 +7518,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #220]
+        stp     w4, w5, [x30, #-248]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0x3847
-        movk    w11, #0x30BF, lsl #16
+        ldr     w11, [sp, #4048]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #272]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -7831,7 +7534,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #276]
+        stp     w2, w3, [x30, #-192]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -7839,7 +7542,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #280]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -7847,17 +7549,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #284]
+        stp     w4, w5, [x30, #-184]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0xB200
-        movk    w11, #0xCEF6, lsl #16
+        ldr     w11, [sp, #4052]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #336]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -7865,7 +7565,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #340]
+        stp     w2, w3, [x30, #-128]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -7873,7 +7573,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #344]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -7881,17 +7580,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #348]
+        stp     w4, w5, [x30, #-120]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0x2BB9
-        movk    w11, #0x6D2E, lsl #16
+        ldr     w11, [sp, #4056]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #400]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -7899,7 +7596,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #404]
+        stp     w2, w3, [x30, #-64]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -7907,7 +7604,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #408]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -7915,17 +7611,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #412]
+        stp     w4, w5, [x30, #-56]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0xA572
-        movk    w11, #0x0B65, lsl #16
+        ldr     w11, [sp, #4060]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #464]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -7933,7 +7627,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #468]
+        stp     w2, w3, [x30, #0]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -7941,7 +7635,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #472]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -7949,17 +7642,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #476]
+        stp     w4, w5, [x30, #8]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0x1F2B
-        movk    w11, #0xA99D, lsl #16
+        ldr     w11, [sp, #4064]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #528]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -7967,7 +7658,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #532]
+        stp     w2, w3, [x30, #64]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -7975,7 +7666,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #536]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -7983,17 +7673,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #540]
+        stp     w4, w5, [x30, #72]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0x98E4
-        movk    w11, #0x47D4, lsl #16
+        ldr     w11, [sp, #4068]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #592]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -8001,7 +7689,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #596]
+        stp     w2, w3, [x30, #128]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -8009,7 +7697,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #600]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -8017,17 +7704,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #604]
+        stp     w4, w5, [x30, #136]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0x129D
-        movk    w11, #0xE60C, lsl #16
+        ldr     w11, [sp, #4072]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #656]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -8035,7 +7720,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #660]
+        stp     w2, w3, [x30, #192]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -8043,7 +7728,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #664]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -8051,17 +7735,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #668]
+        stp     w4, w5, [x30, #200]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0x8C56
-        movk    w11, #0x8443, lsl #16
+        ldr     w11, [sp, #4076]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #720]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -8069,7 +7751,8 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #724]
+        add     x30, x12, #976
+        stp     w2, w3, [x30, #-256]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -8077,7 +7760,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #728]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -8085,17 +7767,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #732]
+        stp     w4, w5, [x30, #-248]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0x060F
-        movk    w11, #0x227B, lsl #16
+        ldr     w11, [sp, #4080]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #784]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -8103,7 +7783,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #788]
+        stp     w2, w3, [x30, #-192]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -8111,7 +7791,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #792]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -8119,17 +7798,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #796]
+        stp     w4, w5, [x30, #-184]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0x7FC8
-        movk    w11, #0xC0B2, lsl #16
+        ldr     w11, [sp, #4084]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #848]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -8137,7 +7814,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #852]
+        stp     w2, w3, [x30, #-128]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -8145,7 +7822,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #856]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -8153,17 +7829,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #860]
+        stp     w4, w5, [x30, #-120]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0xF981
-        movk    w11, #0x5EE9, lsl #16
+        ldr     w11, [sp, #4088]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #912]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -8171,7 +7845,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #916]
+        stp     w2, w3, [x30, #-64]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -8179,7 +7853,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #920]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -8187,17 +7860,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #924]
+        stp     w4, w5, [x30, #-56]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0x733A
-        movk    w11, #0xFD21, lsl #16
+        ldr     w11, [sp, #4092]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #976]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -8205,7 +7876,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #980]
+        stp     w2, w3, [x30, #0]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -8213,7 +7884,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #984]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -8221,17 +7891,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #988]
+        stp     w4, w5, [x30, #8]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0xECF3
-        movk    w11, #0x9B58, lsl #16
+        ldr     w11, [sp, #4096]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1040]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -8239,7 +7907,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1044]
+        stp     w2, w3, [x30, #64]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -8247,7 +7915,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1048]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -8255,17 +7922,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1052]
+        stp     w4, w5, [x30, #72]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0x66AC
-        movk    w11, #0x3990, lsl #16
+        ldr     w11, [sp, #4100]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1104]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -8273,7 +7938,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1108]
+        stp     w2, w3, [x30, #128]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -8281,7 +7946,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1112]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -8289,17 +7953,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1116]
+        stp     w4, w5, [x30, #136]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0xE065
-        movk    w11, #0xD7C7, lsl #16
+        ldr     w11, [sp, #4104]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1168]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -8307,7 +7969,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1172]
+        stp     w2, w3, [x30, #192]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -8315,7 +7977,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1176]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -8323,17 +7984,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1180]
+        stp     w4, w5, [x30, #200]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0x5A1E
-        movk    w11, #0x75FF, lsl #16
+        ldr     w11, [sp, #4108]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1232]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -8341,7 +8000,8 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1236]
+        add     x30, x12, #1488
+        stp     w2, w3, [x30, #-256]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -8349,7 +8009,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1240]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -8357,17 +8016,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1244]
+        stp     w4, w5, [x30, #-248]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0xD3D7
-        movk    w11, #0x1436, lsl #16
+        ldr     w11, [sp, #4112]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1296]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -8375,7 +8032,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1300]
+        stp     w2, w3, [x30, #-192]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -8383,7 +8040,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1304]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -8391,17 +8047,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1308]
+        stp     w4, w5, [x30, #-184]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0x4D90
-        movk    w11, #0xB26E, lsl #16
+        ldr     w11, [sp, #4116]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1360]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -8409,7 +8063,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1364]
+        stp     w2, w3, [x30, #-128]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -8417,7 +8071,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1368]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -8425,17 +8078,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1372]
+        stp     w4, w5, [x30, #-120]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0xC749
-        movk    w11, #0x50A5, lsl #16
+        ldr     w11, [sp, #4120]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1424]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -8443,7 +8094,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1428]
+        stp     w2, w3, [x30, #-64]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -8451,7 +8102,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1432]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -8459,17 +8109,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1436]
+        stp     w4, w5, [x30, #-56]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0x4102
-        movk    w11, #0xEEDD, lsl #16
+        ldr     w11, [sp, #4124]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1488]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -8477,7 +8125,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1492]
+        stp     w2, w3, [x30, #0]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -8485,7 +8133,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1496]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -8493,17 +8140,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1500]
+        stp     w4, w5, [x30, #8]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0xBABB
-        movk    w11, #0x8D14, lsl #16
+        ldr     w11, [sp, #4128]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1552]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -8511,7 +8156,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1556]
+        stp     w2, w3, [x30, #64]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -8519,7 +8164,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1560]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -8527,17 +8171,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1564]
+        stp     w4, w5, [x30, #72]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0x3474
-        movk    w11, #0x2B4C, lsl #16
+        ldr     w11, [sp, #4132]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1616]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -8545,7 +8187,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1620]
+        stp     w2, w3, [x30, #128]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -8553,7 +8195,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1624]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -8561,28 +8202,21 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1628]
+        stp     w4, w5, [x30, #136]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
         // handoff: A and L0..L2, transposed
-        str     w2, [x12, #1680]
-        str     w3, [x12, #1684]
-        str     w4, [x12, #1688]
-        str     w5, [x12, #1692]
-        str     w6, [x12, #1744]
-        str     w7, [x12, #1748]
-        str     w8, [x12, #1752]
-        str     w17, [x12, #1756]
-        str     w19, [x12, #1808]
-        str     w20, [x12, #1812]
-        str     w21, [x12, #1816]
-        str     w22, [x12, #1820]
-        str     w23, [x12, #1872]
-        str     w24, [x12, #1876]
-        str     w25, [x12, #1880]
-        str     w26, [x12, #1884]
+        stp     w2, w3, [x30, #192]
+        stp     w4, w5, [x30, #200]
+        add     x30, x12, #2000
+        stp     w6, w7, [x30, #-256]
+        stp     w8, w17, [x30, #-248]
+        stp     w19, w20, [x30, #-192]
+        stp     w21, w22, [x30, #-184]
+        stp     w23, w24, [x30, #-128]
+        stp     w25, w26, [x30, #-120]
         // ---- scalar subgroup 2: keys 8..11 of the next batch
         ldr     w11, [sp, #172]
         mov     w2, w11
@@ -8615,12 +8249,10 @@ L(scalar_prep):
         ror     w25, w25, w27
         add     w26, w26, w11
         ror     w26, w26, w27
-        mov     w11, #0xBE8E
-        movk    w11, #0x9287, lsl #16
+        ldr     w11, [sp, #4044]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #224]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -8628,7 +8260,8 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #228]
+        add     x30, x12, #480
+        stp     w2, w3, [x30, #-256]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -8636,7 +8269,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #232]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -8644,17 +8276,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #236]
+        stp     w4, w5, [x30, #-248]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0x3847
-        movk    w11, #0x30BF, lsl #16
+        ldr     w11, [sp, #4048]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #288]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -8662,7 +8292,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #292]
+        stp     w2, w3, [x30, #-192]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -8670,7 +8300,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #296]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -8678,17 +8307,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #300]
+        stp     w4, w5, [x30, #-184]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0xB200
-        movk    w11, #0xCEF6, lsl #16
+        ldr     w11, [sp, #4052]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #352]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -8696,7 +8323,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #356]
+        stp     w2, w3, [x30, #-128]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -8704,7 +8331,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #360]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -8712,17 +8338,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #364]
+        stp     w4, w5, [x30, #-120]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0x2BB9
-        movk    w11, #0x6D2E, lsl #16
+        ldr     w11, [sp, #4056]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #416]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -8730,7 +8354,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #420]
+        stp     w2, w3, [x30, #-64]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -8738,7 +8362,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #424]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -8746,17 +8369,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #428]
+        stp     w4, w5, [x30, #-56]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0xA572
-        movk    w11, #0x0B65, lsl #16
+        ldr     w11, [sp, #4060]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #480]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -8764,7 +8385,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #484]
+        stp     w2, w3, [x30, #0]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -8772,7 +8393,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #488]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -8780,17 +8400,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #492]
+        stp     w4, w5, [x30, #8]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0x1F2B
-        movk    w11, #0xA99D, lsl #16
+        ldr     w11, [sp, #4064]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #544]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -8798,7 +8416,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #548]
+        stp     w2, w3, [x30, #64]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -8806,7 +8424,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #552]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -8814,17 +8431,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #556]
+        stp     w4, w5, [x30, #72]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0x98E4
-        movk    w11, #0x47D4, lsl #16
+        ldr     w11, [sp, #4068]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #608]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -8832,7 +8447,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #612]
+        stp     w2, w3, [x30, #128]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -8840,7 +8455,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #616]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -8848,17 +8462,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #620]
+        stp     w4, w5, [x30, #136]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0x129D
-        movk    w11, #0xE60C, lsl #16
+        ldr     w11, [sp, #4072]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #672]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -8866,7 +8478,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #676]
+        stp     w2, w3, [x30, #192]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -8874,7 +8486,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #680]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -8882,17 +8493,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #684]
+        stp     w4, w5, [x30, #200]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0x8C56
-        movk    w11, #0x8443, lsl #16
+        ldr     w11, [sp, #4076]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #736]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -8900,7 +8509,8 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #740]
+        add     x30, x12, #992
+        stp     w2, w3, [x30, #-256]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -8908,7 +8518,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #744]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -8916,17 +8525,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #748]
+        stp     w4, w5, [x30, #-248]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0x060F
-        movk    w11, #0x227B, lsl #16
+        ldr     w11, [sp, #4080]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #800]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -8934,7 +8541,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #804]
+        stp     w2, w3, [x30, #-192]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -8942,7 +8549,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #808]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -8950,17 +8556,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #812]
+        stp     w4, w5, [x30, #-184]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0x7FC8
-        movk    w11, #0xC0B2, lsl #16
+        ldr     w11, [sp, #4084]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #864]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -8968,7 +8572,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #868]
+        stp     w2, w3, [x30, #-128]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -8976,7 +8580,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #872]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -8984,17 +8587,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #876]
+        stp     w4, w5, [x30, #-120]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0xF981
-        movk    w11, #0x5EE9, lsl #16
+        ldr     w11, [sp, #4088]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #928]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -9002,7 +8603,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #932]
+        stp     w2, w3, [x30, #-64]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -9010,7 +8611,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #936]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -9018,17 +8618,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #940]
+        stp     w4, w5, [x30, #-56]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0x733A
-        movk    w11, #0xFD21, lsl #16
+        ldr     w11, [sp, #4092]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #992]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -9036,7 +8634,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #996]
+        stp     w2, w3, [x30, #0]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -9044,7 +8642,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1000]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -9052,17 +8649,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1004]
+        stp     w4, w5, [x30, #8]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0xECF3
-        movk    w11, #0x9B58, lsl #16
+        ldr     w11, [sp, #4096]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1056]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -9070,7 +8665,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1060]
+        stp     w2, w3, [x30, #64]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -9078,7 +8673,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1064]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -9086,17 +8680,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1068]
+        stp     w4, w5, [x30, #72]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0x66AC
-        movk    w11, #0x3990, lsl #16
+        ldr     w11, [sp, #4100]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1120]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -9104,7 +8696,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1124]
+        stp     w2, w3, [x30, #128]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -9112,7 +8704,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1128]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -9120,17 +8711,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1132]
+        stp     w4, w5, [x30, #136]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0xE065
-        movk    w11, #0xD7C7, lsl #16
+        ldr     w11, [sp, #4104]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1184]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -9138,7 +8727,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1188]
+        stp     w2, w3, [x30, #192]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -9146,7 +8735,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1192]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -9154,17 +8742,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1196]
+        stp     w4, w5, [x30, #200]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0x5A1E
-        movk    w11, #0x75FF, lsl #16
+        ldr     w11, [sp, #4108]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1248]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -9172,7 +8758,8 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1252]
+        add     x30, x12, #1504
+        stp     w2, w3, [x30, #-256]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -9180,7 +8767,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1256]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -9188,17 +8774,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1260]
+        stp     w4, w5, [x30, #-248]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0xD3D7
-        movk    w11, #0x1436, lsl #16
+        ldr     w11, [sp, #4112]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1312]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -9206,7 +8790,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1316]
+        stp     w2, w3, [x30, #-192]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -9214,7 +8798,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1320]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -9222,17 +8805,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1324]
+        stp     w4, w5, [x30, #-184]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0x4D90
-        movk    w11, #0xB26E, lsl #16
+        ldr     w11, [sp, #4116]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1376]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -9240,7 +8821,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1380]
+        stp     w2, w3, [x30, #-128]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -9248,7 +8829,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1384]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -9256,17 +8836,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1388]
+        stp     w4, w5, [x30, #-120]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0xC749
-        movk    w11, #0x50A5, lsl #16
+        ldr     w11, [sp, #4120]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1440]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -9274,7 +8852,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1444]
+        stp     w2, w3, [x30, #-64]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -9282,7 +8860,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1448]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -9290,17 +8867,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1452]
+        stp     w4, w5, [x30, #-56]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0x4102
-        movk    w11, #0xEEDD, lsl #16
+        ldr     w11, [sp, #4124]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1504]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -9308,7 +8883,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1508]
+        stp     w2, w3, [x30, #0]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -9316,7 +8891,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1512]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -9324,17 +8898,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1516]
+        stp     w4, w5, [x30, #8]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0xBABB
-        movk    w11, #0x8D14, lsl #16
+        ldr     w11, [sp, #4128]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1568]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -9342,7 +8914,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1572]
+        stp     w2, w3, [x30, #64]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -9350,7 +8922,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1576]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -9358,17 +8929,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1580]
+        stp     w4, w5, [x30, #72]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0x3474
-        movk    w11, #0x2B4C, lsl #16
+        ldr     w11, [sp, #4132]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1632]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -9376,7 +8945,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1636]
+        stp     w2, w3, [x30, #128]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -9384,7 +8953,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1640]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -9392,28 +8960,21 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1644]
+        stp     w4, w5, [x30, #136]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
         // handoff: A and L0..L2, transposed
-        str     w2, [x12, #1696]
-        str     w3, [x12, #1700]
-        str     w4, [x12, #1704]
-        str     w5, [x12, #1708]
-        str     w6, [x12, #1760]
-        str     w7, [x12, #1764]
-        str     w8, [x12, #1768]
-        str     w17, [x12, #1772]
-        str     w19, [x12, #1824]
-        str     w20, [x12, #1828]
-        str     w21, [x12, #1832]
-        str     w22, [x12, #1836]
-        str     w23, [x12, #1888]
-        str     w24, [x12, #1892]
-        str     w25, [x12, #1896]
-        str     w26, [x12, #1900]
+        stp     w2, w3, [x30, #192]
+        stp     w4, w5, [x30, #200]
+        add     x30, x12, #2016
+        stp     w6, w7, [x30, #-256]
+        stp     w8, w17, [x30, #-248]
+        stp     w19, w20, [x30, #-192]
+        stp     w21, w22, [x30, #-184]
+        stp     w23, w24, [x30, #-128]
+        stp     w25, w26, [x30, #-120]
         // ---- scalar subgroup 3: keys 12..15 of the next batch
         ldr     w11, [sp, #172]
         mov     w2, w11
@@ -9446,12 +9007,10 @@ L(scalar_prep):
         ror     w25, w25, w27
         add     w26, w26, w11
         ror     w26, w26, w27
-        mov     w11, #0xBE8E
-        movk    w11, #0x9287, lsl #16
+        ldr     w11, [sp, #4044]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #240]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -9459,7 +9018,8 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #244]
+        add     x30, x12, #496
+        stp     w2, w3, [x30, #-256]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -9467,7 +9027,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #248]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -9475,17 +9034,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #252]
+        stp     w4, w5, [x30, #-248]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0x3847
-        movk    w11, #0x30BF, lsl #16
+        ldr     w11, [sp, #4048]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #304]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -9493,7 +9050,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #308]
+        stp     w2, w3, [x30, #-192]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -9501,7 +9058,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #312]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -9509,17 +9065,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #316]
+        stp     w4, w5, [x30, #-184]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0xB200
-        movk    w11, #0xCEF6, lsl #16
+        ldr     w11, [sp, #4052]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #368]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -9527,7 +9081,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #372]
+        stp     w2, w3, [x30, #-128]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -9535,7 +9089,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #376]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -9543,17 +9096,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #380]
+        stp     w4, w5, [x30, #-120]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0x2BB9
-        movk    w11, #0x6D2E, lsl #16
+        ldr     w11, [sp, #4056]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #432]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -9561,7 +9112,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #436]
+        stp     w2, w3, [x30, #-64]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -9569,7 +9120,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #440]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -9577,17 +9127,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #444]
+        stp     w4, w5, [x30, #-56]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0xA572
-        movk    w11, #0x0B65, lsl #16
+        ldr     w11, [sp, #4060]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #496]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -9595,7 +9143,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #500]
+        stp     w2, w3, [x30, #0]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -9603,7 +9151,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #504]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -9611,17 +9158,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #508]
+        stp     w4, w5, [x30, #8]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0x1F2B
-        movk    w11, #0xA99D, lsl #16
+        ldr     w11, [sp, #4064]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #560]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -9629,7 +9174,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #564]
+        stp     w2, w3, [x30, #64]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -9637,7 +9182,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #568]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -9645,17 +9189,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #572]
+        stp     w4, w5, [x30, #72]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0x98E4
-        movk    w11, #0x47D4, lsl #16
+        ldr     w11, [sp, #4068]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #624]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -9663,7 +9205,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #628]
+        stp     w2, w3, [x30, #128]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -9671,7 +9213,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #632]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -9679,17 +9220,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #636]
+        stp     w4, w5, [x30, #136]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0x129D
-        movk    w11, #0xE60C, lsl #16
+        ldr     w11, [sp, #4072]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #688]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -9697,7 +9236,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #692]
+        stp     w2, w3, [x30, #192]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -9705,7 +9244,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #696]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -9713,17 +9251,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #700]
+        stp     w4, w5, [x30, #200]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0x8C56
-        movk    w11, #0x8443, lsl #16
+        ldr     w11, [sp, #4076]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #752]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -9731,7 +9267,8 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #756]
+        add     x30, x12, #1008
+        stp     w2, w3, [x30, #-256]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -9739,7 +9276,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #760]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -9747,17 +9283,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #764]
+        stp     w4, w5, [x30, #-248]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0x060F
-        movk    w11, #0x227B, lsl #16
+        ldr     w11, [sp, #4080]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #816]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -9765,7 +9299,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #820]
+        stp     w2, w3, [x30, #-192]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -9773,7 +9307,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #824]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -9781,17 +9314,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #828]
+        stp     w4, w5, [x30, #-184]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0x7FC8
-        movk    w11, #0xC0B2, lsl #16
+        ldr     w11, [sp, #4084]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #880]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -9799,7 +9330,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #884]
+        stp     w2, w3, [x30, #-128]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -9807,7 +9338,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #888]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -9815,17 +9345,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #892]
+        stp     w4, w5, [x30, #-120]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0xF981
-        movk    w11, #0x5EE9, lsl #16
+        ldr     w11, [sp, #4088]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #944]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -9833,7 +9361,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #948]
+        stp     w2, w3, [x30, #-64]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -9841,7 +9369,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #952]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -9849,17 +9376,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #956]
+        stp     w4, w5, [x30, #-56]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0x733A
-        movk    w11, #0xFD21, lsl #16
+        ldr     w11, [sp, #4092]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1008]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -9867,7 +9392,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1012]
+        stp     w2, w3, [x30, #0]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -9875,7 +9400,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1016]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -9883,17 +9407,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1020]
+        stp     w4, w5, [x30, #8]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0xECF3
-        movk    w11, #0x9B58, lsl #16
+        ldr     w11, [sp, #4096]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1072]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -9901,7 +9423,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1076]
+        stp     w2, w3, [x30, #64]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -9909,7 +9431,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1080]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -9917,17 +9438,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1084]
+        stp     w4, w5, [x30, #72]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0x66AC
-        movk    w11, #0x3990, lsl #16
+        ldr     w11, [sp, #4100]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1136]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -9935,7 +9454,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1140]
+        stp     w2, w3, [x30, #128]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -9943,7 +9462,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1144]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -9951,17 +9469,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1148]
+        stp     w4, w5, [x30, #136]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0xE065
-        movk    w11, #0xD7C7, lsl #16
+        ldr     w11, [sp, #4104]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1200]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -9969,7 +9485,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1204]
+        stp     w2, w3, [x30, #192]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -9977,7 +9493,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1208]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -9985,17 +9500,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1212]
+        stp     w4, w5, [x30, #200]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0x5A1E
-        movk    w11, #0x75FF, lsl #16
+        ldr     w11, [sp, #4108]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1264]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -10003,7 +9516,8 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1268]
+        add     x30, x12, #1520
+        stp     w2, w3, [x30, #-256]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -10011,7 +9525,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1272]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -10019,17 +9532,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1276]
+        stp     w4, w5, [x30, #-248]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0xD3D7
-        movk    w11, #0x1436, lsl #16
+        ldr     w11, [sp, #4112]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1328]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -10037,7 +9548,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1332]
+        stp     w2, w3, [x30, #-192]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -10045,7 +9556,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1336]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -10053,17 +9563,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1340]
+        stp     w4, w5, [x30, #-184]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0x4D90
-        movk    w11, #0xB26E, lsl #16
+        ldr     w11, [sp, #4116]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1392]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -10071,7 +9579,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1396]
+        stp     w2, w3, [x30, #-128]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -10079,7 +9587,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1400]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -10087,17 +9594,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1404]
+        stp     w4, w5, [x30, #-120]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0xC749
-        movk    w11, #0x50A5, lsl #16
+        ldr     w11, [sp, #4120]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1456]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -10105,7 +9610,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1460]
+        stp     w2, w3, [x30, #-64]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -10113,7 +9618,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1464]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -10121,17 +9625,15 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1468]
+        stp     w4, w5, [x30, #-56]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
-        mov     w11, #0x4102
-        movk    w11, #0xEEDD, lsl #16
+        ldr     w11, [sp, #4124]
         add     w27, w2, w19
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1520]
         add     w27, w2, w19
         add     w23, w23, w27
         neg     w27, w27
@@ -10139,7 +9641,7 @@ L(scalar_prep):
         add     w28, w3, w20
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1524]
+        stp     w2, w3, [x30, #0]
         add     w28, w3, w20
         add     w24, w24, w28
         neg     w28, w28
@@ -10147,7 +9649,6 @@ L(scalar_prep):
         add     w1, w4, w21
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1528]
         add     w1, w4, w21
         add     w25, w25, w1
         neg     w1, w1
@@ -10155,17 +9656,15 @@ L(scalar_prep):
         add     w27, w5, w22
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1532]
+        stp     w4, w5, [x30, #8]
         add     w27, w5, w22
         add     w26, w26, w27
         neg     w27, w27
         ror     w26, w26, w27
-        mov     w11, #0xBABB
-        movk    w11, #0x8D14, lsl #16
+        ldr     w11, [sp, #4128]
         add     w27, w2, w23
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1584]
         add     w27, w2, w23
         add     w6, w6, w27
         neg     w27, w27
@@ -10173,7 +9672,7 @@ L(scalar_prep):
         add     w28, w3, w24
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1588]
+        stp     w2, w3, [x30, #64]
         add     w28, w3, w24
         add     w7, w7, w28
         neg     w28, w28
@@ -10181,7 +9680,6 @@ L(scalar_prep):
         add     w1, w4, w25
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1592]
         add     w1, w4, w25
         add     w8, w8, w1
         neg     w1, w1
@@ -10189,17 +9687,15 @@ L(scalar_prep):
         add     w27, w5, w26
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1596]
+        stp     w4, w5, [x30, #72]
         add     w27, w5, w26
         add     w17, w17, w27
         neg     w27, w27
         ror     w17, w17, w27
-        mov     w11, #0x3474
-        movk    w11, #0x2B4C, lsl #16
+        ldr     w11, [sp, #4132]
         add     w27, w2, w6
         add     w27, w27, w11
         ror     w2, w27, #29
-        str     w2, [x12, #1648]
         add     w27, w2, w6
         add     w19, w19, w27
         neg     w27, w27
@@ -10207,7 +9703,7 @@ L(scalar_prep):
         add     w28, w3, w7
         add     w28, w28, w11
         ror     w3, w28, #29
-        str     w3, [x12, #1652]
+        stp     w2, w3, [x30, #128]
         add     w28, w3, w7
         add     w20, w20, w28
         neg     w28, w28
@@ -10215,7 +9711,6 @@ L(scalar_prep):
         add     w1, w4, w8
         add     w1, w1, w11
         ror     w4, w1, #29
-        str     w4, [x12, #1656]
         add     w1, w4, w8
         add     w21, w21, w1
         neg     w1, w1
@@ -10223,28 +9718,22 @@ L(scalar_prep):
         add     w27, w5, w17
         add     w27, w27, w11
         ror     w5, w27, #29
-        str     w5, [x12, #1660]
+        stp     w4, w5, [x30, #136]
         add     w27, w5, w17
         add     w22, w22, w27
         neg     w27, w27
         ror     w22, w22, w27
         // handoff: A and L0..L2, transposed
-        str     w2, [x12, #1712]
-        str     w3, [x12, #1716]
-        str     w4, [x12, #1720]
-        str     w5, [x12, #1724]
-        str     w6, [x12, #1776]
-        str     w7, [x12, #1780]
-        str     w8, [x12, #1784]
-        str     w17, [x12, #1788]
-        str     w19, [x12, #1840]
-        str     w20, [x12, #1844]
-        str     w21, [x12, #1848]
-        str     w22, [x12, #1852]
-        str     w23, [x12, #1904]
-        str     w24, [x12, #1908]
-        str     w25, [x12, #1912]
-        str     w26, [x12, #1916]
+        stp     w2, w3, [x30, #192]
+        stp     w4, w5, [x30, #200]
+        add     x30, x12, #2032
+        stp     w6, w7, [x30, #-256]
+        stp     w8, w17, [x30, #-248]
+        stp     w19, w20, [x30, #-192]
+        stp     w21, w22, [x30, #-184]
+        stp     w23, w24, [x30, #-128]
+        stp     w25, w26, [x30, #-120]
+        ldr     x30, [sp, #184]
         ret
 #if !defined(__APPLE__)
         .size   rc5_72_unit_func_neon_hyb, . - rc5_72_unit_func_neon_hyb

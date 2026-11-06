@@ -133,11 +133,13 @@ assert (S0, K1, K2) == (0xBF0A8B1D, 0x15235639, 0xF45044D5)
 # sp+2112 table 1 (same layout)
 SP_X19, SP_X1, SP_PRE = 64, 144, 160
 PRE_B0, PRE_S1, PRE_B1, PRE_S2, PRE_B2, SP_HI = (SP_PRE + 4 * i for i in range(6))
+SP_LR = SP_PRE + 24                 # x30 while scalar_prep runs (x30 = store pointer)
 TAB0, TAB1, TABSZ = 192, 2112, 30 * STRIDE
 ANCHOR = 13 * STRIDE                 # ldp q offsets stay within +-1008
 ROW_A, ROW_L = 26, 27                # handoff rows: A, then L0..L2
-FRAME = 4032
-assert TAB0 + TABSZ <= TAB1 and TAB1 + TABSZ <= FRAME and FRAME % 64 == 0
+SP_CONST = TAB1 + TABSZ              # scalar pass-1 constants, k=3..26 (word k)
+FRAME = SP_CONST + 128
+assert SP_LR + 8 <= TAB0 and TAB0 + TABSZ <= TAB1 and FRAME % 64 == 0
 def roff(n): return (n - 13) * STRIDE       # S row offset from the anchor
 
 # ---- vector stream ---------------------------------------------------------
@@ -219,14 +221,25 @@ def vector_body():
     half_round(C, D, roff(24))
 
 # ---- scalar stream ---------------------------------------------------------
-def sc_store(reg, row, sg, i):
-    ins(f"str     {reg}, [x12, #{row * STRIDE + 16 * sg + 4 * i}]")
+# The scalar stream stores S/A/L words in transposed pairs (stp w, w: keys
+# 2j and 2j+1 of a subgroup are adjacent words of a row) through x30, which
+# points into the target table and is re-based every 8 rows (stp reaches
+# -256..+252). x30 is free in the body; scalar_prep saves it around itself.
+sc_base = [None]
+def sc_store_pair(ra, rb, row, sg, j):
+    off = None if sc_base[0] is None else (row - sc_base[0]) * STRIDE + 8 * j
+    if off is None or not -256 <= off <= 252:
+        sc_base[0] = row + 4
+        ins(f"add     x30, x12, #{sc_base[0] * STRIDE + 16 * sg}")
+        off = (row - sc_base[0]) * STRIDE + 8 * j
+    ins(f"stp     {ra}, {rb}, [x30, #{off}]")
 
 def scalar_stream(hi_lead):
     """the prep of one 16-key batch into [x12]: hi_lead emits the L0hi setup
     into the SP_HI frame slot. Clobbers only the scalar-pool registers."""
     hi_lead()
     for sg in range(NP):
+        sc_base[0] = None
         ins(f"// ---- scalar subgroup {sg}: keys {4*sg}..{4*sg+3} of the next batch")
         ins(f"ldr     {SC_K}, [sp, #{PRE_S2}]")
         for i in range(4): ins(f"mov     {SA[i]}, {SC_K}")
@@ -249,7 +262,7 @@ def scalar_stream(hi_lead):
             if k <= 25: shared = (P + k * Q) & M
             elif k == 26: shared = S0
             if shared is not None:
-                mov32(SC_K, shared)
+                ins(f"ldr     {SC_K}, [sp, #{SP_CONST + 4 * k}]")
             elif k == 27:
                 ins(f"ldr     {SC_K}, [sp, #{PRE_S1}]")
             elif k == 28:
@@ -264,15 +277,15 @@ def scalar_stream(hi_lead):
                 else:
                     ins(f"add     {t}, {t}, {SC_K}")
                 ins(f"ror     {SA[i]}, {t}, #29")
-                sc_store(SA[i], row, sg, i)
+                if i % 2: sc_store_pair(SA[i - 1], SA[i], row, sg, i // 2)
                 ins(f"add     {t}, {SA[i]}, {SL[bx][i]}")
                 ins(f"add     {SL[by][i]}, {SL[by][i]}, {t}")
                 ins(f"neg     {t}, {t}")
                 ins(f"ror     {SL[by][i]}, {SL[by][i]}, {t}")
         ins(f"// handoff: A and L0..L2, transposed")
-        for i in range(4): sc_store(SA[i], ROW_A, sg, i)
+        for h in range(2): sc_store_pair(SA[2 * h], SA[2 * h + 1], ROW_A, sg, h)
         for j in range(3):
-            for i in range(4): sc_store(SL[j][i], ROW_L + j, sg, i)
+            for h in range(2): sc_store_pair(SL[j][2 * h], SL[j][2 * h + 1], ROW_L + j, sg, h)
 
 def hi_lead_next():
     ins(f"add     {ST[0]}, w13, #16            // prep is for the NEXT batch")
@@ -319,7 +332,8 @@ FUNC(rc5_72_unit_func_neon_hyb):
 """)
 ins("stp     x29, x30, [sp, #-16]!")
 ins("mov     x29, sp")
-ins(f"sub     x16, x29, #{FRAME}")
+ins(f"mov     x16, #{FRAME}")
+ins("sub     x16, x29, x16")
 ins("and     sp, x16, #-64")
 ins("stp     d8, d9, [sp, #0]")
 ins("stp     d10, d11, [sp, #16]")
@@ -331,6 +345,10 @@ ins(f"stp     x23, x24, [sp, #{SP_X19 + 32}]")
 ins(f"stp     x25, x26, [sp, #{SP_X19 + 48}]")
 ins(f"stp     x27, x28, [sp, #{SP_X19 + 64}]")
 ins(f"str     x1, [sp, #{SP_X1}]")
+ins("// the scalar stream's pass-1 subkey constants (one ldr per step)")
+for k in range(3, min(SPLIT, 27)):
+    mov32("w16", (P + k * Q) & M if k <= 25 else S0)
+    ins(f"str     w16, [sp, #{SP_CONST + 4 * k}]")
 e()
 ins("ldr     w9, [x1]")
 ins("lsr     w9, w9, #4                 // 16 keys per batch")
@@ -554,7 +572,9 @@ e()
 ins("// standalone scalar prep: the pipeline prologue, and the redo after an")
 ins("// L0hi byte carry. In: x12 = target table base, [sp, SP_HI] = prep L0hi.")
 e("L(scalar_prep):")
+ins(f"str     x30, [sp, #{SP_LR}]")
 scalar_stream(lambda: None)
+ins(f"ldr     x30, [sp, #{SP_LR}]")
 ins("ret")
 e("#if !defined(__APPLE__)")
 ins(".size   rc5_72_unit_func_neon_hyb, . - rc5_72_unit_func_neon_hyb")
