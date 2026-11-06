@@ -24,7 +24,7 @@ for d in orig fix; do
   printf '#include "cputypes.h"\nRESULT: OS=CLIENT_OS CPU=CLIENT_CPU NAME=CLIENT_OS_NAME\n' > "$W/$d/probe.txt"
   printf '#include "cputypes.h"\nint os = CLIENT_OS, cpu = CLIENT_CPU;\n' > "$W/$d/probe.cpp"
 done
-res() { d=$1; shift; "$CXX" "$@" -E -P -x c++ "$W/$d/probe.txt" 2>&1 | grep -m1 -E 'RESULT|error' | sed 's/RESULT: //'; }
+res() { d=$1; shift; "$CXX" "$@" -E -P -x c++ "$W/$d/probe.txt" 2>&1 | grep -m1 '^RESULT' | sed 's/RESULT: //'; }
 cc_ok() { d=$1; shift; "$CXX" "$@" -c "$W/$d/probe.cpp" -o "$W/p.o" > "$W/cc.log" 2>&1 && echo yes || echo "NO: $(head -1 "$W/cc.log")"; }
 {
   echo "## cputypes.h under the real NDK"
