@@ -1,0 +1,27 @@
+name: MIX HYB split sweep (N2)
+
+# Manual only: gh workflow run hybrid-sweep.yml --ref neon-mix16
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  n2:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v4
+    - name: Sweep
+      run: sh tools/ci-bench/hybrid-sweep.sh sweep-out 2
+    - name: Summary
+      if: always()
+      run: cat sweep-out/results.md >> "$GITHUB_STEP_SUMMARY" || true
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: hybrid-sweep
+        path: |
+          sweep-out
+          !sweep-out/clockcal
