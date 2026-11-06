@@ -1,7 +1,10 @@
 name: MIX HYB split sweep (N2)
 
-# Manual only: gh workflow run hybrid-sweep.yml --ref neon-mix16
+# Run it by pushing the commit to the hybrid-sweep-run branch:
+#   git push origin neon-mix16:hybrid-sweep-run -f
 on:
+  push:
+    branches: [hybrid-sweep-run]
   workflow_dispatch:
 
 permissions:

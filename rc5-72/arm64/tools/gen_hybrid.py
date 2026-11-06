@@ -27,7 +27,12 @@ TESTMASK = "--testmask" in sys.argv
 NP = 4                       # vector pipes
 STRIDE = 16 * NP             # bytes per S row (4 pipes x 4 lanes)
 SPLIT = 32                   # first vector step k; scalar does k=3..SPLIT-1
-assert 29 <= SPLIT <= 52 and SPLIT % 1 == 0
+for a in sys.argv:
+    if a.startswith("--split="): SPLIT = int(a.split("=")[1])
+# Below 29 the vector side broadcasts the pass-1 constants (mov32 + dup,
+# k=SPLIT..26) and the precompute values (dup from the spills, k=27..28);
+# no extra base register, so the two streams stay disjoint. 4 <= SPLIT.
+assert 4 <= SPLIT <= 52
 
 # ---- vector register map (as gen_neon16.py; v28-v31 unused here) ---------
 T = [f"v{i}" for i in range(0, 4)]
@@ -132,12 +137,21 @@ def roff(n): return (n - 13) * STRIDE       # S row offset from the anchor
 
 # ---- vector stream ---------------------------------------------------------
 def ks_step_u(k):
-    """unrolled key-schedule step k, all pipes, direct row offsets."""
+    """unrolled key-schedule step k, all pipes, direct row offsets.
+    k <= 25: S_in is the pass-1 constant (ROM row via x8); k = 26..28: S_in is
+    S0 / pre_S1 / pre_S2, broadcast from the spills; else the table row."""
     row, bx, by = k % 26, (k - 1) % 3, k % 3
     Bx = [B[p][bx] for p in range(NP)]
     By = [B[p][by] for p in range(NP)]
     ins(f"// k={k}: A = (A + S[{row}] + B{bx}) <<< 3; S[{row}] = A; B{by} = (B{by} + B{bx} + A) <<< (B{bx} + A)")
-    load4(T, "x10", roff(row))
+    if k <= 26:
+        mov32("w16", S0 if k == 26 else (P + k * Q) & M)
+        each("dup     {t}, w16", t=[s4(r) for r in T])
+    elif k in (27, 28):
+        ins(f"ldr     w16, [sp, #{PRE_S1 if k == 27 else PRE_S2}]")
+        each("dup     {t}, w16", t=[s4(r) for r in T])
+    else:
+        load4(T, "x10", roff(row))
     each("add     {t}, {t}, {a}", t=[s4(r) for r in T], a=[s4(r) for r in A])
     each("add     {t}, {t}, {b}", t=[s4(r) for r in T], b=[s4(r) for r in Bx])
     rotl3(A, T)
@@ -544,6 +558,7 @@ e()
 ins(".p2align 4")
 e("L(weights):")
 ins(".word   1, 2, 4, 8")
+
 e()
 e("#if !defined(__APPLE__)")
 ins('.section .note.GNU-stack,"",%progbits')
