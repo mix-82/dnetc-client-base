@@ -1,0 +1,27 @@
+name: vmix on N2
+
+# Push to the vmix-n2-run branch: git push -f origin neon-mix16:vmix-n2-run
+on:
+  push:
+    branches: [vmix-n2-run]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  vmix:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build and run (3 rounds)
+      run: |
+        cc -O2 tools/ci-bench/vmix.c tools/ci-bench/vmix.S -o vmix
+        { echo "## $(grep -m1 'CPU part' /proc/cpuinfo)"; for r in 1 2 3; do echo; echo "### round $r"; ./vmix 5; done; } | tee vmix-n2.md
+        cat vmix-n2.md >> "$GITHUB_STEP_SUMMARY"
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: vmix-n2
+        path: vmix-n2.md

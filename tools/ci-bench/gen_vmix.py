@@ -141,17 +141,20 @@ def skewed_round(merge):
     merge(L(G1, "C"), E(G2, "C"))
 
 # --- NEON16 step (gen_neon16.py layout) ------------------------------------
-def step16():
+def step16(ngroups=4, loads=True, stores=True):
+    """ngroups < 4 runs only the first ngroups vector chains (latency probe);
+    loads/stores False drop the S-row ldp/stp (memory-cost probe)."""
     A16 = [f"v{i}" for i in range(8, 12)]
     B16 = [[f"v{12 + 3 * p + j}" for j in range(3)] for p in range(4)]
     g = list(range(4))
     def grp4(fmt, **regs):
-        for i in range(4):
+        for i in range(ngroups):
             ins(fmt.format(**{k: v[i] for k, v in regs.items()}))
     for off, bx, by in ((-64, 1, 2), (0, 2, 0), (64, 0, 1)):
         Bx = [B16[p][bx] for p in range(4)]; By = [B16[p][by] for p in range(4)]
-        ins(f"ldp     q0, q1, [x10, #{off + 256}]")
-        ins(f"ldp     q2, q3, [x10, #{off + 288}]")
+        if loads:
+            ins(f"ldp     q0, q1, [x10, #{off + 256}]")
+            ins(f"ldp     q2, q3, [x10, #{off + 288}]")
         if XAR:
             grp4("add     {a}.4s, {a}.4s, {t}.4s", a=A16, t=T)
             grp4("add     {a}.4s, {a}.4s, {b}.4s", a=A16, b=Bx)
@@ -161,8 +164,9 @@ def step16():
             grp4("add     {t}.4s, {t}.4s, {b}.4s", t=T, b=Bx)
             grp4("shl     {a}.4s, {t}.4s, #3", a=A16, t=T)
             grp4("sri     {a}.4s, {t}.4s, #29", a=A16, t=T)
-        ins(f"stp     q8, q9, [x11, #{off + 256}]")
-        ins(f"stp     q10, q11, [x11, #{off + 288}]")
+        if stores:
+            ins(f"stp     q8, q9, [x11, #{off + 256}]")
+            ins(f"stp     q10, q11, [x11, #{off + 288}]")
         grp4("add     {t}.4s, {b}.4s, {a}.4s", t=T, b=Bx, a=A16)
         grp4("add     {y}.4s, {y}.4s, {t}.4s", y=By, t=T)
         grp4("and     {u}.16b, {s}.16b, v30.16b", u=U, s=T)
@@ -324,6 +328,11 @@ def nostore():
     STORES = False; lock(); STORES = True
 kernel("step32_nostore", nostore, 3)
 kernel("step16_lockstep", step16, 3)
+kernel("step16_noload", lambda: step16(loads=False), 3)
+kernel("step16_nomem", lambda: step16(loads=False, stores=False), 3)
+kernel("step16_g1", lambda: step16(ngroups=1), 3)
+kernel("step16_g2", lambda: step16(ngroups=2), 3)
+kernel("step16_g3", lambda: step16(ngroups=3), 3)
 def sc3():
     sc_step(15, SCB, SCC); sc_step(16, SCC, SCB); sc_step(17, SCB, SCC)
 kernel("sc4", sc3, 3)
