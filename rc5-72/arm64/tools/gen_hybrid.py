@@ -26,7 +26,8 @@ import sys
 TESTMASK = "--testmask" in sys.argv
 NP = 4                       # vector pipes
 STRIDE = 16 * NP             # bytes per S row (4 pipes x 4 lanes)
-SPLIT = 32                   # first vector step k; scalar does k=3..SPLIT-1
+SPLIT = 29                   # first vector step k; scalar does k=3..SPLIT-1
+# 29 is the N2 sweep optimum (112 c/k; 26:113 32:117 20:125 41:131).
 for a in sys.argv:
     if a.startswith("--split="): SPLIT = int(a.split("=")[1])
 # Below 29 the vector side broadcasts the pass-1 constants (mov32 + dup,
