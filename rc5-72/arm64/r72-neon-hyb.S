@@ -21,12 +21,12 @@
         .text
         .p2align 4
         .globl  FUNC(rc5_72_unit_func_neon_hyb)
-#if !defined(__APPLE__)
+#if defined(__ELF__)
         .type   rc5_72_unit_func_neon_hyb, %function
 #endif
 FUNC(rc5_72_unit_func_neon_hyb):
 // x0 = RC5_72UnitWork *, x1 = u32 *iterations, x2 = memblk (unused)
-// Vector stream: v0-v27 as in r72-neon-mix16.S (v28-v31 unused);
+// Vector stream: v0-v27 as in r72-neon-mix16.S (v28-v31 only with --preload);
 //   x0, w9 (batches), w13/w14/w15 (L0), x16 scratch, x10 = current table
 //   anchor (base + 832). x11 = current base (handoff loads only),
 //   x12 = other table base (the scalar stream's store target).
@@ -6458,7 +6458,7 @@ L(redo_mid):
 
 L(check_hi):
         // Rare path (about 1 batch in 2^28); scalar-pool registers (w2-w4) are
-        // dead here, and x10/x11/x12 (the table pointers) must stay intact.
+        // dead here, and x10/x12 (the table pointers) must stay intact.
         adr     x16, L(weights)
         ldr     q4, [x16]
         and     v5.16b, v0.16b, v4.16b
@@ -9664,7 +9664,7 @@ L(scalar_prep):
         stp     w25, w26, [x30, #-120]
         ldr     x30, [sp, #184]
         ret
-#if !defined(__APPLE__)
+#if defined(__ELF__)
         .size   rc5_72_unit_func_neon_hyb, . - rc5_72_unit_func_neon_hyb
 #endif
 
@@ -9719,6 +9719,6 @@ L(sck24):
 L(sck25):
         .word   0x2B4C3474
 
-#if !defined(__APPLE__)
+#if defined(__ELF__)
         .section .note.GNU-stack,"",%progbits
 #endif

@@ -18,7 +18,9 @@ L0hi+16.  On an L0hi byte carry (1 batch in 16) or at the last batch, the
 prep is discarded and (after the mid/lo recompute) redone by the standalone
 copy of the scalar phase, so the steady loop has no special cases.
 
-Usage: gen_hybrid.py [--testmask] > ../r72-neon-hyb.S
+Usage: gen_hybrid.py [--split=N] [--preload] [--testmask] > ../r72-neon-hyb.S
+--split=N: first vector step (default 26).
+--preload: experimental, see below.
 --testmask: test build only (see gen_neon16.py).
 """
 import sys
@@ -27,11 +29,8 @@ TESTMASK = "--testmask" in sys.argv
 NP = 4                       # vector pipes
 STRIDE = 16 * NP             # bytes per S row (4 pipes x 4 lanes)
 SPLIT = 26                   # first vector step k; scalar does k=3..SPLIT-1
-# 26 favors the fast end of the hybrid's class (cycles/key at split
-# 20/23/26/29/32): N2 125/118/113/112/117, Cortex-A78 124/117/113/-/116,
-# Oryon-M 103/104/109/-/118, in-order Cortex-A55 268/266/271/-/340.
-# N2 +0.9% and A78 +-0 from their own optima; the cost lands on Oryon-M
-# (+5.8%) and A55 (+1.9%), far from the A55's split-32 cliff.
+# 26 is the end of the first key-schedule pass, where the step constants are
+# fixed (KKS7450 splits there too); higher splits slow in-order cores.
 for a in sys.argv:
     if a.startswith("--split="): SPLIT = int(a.split("=")[1])
 # Below 29 the vector side broadcasts the pass-1 constants (mov32 + dup,
@@ -43,7 +42,7 @@ assert 4 <= SPLIT <= 52
 # load. Same instructions, different order. Default off.
 PRELOAD = "--preload" in sys.argv
 
-# ---- vector register map (as gen_neon16.py; v28-v31 unused here) ---------
+# ---- vector register map (as gen_neon16.py; v28-v31 used only by --preload)
 T = [f"v{i}" for i in range(0, 4)]
 U = [f"v{i}" for i in range(4, 8)]
 A = [f"v{i}" for i in range(8, 12)]
@@ -56,8 +55,9 @@ assert len(set(C + D + [B[p][1] for p in range(NP)])) == 12
 # ---- scalar register map --------------------------------------------------
 # The two streams are interleaved line by line, so they share nothing:
 # vector GPRs: x0, w9, w13-w15 (read), x16, x10 (table anchor, live all body).
-# Scalar GPRs below; x11/x12 are the table base registers (x11 dead during
-# the body after the handoff loads; x12 is the scalar store target).
+# Scalar GPRs below; x12 is the scalar store target. x11 (current table base)
+# is dead after the handoff loads: the scalar stream reuses it as w11, and
+# swap_tables sets it again.
 SA  = ["w2", "w3", "w4", "w5"]        # A chain per key
 SL  = [["w6", "w7", "w8", "w17"],     # L[0] per key
        ["w19", "w20", "w21", "w22"],  # L[1] per key
@@ -148,8 +148,8 @@ def roff(n): return (n - 13) * STRIDE       # S row offset from the anchor
 # ---- vector stream ---------------------------------------------------------
 def ks_step_u(k):
     """unrolled key-schedule step k, all pipes, direct row offsets.
-    k <= 25: S_in is the pass-1 constant (ROM row via x8); k = 26..28: S_in is
-    S0 / pre_S1 / pre_S2, broadcast from the spills; else the table row."""
+    k <= 25: S_in is the pass-1 constant (mov32 + dup); k = 26: S0 (mov32 +
+    dup); k = 27, 28: pre_S1 / pre_S2, dup from the spills; else the table row."""
     row, bx, by = k % 26, (k - 1) % 3, k % 3
     Bx = [B[p][bx] for p in range(NP)]
     By = [B[p][by] for p in range(NP)]
@@ -347,12 +347,12 @@ e("""
         .text
         .p2align 4
         .globl  FUNC(rc5_72_unit_func_neon_hyb)
-#if !defined(__APPLE__)
+#if defined(__ELF__)
         .type   rc5_72_unit_func_neon_hyb, %function
 #endif
 FUNC(rc5_72_unit_func_neon_hyb):
 // x0 = RC5_72UnitWork *, x1 = u32 *iterations, x2 = memblk (unused)
-// Vector stream: v0-v27 as in r72-neon-mix16.S (v28-v31 unused);
+// Vector stream: v0-v27 as in r72-neon-mix16.S (v28-v31 only with --preload);
 //   x0, w9 (batches), w13/w14/w15 (L0), x16 scratch, x10 = current table
 //   anchor (base + 832). x11 = current base (handoff loads only),
 //   x12 = other table base (the scalar stream's store target).
@@ -503,7 +503,7 @@ ins("b       L(swap_tables)")
 e()
 e("L(check_hi):")
 ins("// Rare path (about 1 batch in 2^28); scalar-pool registers (w2-w4) are")
-ins("// dead here, and x10/x11/x12 (the table pointers) must stay intact.")
+ins("// dead here, and x10/x12 (the table pointers) must stay intact.")
 ins("adr     x16, L(weights)")
 ins(f"ldr     {q(U[0])}, [x16]")
 movemask("w2", T, U[0], U[1], "w3")
@@ -602,7 +602,7 @@ ins(f"str     x30, [sp, #{SP_LR}]")
 scalar_stream(lambda: None)
 ins(f"ldr     x30, [sp, #{SP_LR}]")
 ins("ret")
-e("#if !defined(__APPLE__)")
+e("#if defined(__ELF__)")
 ins(".size   rc5_72_unit_func_neon_hyb, . - rc5_72_unit_func_neon_hyb")
 e("#endif")
 e()
@@ -615,7 +615,7 @@ for k in range(3, min(SPLIT, 27)):
     ins(f".word   0x{((P + k * Q) & M if k <= 25 else S0):08X}")
 
 e()
-e("#if !defined(__APPLE__)")
+e("#if defined(__ELF__)")
 ins('.section .note.GNU-stack,"",%progbits')
 e("#endif")
 
