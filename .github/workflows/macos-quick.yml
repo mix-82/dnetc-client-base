@@ -29,7 +29,7 @@ jobs:
         make -j3
     - name: Self-test
       run: ./dnetc -test rc5-72
-    - name: Bench (MIX NEON #7 vs MIX HYBRID #8, alternating)
+    - name: Bench (MIX NEON #7 vs MIX NEON HYBRID #8, alternating)
       run: |
         cc -O2 tools/ci-bench/clockcal.c -o clockcal
         rate() { sed -E 's/^\[[^]]*\] //' "$1" | grep -oE '\[[0-9,]+ keys/sec\]' | tail -1 | tr -d '[],'; }

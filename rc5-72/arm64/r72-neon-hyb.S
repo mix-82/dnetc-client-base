@@ -1,4 +1,4 @@
-// RC5-72 scalar + NEON core for AArch64, 16 keys per batch (MIX HYBRID)
+// RC5-72 scalar + NEON core for AArch64, 16 keys per batch (MIX NEON HYBRID)
 // Created by Mix. Based on the structure of Didier Levet's PPC KKS7450
 // core, rebalanced for AArch64.
 //
