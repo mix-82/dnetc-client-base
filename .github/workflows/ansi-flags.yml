@@ -25,6 +25,7 @@ concurrency:
 
 jobs:
   macos:
+    if: false              # macOS results already in; macos-14 is retired
     name: ${{ matrix.os }} (clang)
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
@@ -48,7 +49,6 @@ jobs:
           !ansi-flags-out/dnetc-*
 
   linux:
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.linux == 'true'
     name: linux-arm64 slot ${{ matrix.slot }} (gcc)
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
@@ -59,7 +59,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Run
-      run: sh tools/ansi-flags/run.sh ansi-flags-out 2
+      run: CORES="0 1 2 5" sh tools/ansi-flags/run.sh ansi-flags-out 2
     - name: Summary
       if: always()
       run: cat ansi-flags-out/results.md >> "$GITHUB_STEP_SUMMARY" || true

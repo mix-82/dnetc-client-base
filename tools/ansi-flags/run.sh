@@ -7,8 +7,9 @@
 # binary must pass -test rc5-72. The benchmarks then run round-robin (round
 # 1 of every set, then round 2, ...) so a drifting clock (the macOS runners
 # are VMs) affects all sets alike, with a clock measurement before each run.
-# Reports the median cycles/key and keys/sec per set and core (#0-2 = ANSI
-# 4/2/1-pipe) in $OUT/results.md.
+# Reports the median cycles/key and keys/sec per set and core in
+# $OUT/results.md. CORES (default "0 1 2" = ANSI 4/2/1-pipe) picks the cores;
+# the NEON 8x4 core (#5, C++ intrinsics) is rebuilt with each set too.
 #
 # Usage: tools/ansi-flags/run.sh [outdir] [rounds]
 # Environment: MAKE_ARGS (extra make arguments, for cross testing),
@@ -24,6 +25,7 @@ mkdir -p "$OUT"
 OUT=$(cd "$OUT" && pwd)
 cd "$ROOT" || exit 1
 NCPU=$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 2)
+CORES=${CORES:-"0 1 2"}
 
 case "$(uname -s)" in
 Darwin)
@@ -50,8 +52,8 @@ Darwin)
 -O3
 -Os
 -Os -funroll-loops
--O2 -funroll-loops -finline-functions
--O2 -funroll-loops -mtune=cortex-a76'
+-O2 -funroll-loops -mtune=cortex-a76
+-O2 -funroll-loops -mcpu=neoverse-n2'
   ;;
 esac
 [ -n "${SETS_OVERRIDE:-}" ] && SETS=$SETS_OVERRIDE
@@ -72,7 +74,7 @@ n=0
 while IFS= read -r set; do
   n=$((n + 1))
   sed "s|^\(CCFLAGS = .*\) $CUR |\1 $set |" Makefile.orig > Makefile
-  rm -f output/r72ansi1.o output/r72ansi2.o output/r72ansi4.o dnetc
+  rm -f output/r72ansi1.o output/r72ansi2.o output/r72ansi4.o output/r72-neon-8x4.o dnetc
   eval make $MAKE_ARGS > "$OUT/build-$n.txt" 2>&1
   if [ ! -x dnetc ] || ! grep -q -- " $set " "$OUT/build-$n.txt"; then
     echo "set $n ($set): build failed"; echo "build failed" > "$OUT/test-$n.status"; continue
@@ -97,7 +99,7 @@ while [ $r -lt "$ROUNDS" ]; do
   while [ $n -lt "$NSETS" ]; do
     n=$((n + 1))
     [ -x "$OUT/dnetc-$n" ] || continue
-    for core in 0 1 2; do
+    for core in $CORES; do
       ghz=0
       [ -x "$OUT/clockcal" ] && ghz=$($RUN "$OUT/clockcal" 3 | awk '{print $1}')
       $RUN "$OUT/dnetc-$n" -bench rc5-72 $core > "$OUT/bench-$n-$core-$r.txt" 2>&1
@@ -115,13 +117,14 @@ done
   echo "CPU: $CPU x $NCPU; $ROUNDS rounds, round-robin; median cycles/key (median Mkeys/s)."
   echo "Current $TARGET set: \`$CUR\`."
   echo
-  echo "| options | -test | #0 ANSI 4-pipe | #1 ANSI 2-pipe | #2 ANSI 1-pipe |"
-  echo "|---|---|---|---|---|"
+  hdr="| options | -test |"; sep="|---|---|"
+  for core in $CORES; do hdr="$hdr #$core $(grep -m1 -oE "core #$core \([^)]*\)" "$OUT/test-1.txt" | sed 's/.*(//; s/)//') |"; sep="$sep---|"; done
+  echo "$hdr"; echo "$sep"
   n=0
   while IFS= read -r set; do
     n=$((n + 1))
     row="| \`$set\` | $(cat "$OUT/test-$n.status" 2>/dev/null)"
-    for core in 0 1 2; do
+    for core in $CORES; do
       cell=$(awk -v n=$n -v c=$core '
              function med(a, cnt,   i, j, t) {
                for (i = 1; i <= cnt; i++) for (j = i + 1; j <= cnt; j++) if (a[j] < a[i]) { t = a[i]; a[i] = a[j]; a[j] = t }
