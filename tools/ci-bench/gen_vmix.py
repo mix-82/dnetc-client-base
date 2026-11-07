@@ -141,25 +141,18 @@ def skewed_round(merge):
     merge(L(G1, "C"), E(G2, "C"))
 
 # --- NEON16 step (gen_neon16.py layout) ------------------------------------
-def step16(ngroups=4, loads=True, stores=True, mul=False, pre=False):
+def step16(ngroups=4, loads=True, stores=True, mul=False):
     """ngroups < 4 runs only the first ngroups vector chains (latency probe);
-    loads/stores False drop the S-row ldp/stp (memory-cost probe); pre loads
-    each S row one sub-step early into v24-v27 (hides load-use stalls on
-    in-order cores)."""
-    P = [f"v{i}" for i in range(24, 28)]
+    loads/stores False drop the S-row ldp/stp (memory-cost probe)."""
     A16 = [f"v{i}" for i in range(8, 12)]
     B16 = [[f"v{12 + 3 * p + j}" for j in range(3)] for p in range(4)]
     g = list(range(4))
     def grp4(fmt, **regs):
         for i in range(ngroups):
             ins(fmt.format(**{k: v[i] for k, v in regs.items()}))
-    for off, nxt, bx, by in ((-64, 0, 1, 2), (0, 64, 2, 0), (64, -64, 0, 1)):
+    for off, bx, by in ((-64, 1, 2), (0, 2, 0), (64, 0, 1)):
         Bx = [B16[p][bx] for p in range(4)]; By = [B16[p][by] for p in range(4)]
-        if pre:
-            grp4("add     {t}.4s, {p}.4s, {a}.4s", t=T, p=P, a=A16)
-            ins(f"ldp     q24, q25, [x10, #{nxt + 256}]")
-            ins(f"ldp     q26, q27, [x10, #{nxt + 288}]")
-        elif loads:
+        if loads:
             ins(f"ldp     q0, q1, [x10, #{off + 256}]")
             ins(f"ldp     q2, q3, [x10, #{off + 288}]")
         if XAR:
@@ -167,8 +160,7 @@ def step16(ngroups=4, loads=True, stores=True, mul=False, pre=False):
             grp4("add     {a}.4s, {a}.4s, {b}.4s", a=A16, b=Bx)
             for i in range(4): ins(f"xar     z{8 + i}.s, z{8 + i}.s, z28.s, #29")
         else:
-            if not pre:
-                grp4("add     {t}.4s, {t}.4s, {a}.4s", t=T, a=A16)
+            grp4("add     {t}.4s, {t}.4s, {a}.4s", t=T, a=A16)
             grp4("add     {t}.4s, {t}.4s, {b}.4s", t=T, b=Bx)
             if mul:  # x<<3 as x*8: vector mul issues on V0, shifts only on V1 (N2)
                 grp4("mul     {a}.4s, {t}.4s, v29.4s", a=A16, t=T)
@@ -229,8 +221,8 @@ def merge_prop(a, b):
     while bi < len(b):
         out.append(b[bi]); bi += 1
 
-def hyb16(r, mul=False, pre=False):
-    merge_prop(cap(step16, 4, True, True, mul, pre), sc_lines(3 * r))
+def hyb16(r, mul=False):
+    merge_prop(cap(step16, 4, True, True, mul), sc_lines(3 * r))
 
 def hyb32(r):
     merge_prop(cap(lock), sc_lines(3 * r))
@@ -346,7 +338,6 @@ kernel("step16_g1", lambda: step16(ngroups=1), 3)
 kernel("step16_g2", lambda: step16(ngroups=2), 3)
 kernel("step16_g3", lambda: step16(ngroups=3), 3)
 kernel("step16_mul", lambda: step16(mul=True), 3)
-kernel("step16_pre", lambda: step16(pre=True), 3)
 def sc3():
     sc_step(15, SCB, SCC); sc_step(16, SCC, SCB); sc_step(17, SCB, SCC)
 kernel("sc4", sc3, 3)
@@ -354,8 +345,6 @@ for r in (1, 2, 3):
     kernel(f"hyb16_{r}", lambda r=r: hyb16(r), 3)
 for r in (1, 2):
     kernel(f"hyb16_mul_{r}", lambda r=r: hyb16(r, True), 3)
-for r in (1, 2):
-    kernel(f"hyb16_pre_{r}", lambda r=r: hyb16(r, False, True), 3)
 for r in (2, 4, 6):
     kernel(f"hyb32_{r}", lambda r=r: hyb32(r), 3)
 

@@ -18,9 +18,8 @@ L0hi+16.  On an L0hi byte carry (1 batch in 16) or at the last batch, the
 prep is discarded and (after the mid/lo recompute) redone by the standalone
 copy of the scalar phase, so the steady loop has no special cases.
 
-Usage: gen_hybrid.py [--split=N] [--preload] [--testmask] > ../r72-neon-hyb.S
+Usage: gen_hybrid.py [--split=N] [--testmask] > ../r72-neon-hyb.S
 --split=N: first vector step (default 26).
---preload: experimental, see below.
 --testmask: test build only (see gen_neon16.py).
 """
 import sys
@@ -37,12 +36,8 @@ for a in sys.argv:
 # k=SPLIT..26) and the precompute values (dup from the spills, k=27..28);
 # no extra base register, so the two streams stay disjoint. 4 <= SPLIT.
 assert 4 <= SPLIT <= 52
-# --preload (experimental): load each S row the vector side reads one step
-# early into v28-v31, so in-order cores (Cortex-A53/A55) do not stall on the
-# load. Same instructions, different order. Default off.
-PRELOAD = "--preload" in sys.argv
 
-# ---- vector register map (as gen_neon16.py; v28-v31 used only by --preload)
+# ---- vector register map (as gen_neon16.py; v28-v31 unused)
 T = [f"v{i}" for i in range(0, 4)]
 U = [f"v{i}" for i in range(4, 8)]
 A = [f"v{i}" for i in range(8, 12)]
@@ -160,14 +155,9 @@ def ks_step_u(k):
     elif k in (27, 28):
         ins(f"ldr     w16, [sp, #{PRE_S1 if k == 27 else PRE_S2}]")
         each("dup     {t}, w16", t=[s4(r) for r in T])
-    elif PRELOAD:
-        pre_use(row)
-        each("add     {t}, {p}, {a}", t=[s4(r) for r in T], p=[s4(r) for r in PV], a=[s4(r) for r in A])
-        pre_next()
     else:
         load4(T, "x10", roff(row))
-    if k <= 28 or not PRELOAD:
-        each("add     {t}, {t}, {a}", t=[s4(r) for r in T], a=[s4(r) for r in A])
+    each("add     {t}, {t}, {a}", t=[s4(r) for r in T], a=[s4(r) for r in A])
     each("add     {t}, {t}, {b}", t=[s4(r) for r in T], b=[s4(r) for r in Bx])
     rotl3(A, T)
     store4(A, "x10", roff(row))
@@ -175,28 +165,11 @@ def ks_step_u(k):
     each("add     {y}, {y}, {t}", y=[s4(r) for r in By], t=[s4(r) for r in T])
     vrotl(By, T, U, T)
 
-def half_round(X, Y, off, pre=False):
+def half_round(X, Y, off):
     each("eor     {x}, {x}, {y}", x=[b16(r) for r in X], y=[b16(r) for r in Y])
     vrotl(X, Y, U, T)
-    if pre:
-        pre_use(off // STRIDE + 13)
-        each("add     {x}, {x}, {p}", x=[s4(r) for r in X], p=[s4(r) for r in PV])
-        pre_next()
-        return
     load4(T, "x10", off)
     each("add     {x}, {x}, {t}", x=[s4(r) for r in X], t=[s4(r) for r in T])
-
-# --preload: the vector side's S-row reads in program order; each read uses
-# PV (loaded at the previous read) and then starts the next row's load.
-PV = ["v28", "v29", "v30", "v31"]
-PRE_ROWS = [k % 26 for k in range(max(SPLIT, 29), 77)] + list(range(0, 25))
-pre_i = [0]
-def pre_use(row):
-    assert PRE_ROWS[pre_i[0]] == row, (pre_i[0], row)
-def pre_next():
-    pre_i[0] += 1
-    if pre_i[0] < len(PRE_ROWS):
-        load4(PV, "x10", roff(PRE_ROWS[pre_i[0]]))
 
 def compare(dst, vecs, ref, vtmp):
     if not TESTMASK:
@@ -227,9 +200,6 @@ def popcnt(dst_w, src_w, vtmp):
 
 def vector_body():
     """steps SPLIT..76, encryption, up to (not including) the check."""
-    if PRELOAD:
-        pre_i[0] = 0
-        load4(PV, "x10", roff(PRE_ROWS[0]))
     for k in range(SPLIT, 77):
         ks_step_u(k)
     ins("// encryption: C = plain.lo + S[0], D = plain.hi + S[1]")
@@ -237,19 +207,15 @@ def vector_body():
     ins(f"dup     {s4(U[0])}, w16")
     ins("ldr     w16, [x0, #0]")
     ins(f"dup     {s4(U[1])}, w16")
-    src = PV if PRELOAD else T
     for row, dst, u in ((0, C, U[0]), (1, D, U[1])):
-        if PRELOAD: pre_use(row)
-        else: load4(T, "x10", roff(row))
-        each("add     {c}, {t}, " + s4(u), c=[s4(r) for r in dst], t=[s4(r) for r in src])
-        if PRELOAD: pre_next()
+        load4(T, "x10", roff(row))
+        each("add     {c}, {t}, " + s4(u), c=[s4(r) for r in dst], t=[s4(r) for r in T])
     for r in range(1, 12):
         ins(f"// round {r}: C = ((C ^ D) <<< D) + S[{2*r}]; D = ((D ^ C) <<< C) + S[{2*r+1}]")
-        half_round(C, D, roff(2 * r), PRELOAD)
-        half_round(D, C, roff(2 * r + 1), PRELOAD)
+        half_round(C, D, roff(2 * r))
+        half_round(D, C, roff(2 * r + 1))
     ins("// final half-round; D only on the rare path")
-    half_round(C, D, roff(24), PRELOAD)
-    if PRELOAD: assert pre_i[0] == len(PRE_ROWS), pre_i[0]
+    half_round(C, D, roff(24))
 
 # ---- scalar stream ---------------------------------------------------------
 # The scalar stream stores S/A/L words in transposed pairs (stp w, w: keys
@@ -352,7 +318,7 @@ e("""
 #endif
 FUNC(rc5_72_unit_func_neon_hyb):
 // x0 = RC5_72UnitWork *, x1 = u32 *iterations, x2 = memblk (unused)
-// Vector stream: v0-v27 as in r72-neon-mix16.S (v28-v31 only with --preload);
+// Vector stream: v0-v27 as in r72-neon-mix16.S;
 //   x0, w9 (batches), w13/w14/w15 (L0), x16 scratch, x10 = current table
 //   anchor (base + 832). x11 = current base (handoff loads only),
 //   x12 = other table base (the scalar stream's store target).

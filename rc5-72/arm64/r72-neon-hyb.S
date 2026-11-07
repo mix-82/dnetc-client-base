@@ -26,7 +26,7 @@
 #endif
 FUNC(rc5_72_unit_func_neon_hyb):
 // x0 = RC5_72UnitWork *, x1 = u32 *iterations, x2 = memblk (unused)
-// Vector stream: v0-v27 as in r72-neon-mix16.S (v28-v31 only with --preload);
+// Vector stream: v0-v27 as in r72-neon-mix16.S;
 //   x0, w9 (batches), w13/w14/w15 (L0), x16 scratch, x10 = current table
 //   anchor (base + 832). x11 = current base (handoff loads only),
 //   x12 = other table base (the scalar stream's store target).
