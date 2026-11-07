@@ -24,6 +24,9 @@ DECL(step32_lockstep) DECL(step32_skew) DECL(step32_fine) DECL(step32_nostore)
 DECL(step16_lockstep)
 DECL(step16_noload) DECL(step16_nomem) DECL(step16_g1) DECL(step16_g2) DECL(step16_g3) DECL(step16_mul) DECL(hyb16_mul_1) DECL(hyb16_mul_2)
 DECL(sc4) DECL(hyb16_1) DECL(hyb16_2) DECL(hyb16_3)
+DECL(step16_v) DECL(step16_str) DECL(step16_ldr) DECL(step16_ls) DECL(step16_skew)
+DECL(hyb16_pair_1) DECL(hyb16_pair_2) DECL(hyb16_lsp_1) DECL(hyb16_lsp_2)
+DECL(hyb16_skp_1) DECL(hyb16_skp_2) DECL(hyb16_skw_1) DECL(hyb16_skw_2)
 DECL(hyb32_2) DECL(hyb32_4) DECL(hyb32_6)
 #ifdef HAVE_SVE2_KERNELS
 DECL(xar) DECL(step32_xar) DECL(step16_xar)
@@ -59,6 +62,19 @@ static struct { const char *name; void (*fn)(uint64_t, void *); int unit; const 
   K(hyb16_1, 3, "NEON16 step + 1 scalar 4-key step, interleaved"),
   K(hyb16_2, 3, "NEON16 step + 2 scalar 4-key steps, interleaved"),
   K(hyb16_3, 3, "NEON16 step + 3 scalar 4-key steps, interleaved"),
+  K(step16_v, 3, "step16 rebuilt by step16v (must equal step16_lockstep)"),
+  K(step16_str, 3, "step16, stores as 4x str q instead of 2x stp q"),
+  K(step16_ldr, 3, "step16, loads as 4x ldr q instead of 2x ldp q"),
+  K(step16_ls, 3, "step16, ldr q + str q"),
+  K(step16_skew, 3, "step16_ls, pipes skewed so shifts are spread"),
+  K(hyb16_pair_1, 3, "hyb16_1, in-order pairing order (vector, then scalar)"),
+  K(hyb16_pair_2, 3, "hyb16_2, in-order pairing order"),
+  K(hyb16_lsp_1, 3, "step16_ls + 1 scalar step, pairing order"),
+  K(hyb16_lsp_2, 3, "step16_ls + 2 scalar steps, pairing order"),
+  K(hyb16_skp_1, 3, "step16_skew + 1 scalar step, pairing order"),
+  K(hyb16_skp_2, 3, "step16_skew + 2 scalar steps, pairing order"),
+  K(hyb16_skw_1, 3, "step16_skew + 1 scalar step, even interleave"),
+  K(hyb16_skw_2, 3, "step16_skew + 2 scalar steps, even interleave"),
   K(hyb32_2, 3, "NEON32 step + 2 scalar 4-key steps, interleaved"),
   K(hyb32_4, 3, "NEON32 step + 4 scalar 4-key steps, interleaved"),
   K(hyb32_6, 3, "NEON32 step + 6 scalar 4-key steps, interleaved"),

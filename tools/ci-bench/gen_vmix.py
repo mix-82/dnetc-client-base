@@ -227,6 +227,71 @@ def hyb16(r, mul=False):
 def hyb32(r):
     merge_prop(cap(lock), sc_lines(3 * r))
 
+# --- ordering / load-store variants of the NEON16 step (Arm guides, Nov 7) --
+# ld/st: "pair" = ldp/stp q (as step16), "single" = ldr/str q per pipe.
+# order: "grp" = as step16 (4 pipes per op, e.g. 4 shl then 4 sri);
+#        "skew" = diagonal wavefront over the 3 sub-steps, pipe p one op
+#        behind pipe p-1, so adjacent instructions are different ops (spreads
+#        the F1-only shifts on Cortex-A57/A72). Same instructions and
+#        dependences; dependent ops stay 4 apart except at the loop edge.
+def step16v(ld="pair", st="pair", order="grp"):
+    A16 = [f"v{i}" for i in range(8, 12)]
+    B16 = [[f"v{12 + 3 * p + j}" for j in range(3)] for p in range(4)]
+    seq = [[] for _ in range(4)]
+    for off, bx, by in ((-64, 1, 2), (0, 2, 0), (64, 0, 1)):
+        Bx = [B16[p][bx] for p in range(4)]; By = [B16[p][by] for p in range(4)]
+        def ops(i):
+            t, u, a, x, y = T[i], U[i], A16[i], Bx[i], By[i]
+            l = []
+            if ld == "single": l.append(f"ldr     q{i}, [x10, #{off + 256 + 16 * i}]")
+            l += [f"add     {t}.4s, {t}.4s, {a}.4s", f"add     {t}.4s, {t}.4s, {x}.4s",
+                  f"shl     {a}.4s, {t}.4s, #3", f"sri     {a}.4s, {t}.4s, #29"]
+            if st == "single": l.append(f"str     q{8 + i}, [x11, #{off + 256 + 16 * i}]")
+            l += [f"add     {t}.4s, {x}.4s, {a}.4s", f"add     {y}.4s, {y}.4s, {t}.4s",
+                  f"and     {u}.16b, {t}.16b, v30.16b", f"orr     {t}.16b, {t}.16b, v31.16b",
+                  f"ushl    {u}.4s, {y}.4s, {u}.4s", f"ushl    {t}.4s, {y}.4s, {t}.4s",
+                  f"orr     {y}.16b, {u}.16b, {t}.16b"]
+            return l
+        P = [ops(i) for i in range(4)]
+        if order == "skew":
+            assert st == "single" and ld == "single"
+            for i in range(4): seq[i] += P[i]
+            continue
+        if ld == "pair":
+            ins(f"ldp     q0, q1, [x10, #{off + 256}]")
+            ins(f"ldp     q2, q3, [x10, #{off + 288}]")
+        n = len(P[0])
+        if order == "grp":
+            for j in range(n):
+                for i in range(4): ins(P[i][j])
+                if st == "pair" and P[0][j].startswith("sri"):
+                    ins(f"stp     q8, q9, [x11, #{off + 256}]")
+                    ins(f"stp     q10, q11, [x11, #{off + 288}]")
+    if order == "skew":     # one wavefront over all 3 sub-steps (pipes are independent)
+        n = len(seq[0])
+        for t in range(n + 3):
+            for i in range(4):
+                if 0 <= t - i < n: ins(seq[i][t - i])
+
+def merge_pair(a, b):
+    """in-order dual-issue order (Cortex-A55 rule: a 128-bit vector op pairs
+    only as the older instruction): each line of a is followed by one line of
+    b; b's surplus goes in pairs after evenly spaced lines of a."""
+    extra = max(0, len(b) - len(a))
+    pairs, bi, got = extra // 2, 0, 0
+    for i, line in enumerate(a):
+        out.append(line)
+        if bi < len(b) and (len(b) >= len(a) or (i + 1) * len(b) // len(a) > bi):
+            out.append(b[bi]); bi += 1
+        want = (i + 1) * pairs // len(a)
+        while got < want and bi + 1 < len(b):
+            out.append(b[bi]); out.append(b[bi + 1]); bi += 2; got += 1
+    out.extend(b[bi:])
+
+def hyb16v(r, merge, **kw):
+    v = cap(step16v, kw.get("ld", "pair"), kw.get("st", "pair"), kw.get("order", "grp"))
+    merge(v, sc_lines(3 * r))
+
 # --- simple kernels ----------------------------------------------------------
 def simple(op, n=32):
     """n independent instructions rotating over v8-v23 (16 registers)."""
@@ -345,6 +410,16 @@ for r in (1, 2, 3):
     kernel(f"hyb16_{r}", lambda r=r: hyb16(r), 3)
 for r in (1, 2):
     kernel(f"hyb16_mul_{r}", lambda r=r: hyb16(r, True), 3)
+kernel("step16_v", lambda: step16v(), 3)
+kernel("step16_str", lambda: step16v(st="single"), 3)
+kernel("step16_ldr", lambda: step16v(ld="single"), 3)
+kernel("step16_ls", lambda: step16v(ld="single", st="single"), 3)
+kernel("step16_skew", lambda: step16v("single", "single", "skew"), 3)
+for r in (1, 2):
+    kernel(f"hyb16_pair_{r}", lambda r=r: hyb16v(r, merge_pair), 3)
+    kernel(f"hyb16_lsp_{r}", lambda r=r: hyb16v(r, merge_pair, ld="single", st="single"), 3)
+    kernel(f"hyb16_skp_{r}", lambda r=r: hyb16v(r, merge_pair, ld="single", st="single", order="skew"), 3)
+    kernel(f"hyb16_skw_{r}", lambda r=r: hyb16v(r, merge_prop, ld="single", st="single", order="skew"), 3)
 for r in (2, 4, 6):
     kernel(f"hyb32_{r}", lambda r=r: hyb32(r), 3)
 
