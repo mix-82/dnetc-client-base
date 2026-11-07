@@ -10,7 +10,7 @@ for v in raw orig fix; do
   ref=$([ $v = fix ] && echo origin/${FIXREF:-android-detect} || echo upstream/master)
   rm -rf "t-$v"; git worktree add -q --detach "t-$v" "$ref"
   ( cd "t-$v"
-    [ $v = raw ] || grep -q "defined(__ANDROID__)" common/netbase.cpp ||     sed -i 's|^#if (defined(__GLIBC__) \&\& (__GLIBC__ >= 2)) \\$|&\n    \|\| defined(__ANDROID__) \\|' common/netbase.cpp
+    [ $v != orig ] ||     sed -i 's|^#if (defined(__GLIBC__) \&\& (__GLIBC__ >= 2)) \\$|&\n    \|\| defined(__ANDROID__) \\|' common/netbase.cpp
     sed -i '/gcc-arm64 optimizations need to be determined/{n;/^\s*exit\s*$/d}' configure
     SHELL=/bin/sh ./configure linux-arm64 > "$OUT/cfg-$v.log" 2>&1
     make -k -j4 CC="$B/aarch64-linux-android30-clang++ -std=gnu++14 -DANDROID" \
