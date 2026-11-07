@@ -1,0 +1,42 @@
+name: -stress rc5-72 (MIX cores)
+
+# Push to the stress-run branch: git push -f origin neon-mix16:stress-run
+on:
+  push:
+    branches: [stress-run]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stress:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04-arm, macos-15, macos-26]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: |
+        case "${{ matrix.os }}" in macos*) ./configure macosx-arm64 ;; *) ./configure linux-arm64 ;; esac > /dev/null
+        make -j3 > build.log 2>&1 || [ -x dnetc ]
+    - name: -stress (cores 5, 7, 8)
+      run: |
+        for c in 5 7 8; do
+          echo "=== core $c, $(date -u +%T)"
+          ./dnetc -l dnetc-stress.log -stress rc5-72 $c > stress-$c.out 2>&1; echo "exit $?"
+          grep -iE 'core #|pass|fail|error|success' stress-$c.out | sed -E 's/^\[[^]]*\] //' | tail -8
+        done 2>&1 | tee summary.txt
+        { echo '```'; cat summary.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: stress-${{ matrix.os }}
+        path: |
+          dnetc-stress.log
+          stress-*.out
+          summary.txt
