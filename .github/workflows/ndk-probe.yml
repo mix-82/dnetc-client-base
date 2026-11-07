@@ -3,6 +3,9 @@ name: NDK cputypes probe
 on:
   push:
     branches: [ndk-probe]
+    paths:               # only when this probe changes; otherwise run it by hand
+      - 'tools/ndk-probe/run.sh'
+      - '.github/workflows/ndk-probe.yml'
   workflow_dispatch:
 
 permissions:

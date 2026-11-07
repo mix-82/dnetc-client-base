@@ -3,6 +3,8 @@ name: PMU probe (arm64 runner performance counters)
 on:
   push:
     branches: [ndk-probe]
+    paths:               # only when this probe changes; otherwise run it by hand
+      - '.github/workflows/pmu-probe.yml'
   workflow_dispatch:
 
 permissions:

@@ -3,6 +3,8 @@ name: PMU top-down of MIX NEON vs MIX HYBRID (N2)
 on:
   push:
     branches: [ndk-probe]
+    paths:               # only when this probe changes; otherwise run it by hand
+      - '.github/workflows/pmu-cores.yml'
   workflow_dispatch:
 
 permissions:

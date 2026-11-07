@@ -3,6 +3,8 @@ name: NDK r22 vs r30 predefined macros
 on:
   push:
     branches: [ndk-probe]
+    paths:               # only when this probe changes; otherwise run it by hand
+      - '.github/workflows/ndk-defines.yml'
   workflow_dispatch:
 
 permissions:
