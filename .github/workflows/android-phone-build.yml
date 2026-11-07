@@ -1,0 +1,63 @@
+name: Android phone build (NDK r30, macOS clang options)
+
+# Builds the android-phone-test branch (Android detection + timer probe)
+# with the NDK's clang and configure's macOS clang options (OPTS_CLANGCC,
+# -Os), then runs -test, -stress and -bench natively on an arm64 runner.
+on:
+  push:
+    branches: [ndk-probe]
+    paths: ['.github/workflows/android-phone-build.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: android-phone-test
+    - name: Build
+      run: |
+        B=$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin
+        echo "NDK: $(grep Pkg.Revision $ANDROID_NDK_LATEST_HOME/source.properties)"
+        # master's linux-arm64 target stops before building; remove the stop for this test build
+        sed -i '/gcc-arm64 optimizations need to be determined/{n;/^\s*exit\s*$/d}' configure
+        SHELL=/bin/sh ./configure linux-arm64 > cfg.log 2>&1
+        OPTS=$(sed -n '/^OPTS_CLANGCC="/,/"$/p' configure | tr -d '\\\n' | sed 's/^OPTS_CLANGCC="//; s/"$//')
+        echo "clang options: $OPTS"
+        mkdir -p output
+        make -j4 CC="$B/aarch64-linux-android30-clang++ -std=gnu++14 -DANDROID $OPTS" \
+             AS="$B/aarch64-linux-android30-clang -c" STRIP="$B/llvm-strip" \
+             LIBS="" LDFLAGS="-static" > build.log 2>&1 || [ -x dnetc ]
+        grep -m1 'r72-neon-8x4' build.log | grep -q -- ' -Os ' && echo "compile line has -Os"
+        "$B/llvm-strip" dnetc; file dnetc
+    - uses: actions/upload-artifact@v4
+      with:
+        name: dnetc-android-arm64
+        path: |
+          dnetc
+          build.log
+  run:
+    needs: build
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: dnetc-android-arm64
+    - name: -cpuinfo, -test, -stress, -bench
+      run: |
+        chmod +x dnetc
+        ./dnetc -l dnetc.log -cpuinfo > /dev/null 2>&1
+        ./dnetc -l dnetc.log -test rc5-72 > /dev/null 2>&1
+        ./dnetc -l dnetc.log -stress rc5-72 > /dev/null 2>&1
+        ./dnetc -l dnetc.log -bench rc5-72 > /dev/null 2>&1
+        cat dnetc.log; { echo '```'; cat dnetc.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+    - uses: actions/upload-artifact@v4
+      with:
+        name: dnetc-log-runner
+        path: dnetc.log
