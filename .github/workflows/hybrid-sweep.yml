@@ -21,7 +21,7 @@ jobs:
     - name: Sweep
       run: |
         git show 8eab7dfc:rc5-72/arm64/tools/gen_hybrid.py > /tmp/gen_hybrid_old.py  # frame-table constants
-        OLDGEN=/tmp/gen_hybrid_old.py SPLITS="old26 26 old26 26" \
+        OLDGEN=/tmp/gen_hybrid_old.py SPLITS="26 pre26 29 pre29 26 pre26 29 pre29" \
           sh tools/ci-bench/hybrid-sweep.sh sweep-out 3
     - name: Summary
       if: always()
