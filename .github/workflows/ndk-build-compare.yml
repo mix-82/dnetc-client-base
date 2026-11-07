@@ -34,7 +34,7 @@ jobs:
         echo "NDK=/tmp/android-ndk-r22" >> $GITHUB_ENV
     - name: Build both
       env:
-        FIXREF: pr49-timer-test
+        FIXREF: android-detect
       run: |
         bash tools/ndk-probe/build-compare.sh
         cat cmp/summary.md >> "$GITHUB_STEP_SUMMARY"
