@@ -27,6 +27,7 @@ DECL(sc4) DECL(hyb16_1) DECL(hyb16_2) DECL(hyb16_3)
 DECL(step16_v) DECL(step16_str) DECL(step16_ldr) DECL(step16_ls) DECL(step16_skew)
 DECL(hyb16_pair_1) DECL(hyb16_pair_2) DECL(hyb16_lsp_1) DECL(hyb16_lsp_2)
 DECL(hyb16_skp_1) DECL(hyb16_skp_2) DECL(hyb16_skw_1) DECL(hyb16_skw_2)
+DECL(step16_skewp) DECL(hyb16_skq_1) DECL(hyb16_skq_2) DECL(hyb16_skqp_1) DECL(hyb16_skqp_2)
 DECL(hyb32_2) DECL(hyb32_4) DECL(hyb32_6)
 #ifdef HAVE_SVE2_KERNELS
 DECL(xar) DECL(step32_xar) DECL(step16_xar)
@@ -75,6 +76,11 @@ static struct { const char *name; void (*fn)(uint64_t, void *); int unit; const 
   K(hyb16_skp_2, 3, "step16_skew + 2 scalar steps, pairing order"),
   K(hyb16_skw_1, 3, "step16_skew + 1 scalar step, even interleave"),
   K(hyb16_skw_2, 3, "step16_skew + 2 scalar steps, even interleave"),
+  K(step16_skewp, 3, "step16, pipes skewed, ldp/stp kept"),
+  K(hyb16_skq_1, 3, "step16_skewp + 1 scalar step, even interleave"),
+  K(hyb16_skq_2, 3, "step16_skewp + 2 scalar steps, even interleave"),
+  K(hyb16_skqp_1, 3, "step16_skewp + 1 scalar step, pairing order"),
+  K(hyb16_skqp_2, 3, "step16_skewp + 2 scalar steps, pairing order"),
   K(hyb32_2, 3, "NEON32 step + 2 scalar 4-key steps, interleaved"),
   K(hyb32_4, 3, "NEON32 step + 4 scalar 4-key steps, interleaved"),
   K(hyb32_6, 3, "NEON32 step + 6 scalar 4-key steps, interleaved"),

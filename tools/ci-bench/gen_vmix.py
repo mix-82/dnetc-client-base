@@ -29,7 +29,7 @@ Kernels:
                                one in-place XAR with a zero register instead of
                                shl + sri (A += S; A += B; xar A, A, zero, #29)
 """
-import sys
+import re, sys
 
 out = []
 def e(s=""): out.append(s)
@@ -252,11 +252,13 @@ def step16v(ld="pair", st="pair", order="grp"):
                   f"ushl    {u}.4s, {y}.4s, {u}.4s", f"ushl    {t}.4s, {y}.4s, {t}.4s",
                   f"orr     {y}.16b, {u}.16b, {t}.16b"]
             return l
-        P = [ops(i) for i in range(4)]
-        if order == "skew":
-            assert st == "single" and ld == "single"
-            for i in range(4): seq[i] += P[i]
+        if order == "skew":     # build with single ldr/str; pairs merged at emission
+            ld_, st_ = ld, st
+            ld, st = "single", "single"
+            for i in range(4): seq[i] += ops(i)
+            ld, st = ld_, st_
             continue
+        P = [ops(i) for i in range(4)]
         if ld == "pair":
             ins(f"ldp     q0, q1, [x10, #{off + 256}]")
             ins(f"ldp     q2, q3, [x10, #{off + 288}]")
@@ -270,8 +272,21 @@ def step16v(ld="pair", st="pair", order="grp"):
     if order == "skew":     # one wavefront over all 3 sub-steps (pipes are independent)
         n = len(seq[0])
         for t in range(n + 3):
-            for i in range(4):
-                if 0 <= t - i < n: ins(seq[i][t - i])
+            slot = [(i, seq[i][t - i]) for i in range(4) if 0 <= t - i < n]
+            emit, late = [], []
+            for i, l in slot:
+                m = re.match(r"(ldr|str)\s+q(\d+), \[(x1[01]), #(-?\d+)\]", l)
+                if m and (ld if m.group(1) == "ldr" else st) == "pair":
+                    op, r, base, off = m.group(1), int(m.group(2)), m.group(3), int(m.group(4))
+                    if op == "ldr" and i % 2 == 0:
+                        # pipes i, i+1: after pipe i+1's op in this slot (its last read of q(r+1))
+                        late.append(f"ldp     q{r}, q{r + 1}, [{base}, #{off}]")
+                    elif op == "str" and i % 2 == 1:
+                        emit.append(f"stp     q{r - 1}, q{r}, [{base}, #{off - 16}]")
+                    continue
+                emit.append(l)
+                if late and i % 2 == 1: emit += late; late = []
+            for l in emit + late: ins(l)
 
 def merge_pair(a, b):
     """in-order dual-issue order (Cortex-A55 rule: a 128-bit vector op pairs
@@ -415,11 +430,14 @@ kernel("step16_str", lambda: step16v(st="single"), 3)
 kernel("step16_ldr", lambda: step16v(ld="single"), 3)
 kernel("step16_ls", lambda: step16v(ld="single", st="single"), 3)
 kernel("step16_skew", lambda: step16v("single", "single", "skew"), 3)
+kernel("step16_skewp", lambda: step16v("pair", "pair", "skew"), 3)
 for r in (1, 2):
     kernel(f"hyb16_pair_{r}", lambda r=r: hyb16v(r, merge_pair), 3)
     kernel(f"hyb16_lsp_{r}", lambda r=r: hyb16v(r, merge_pair, ld="single", st="single"), 3)
     kernel(f"hyb16_skp_{r}", lambda r=r: hyb16v(r, merge_pair, ld="single", st="single", order="skew"), 3)
     kernel(f"hyb16_skw_{r}", lambda r=r: hyb16v(r, merge_prop, ld="single", st="single", order="skew"), 3)
+    kernel(f"hyb16_skq_{r}", lambda r=r: hyb16v(r, merge_prop, order="skew"), 3)
+    kernel(f"hyb16_skqp_{r}", lambda r=r: hyb16v(r, merge_pair, order="skew"), 3)
 for r in (2, 4, 6):
     kernel(f"hyb32_{r}", lambda r=r: hyb32(r), 3)
 
