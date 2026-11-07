@@ -10,6 +10,12 @@ name: arm64 core benchmark
 on:
   push:
     branches: [neon-mix16]
+    paths:                 # only when the cores, their build or this benchmark change
+      - 'rc5-72/arm64/**'
+      - 'common/core_r72.cpp'
+      - 'configure'
+      - 'tools/ci-bench/ci-arm64-bench.sh'
+      - '.github/workflows/arm64-bench.yml'
   workflow_dispatch:
     inputs:
       rounds:
