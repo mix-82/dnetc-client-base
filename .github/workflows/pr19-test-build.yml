@@ -1,0 +1,54 @@
+name: PR19+PR49 Android test build
+
+# master + dcti PR #49 (android-detect) + dcti PR #19 (Hagb's uname timer fix),
+# no other source changes, built with the Android NDK (bionic, static).
+on:
+  push:
+    branches: [pr19-pr49-test]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: |
+        set -e
+        B=$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin
+        echo "NDK: $(grep Pkg.Revision $ANDROID_NDK_LATEST_HOME/source.properties)"
+        # master's configure stops on linux-arm64 ("gcc-arm64 optimizations need to be
+        # determined"); remove that exit for this build only. The NDK clang options
+        # below replace the gcc ones anyway.
+        sed -i '/gcc-arm64 optimizations need to be determined/{n;/^\s*exit\s*$/d}' configure
+        SHELL=/bin/sh ./configure linux-arm64 > cfg.log 2>&1 || { tail -20 cfg.log; exit 1; }
+        git checkout -- configure
+        OPTS=$(sed -n '/^OPTS_CLANGCC="/,/"$/p' configure | tr -d '\\\n' | sed 's/^OPTS_CLANGCC="//; s/"$//')
+        mkdir -p output
+        make -j4 CC="$B/aarch64-linux-android30-clang++ -std=gnu++14 -DANDROID $OPTS" \
+             AS="$B/aarch64-linux-android30-clang -c" STRIP="$B/llvm-strip" \
+             LIBS="" LDFLAGS="-static" > build.log 2>&1 || [ -x dnetc ] || { grep -iE -m20 "error" build.log; exit 1; }
+        "$B/llvm-strip" dnetc
+        file dnetc | cut -c1-100
+        grep -c "utsname" common/clitime.cpp; grep -c "ask the kernel directly" common/clitime.cpp || true
+        mkdir kit && cp dnetc kit/dnetc-pr19 && git rev-parse HEAD > kit/commit.txt
+    - uses: actions/upload-artifact@v4
+      with:
+        name: dnetc-pr19
+        path: kit/
+  run:
+    needs: build
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: dnetc-pr19
+    - run: |
+        chmod +x dnetc-pr19
+        ./dnetc-pr19 -cpuinfo 2>&1 | head -12
+        echo "-test: $(./dnetc-pr19 -test rc5-72 2>&1 | grep -c '32/32 Tests Passed') of 6"
