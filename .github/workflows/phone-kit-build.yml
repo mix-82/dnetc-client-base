@@ -1,0 +1,62 @@
+name: Phone kit build (NDK, hyb-skew)
+
+# Builds the phone kit's programs with the Android NDK (bionic, static):
+# dnetc with the current MIX NEON HYBRID and with --skew=2 at splits 26 and
+# 25, plus vmix and clockcal. Then runs each one on an arm64 runner.
+on:
+  push:
+    branches: [phone-kit-run]
+    paths: ['.github/workflows/phone-kit-build.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: |
+        B=$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin
+        echo "NDK: $(grep Pkg.Revision $ANDROID_NDK_LATEST_HOME/source.properties)"
+        SHELL=/bin/sh ./configure linux-arm64 > cfg.log 2>&1
+        OPTS=$(sed -n '/^OPTS_CLANGCC="/,/"$/p' configure | tr -d '\\\n' | sed 's/^OPTS_CLANGCC="//; s/"$//')
+        mkdir -p output kit
+        G=rc5-72/arm64/tools/gen_hybrid.py
+        for v in "dnetc:" "dnetc-skew26:--split=26 --skew=2" "dnetc-skew25:--split=25 --skew=2"; do
+          n=${v%%:*}; a=${v#*:}
+          python3 $G $a > rc5-72/arm64/r72-neon-hyb.S
+          rm -f output/r72-neon-hyb.s.o dnetc
+          make -j4 CC="$B/aarch64-linux-android30-clang++ -std=gnu++14 $OPTS" \
+               AS="$B/aarch64-linux-android30-clang -c" STRIP="$B/llvm-strip" \
+               LIBS="" LDFLAGS="-static" > build-$n.log 2>&1 || [ -x dnetc ]
+          "$B/llvm-strip" dnetc; cp dnetc kit/$n; echo "$n ($a): $(file -b dnetc | cut -c1-80)"
+        done
+        "$B/aarch64-linux-android30-clang" -O2 -static tools/ci-bench/vmix.c tools/ci-bench/vmix.S -o kit/vmix
+        "$B/aarch64-linux-android30-clang" -O2 -static tools/ci-bench/clockcal.c -o kit/clockcal
+        "$B/llvm-strip" kit/vmix kit/clockcal
+        md5sum kit/*
+    - uses: actions/upload-artifact@v4
+      with:
+        name: phone-kit-bin
+        path: kit/
+  run:
+    needs: build
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 40
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: phone-kit-bin
+    - name: Run each program
+      run: |
+        chmod +x dnetc* vmix clockcal
+        echo "clockcal: $(./clockcal 3)"
+        for b in dnetc dnetc-skew26 dnetc-skew25; do
+          echo "$b -test: $(./$b -test rc5-72 2>&1 | grep -c '32/32 Tests Passed') of 9"
+          echo "$b -bench 8: $(./$b -bench rc5-72 8 2>&1 | grep -oE '\[[0-9,]+ keys/sec\]' | tail -1)"
+        done
+        ./vmix 1 | grep -E "^clock|^\| (step16_lockstep|step16_skewp|hyb16_2|hyb16_skq_2) "
