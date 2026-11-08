@@ -22,9 +22,12 @@ Usage: gen_hybrid.py [--split=N] [--testmask] > ../r72-neon-hyb.S
 --split=N: first vector step (default 26).
 --testmask: test build only (see gen_neon16.py).
 """
-import sys
+import heapq, re, sys
 
 TESTMASK = "--testmask" in sys.argv
+SKEW = 0                     # --skew=N (experimental): vector pipe p runs N*p ops behind pipe 0
+for a in sys.argv:
+    if a.startswith("--skew="): SKEW = int(a.split("=")[1])
 NP = 4                       # vector pipes
 STRIDE = 16 * NP             # bytes per S row (4 pipes x 4 lanes)
 SPLIT = 26                   # first vector step k; scalar does k=3..SPLIT-1
@@ -70,7 +73,7 @@ def b16(r): return r + ".16b"
 def q(r): return "q" + r[1:]
 def each(fmt, **lists):
     for p in range(NP):
-        ins(fmt.format(**{k: v[p] for k, v in lists.items()}))
+        ins(fmt.format(**{k: v[p] for k, v in lists.items()}) + (f"\t@{p}" if SKEW else ""))
 
 def cap(fn, *a):
     global out
@@ -90,12 +93,14 @@ def merge_prop(a, b):
     out.extend(b[bi:])
 
 def load4(dst, base, off):
-    ins(f"ldp     {q(dst[0])}, {q(dst[1])}, [{base}, #{off}]")
-    ins(f"ldp     {q(dst[2])}, {q(dst[3])}, [{base}, #{off + 32}]")
+    t0, t1 = ("\t@L01", "\t@L23") if SKEW else ("", "")
+    ins(f"ldp     {q(dst[0])}, {q(dst[1])}, [{base}, #{off}]" + t0)
+    ins(f"ldp     {q(dst[2])}, {q(dst[3])}, [{base}, #{off + 32}]" + t1)
 
 def store4(src, base, off):
-    ins(f"stp     {q(src[0])}, {q(src[1])}, [{base}, #{off}]")
-    ins(f"stp     {q(src[2])}, {q(src[3])}, [{base}, #{off + 32}]")
+    t0, t1 = ("\t@S01", "\t@S23") if SKEW else ("", "")
+    ins(f"stp     {q(src[0])}, {q(src[1])}, [{base}, #{off}]" + t0)
+    ins(f"stp     {q(src[2])}, {q(src[3])}, [{base}, #{off + 32}]" + t1)
 
 def vrotl(x, s, t1, t2):
     each("and     {u}, {s}, " + b16(C31), u=[b16(r) for r in t1], s=[b16(r) for r in s])
@@ -216,6 +221,89 @@ def vector_body():
         half_round(D, C, roff(2 * r + 1))
     ins("// final half-round; D only on the rare path")
     half_round(C, D, roff(24))
+
+# ---- --skew (experimental): pipe-skewed order of the vector stream ----------
+# Every line of the vector stream is tagged with its pipe (each/load4/store4);
+# pipe p's j-th op gets priority (j + SKEW*p)*4 + p, so adjacent instructions
+# come from different pipes and different ops (the shifts are spread). The
+# lines are then emitted in that priority order subject to every register and
+# memory dependence (a topological sort), so any result computes the same
+# values as the plain order. Step comments are dropped.
+def _regs(ops):
+    r = set()
+    for o in ops:
+        for m in re.finditer(r"\b([vqsdb])(\d+)\b", o): r.add("v" + m.group(2))
+        for m in re.finditer(r"\b([wx])(\d+)\b", o): r.add("x" + m.group(2))
+        if re.search(r"\bsp\b", o): r.add("sp")
+    return r
+
+def _deps(line):
+    """(reads, writes, mem) for one vector-stream line; mem = (kind, base, lo, hi)"""
+    op, rest = line.split(None, 1)
+    ops = [x.strip() for x in re.split(r",(?![^\[]*\])", rest)]
+    mem = None
+    m = re.search(r"\[(\w+), #(-?\d+)\]", rest)
+    if m:
+        regs = [o for o in ops if not o.startswith("[")]
+        size = {"q": 16, "w": 4, "x": 8}[regs[0][0]] * len(regs)
+        mem = ("ld" if op.startswith("ld") else "st", m.group(1), int(m.group(2)), int(m.group(2)) + size)
+    if op in ("ldr", "ldp"):
+        return _regs([m.group(1)]), _regs(ops[:-1]), mem
+    if op in ("str", "stp"):
+        return _regs(ops), set(), mem
+    if op in ("add", "orr", "and", "eor", "ushl", "shl", "dup", "mov", "cmeq"):
+        return _regs(ops[1:]), _regs(ops[:1]), None
+    if op in ("sri", "movk"):
+        return _regs(ops), _regs(ops[:1]), None
+    raise SystemExit(f"--skew: unhandled vector-stream line: {line}")
+
+def skew_order(lines):
+    body = []                             # (priority, index, text, reads, writes, mem)
+    cnt = [0] * NP
+    for l in lines:
+        t = l.strip()
+        if not t or t.startswith("//"): continue
+        text, _, tag = l.partition("\t@")
+        if tag[:1] in ("L", "S"):         # paired q load/store of pipes a, b
+            a, b = int(tag[1]), int(tag[2])
+            p = a if tag[0] == "L" else b # load: earliest reader; store: latest writer
+            pri = (cnt[p] + SKEW * p) * NP + p
+            cnt[a] += 1; cnt[b] += 1
+        elif tag:
+            p = int(tag); pri = (cnt[p] + SKEW * p) * NP + p; cnt[p] += 1
+        else:
+            pri = cnt[0] * NP           # shared (w16 constants): with pipe 0
+        rd, wr, mem = _deps(text.strip())
+        body.append((pri, len(body), text, rd, wr, mem))
+    n = len(body)
+    succ = [[] for _ in range(n)]; npred = [0] * n
+    def edge(a, b):
+        succ[a].append(b); npred[b] += 1
+    last_w, readers, mems = {}, {}, []
+    for i, (_, _, _, rd, wr, mem) in enumerate(body):
+        for r in rd:
+            if r in last_w: edge(last_w[r], i)                   # RAW
+        for r in wr:
+            if r in last_w: edge(last_w[r], i)                   # WAW
+            for j in readers.get(r, []): edge(j, i)              # WAR
+        for r in rd: readers.setdefault(r, []).append(i)
+        for r in wr: last_w[r] = i; readers[r] = []
+        if mem:
+            for j, (k2, b2, lo2, hi2) in mems:
+                if "st" in (mem[0], k2) and (b2 != mem[1] or (lo2 < mem[3] and mem[2] < hi2)):
+                    edge(j, i)                                   # memory (other bases: conservative)
+            mems.append((i, mem))
+    ready = [(body[i][0], i) for i in range(n) if npred[i] == 0]
+    heapq.heapify(ready)
+    res = []
+    while ready:
+        _, i = heapq.heappop(ready)
+        res.append(body[i][2])
+        for j in succ[i]:
+            npred[j] -= 1
+            if npred[j] == 0: heapq.heappush(ready, (body[j][0], j))
+    assert len(res) == n, "dependence cycle"
+    return res
 
 # ---- scalar stream ---------------------------------------------------------
 # The scalar stream stores S/A/L words in transposed pairs (stp w, w: keys
@@ -403,7 +491,8 @@ for j in range(3):
 e()
 ins(f"// interleaved: vector k={SPLIT}..77+encryption (this batch, table [x10-{ANCHOR}])")
 ins(f"//            x scalar prep k=3..{SPLIT-1} (next batch, table [x12])")
-merge_prop(cap(vector_body), cap(scalar_stream, hi_lead_next))
+merge_prop(skew_order(cap(vector_body)) if SKEW else cap(vector_body),
+           cap(scalar_stream, hi_lead_next))
 e()
 e("L(check_key):")
 compare(T, C, CLO, U[0])
@@ -585,4 +674,4 @@ e("#if defined(__ELF__)")
 ins('.section .note.GNU-stack,"",%progbits')
 e("#endif")
 
-sys.stdout.write("\n".join(out) + "\n")
+sys.stdout.write("\n".join(re.sub(r"\t@\w+$", "", l) for l in out) + "\n")

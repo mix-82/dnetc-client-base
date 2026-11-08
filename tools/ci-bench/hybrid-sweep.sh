@@ -18,16 +18,17 @@ rate() { sed -E 's/^\[[^]]*\] //' "$1" | grep -oE '\[[0-9,]+ keys/sec\]' | tail 
 {
   echo "## MIX HYB split sweep, $(grep -m1 -E 'CPU part|model name' /proc/cpuinfo | sed 's/.*: //')"
   echo
-  echo "| split (first vector step) | -test | keys/sec (best of $ROUNDS) | GHz | cycles/key |"
+  echo "| split (first vector step; sN = --skew=N) | -test | keys/sec (best of $ROUNDS) | GHz | cycles/key |"
   echo "|---|---|---|---|---|"
 } > "$OUT/results.md"
 
 for sp in $SPLITS; do
   case $sp in
-    old*) gen=${OLDGEN:?OLDGEN unset}; n=${sp#old} ;;
-    *)    gen=rc5-72/arm64/tools/gen_hybrid.py; n=$sp ;;
+    old*) gen=${OLDGEN:?OLDGEN unset}; n=${sp#old}; x= ;;
+    *s*)  gen=rc5-72/arm64/tools/gen_hybrid.py; n=${sp%s*}; x=--skew=${sp#*s} ;;
+    *)    gen=rc5-72/arm64/tools/gen_hybrid.py; n=$sp; x= ;;
   esac
-  python3 "$gen" --split=$n > rc5-72/arm64/r72-neon-hyb.S || continue
+  python3 "$gen" --split=$n $x > rc5-72/arm64/r72-neon-hyb.S || continue
   rm -f output/r72-neon-hyb.s.o dnetc
   make > "$OUT/b$sp.log" 2>&1 || [ -x dnetc ] || { echo "| $sp | build failed | - | - | - |" >> "$OUT/results.md"; continue; }
   ./dnetc -test rc5-72 > "$OUT/t$sp.log" 2>&1
