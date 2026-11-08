@@ -3,7 +3,7 @@ name: Mac kit build (Apple silicon, hyb-skew)
 # Builds the Apple-silicon kit's programs natively on a macOS arm64 runner:
 # dnetc from the tree, dnetc-old (MIX NEON HYBRID split 26, plain order),
 # dnetc-new (split 25, skew 2), plus vmix and clockcal. Then runs the kit's
-# own script on the runner as a dry run and uploads the tarball.
+# own script on the runner as a dry run, and uploads the tarball.
 on:
   push:
     branches: [mac-kit-run]
