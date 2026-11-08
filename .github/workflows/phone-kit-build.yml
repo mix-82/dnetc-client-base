@@ -24,6 +24,11 @@ jobs:
         echo "NDK: $(grep Pkg.Revision $ANDROID_NDK_LATEST_HOME/source.properties)"
         SHELL=/bin/sh ./configure linux-arm64 > cfg.log 2>&1 || { echo "configure exit $?"; tail -40 cfg.log; exit 1; }
         OPTS=$(sed -n '/^OPTS_CLANGCC="/,/"$/p' configure | tr -d '\\\n' | sed 's/^OPTS_CLANGCC="//; s/"$//')
+        # Android's C library uses socklen_t; this build is configured as Linux, so let
+        # netbase.cpp take the socklen_t path for it (the fix in dcti PR #49 does this
+        # for OS_ANDROID). Build-only change.
+        sed -i 's|^#if (defined(__GLIBC__) \&\& (__GLIBC__ >= 2)) \\$|#if (defined(__GLIBC__) \&\& (__GLIBC__ >= 2)) \|\| defined(__ANDROID__) \\|' common/netbase.cpp
+        grep -n '__ANDROID__) \\$' common/netbase.cpp
         mkdir -p output kit
         G=rc5-72/arm64/tools/gen_hybrid.py
         for v in "dnetc:" "dnetc-skew26:--split=26 --skew=2" "dnetc-skew25:--split=25 --skew=2"; do
