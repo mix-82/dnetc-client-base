@@ -2,7 +2,7 @@ name: Phone kit build (NDK, hyb-skew)
 
 # Builds the phone kit's programs with the Android NDK (bionic, static):
 # dnetc with the current MIX NEON HYBRID and with --skew=2 at splits 26 and
-# 25, plus vmix and clockcal. Then runs each one on an arm64 runner.
+# 25, plus vmix and clockcal, then runs each one on an arm64 runner.
 on:
   push:
     branches: [phone-kit-run]
