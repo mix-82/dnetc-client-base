@@ -30,7 +30,7 @@ jobs:
           n=${v%%:*}; a=${v#*:}
           python3 $G $a > rc5-72/arm64/r72-neon-hyb.S || { echo "generator failed: $a"; exit 1; }
           rm -f output/r72-neon-hyb.s.o dnetc
-          make -j4 CC="$B/aarch64-linux-android30-clang++ -std=gnu++14 $OPTS" \
+          make -j4 CC="$B/aarch64-linux-android30-clang++ -std=gnu++14 -DANDROID $OPTS" \
                AS="$B/aarch64-linux-android30-clang -c" STRIP="$B/llvm-strip" \
                LIBS="" LDFLAGS="-static" > build-$n.log 2>&1 || [ -x dnetc ] || { grep -iE -m20 "error|undefined" build-$n.log; tail -20 build-$n.log; exit 1; }
           "$B/llvm-strip" dnetc; cp dnetc kit/$n; echo "$n ($a): $(file -b dnetc | cut -c1-80)"
