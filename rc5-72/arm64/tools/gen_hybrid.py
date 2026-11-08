@@ -18,21 +18,22 @@ L0hi+16.  On an L0hi byte carry (1 batch in 16) or at the last batch, the
 prep is discarded and (after the mid/lo recompute) redone by the standalone
 copy of the scalar phase, so the steady loop has no special cases.
 
-Usage: gen_hybrid.py [--split=N] [--testmask] > ../r72-neon-hyb.S
---split=N: first vector step (default 26).
+Usage: gen_hybrid.py [--split=N] [--skew=N] [--testmask] > ../r72-neon-hyb.S
+--split=N: first vector step (default 25).
+--skew=N: vector pipe p runs N*p ops behind pipe 0 (default 2; 0: plain order).
 --testmask: test build only (see gen_neon16.py).
 """
 import heapq, re, sys
 
 TESTMASK = "--testmask" in sys.argv
-SKEW = 0                     # --skew=N (experimental): vector pipe p runs N*p ops behind pipe 0
+SKEW = 2                     # vector pipe p runs SKEW*p ops behind pipe 0 (0: plain order)
 for a in sys.argv:
     if a.startswith("--skew="): SKEW = int(a.split("=")[1])
 NP = 4                       # vector pipes
 STRIDE = 16 * NP             # bytes per S row (4 pipes x 4 lanes)
-SPLIT = 26                   # first vector step k; scalar does k=3..SPLIT-1
-# 26 is the end of the first key-schedule pass, where the step constants are
-# fixed (KKS7450 splits there too); higher splits slow in-order cores.
+SPLIT = 25                   # first vector step k; scalar does k=3..SPLIT-1
+# 25 measured best with the skewed vector order; higher splits slow in-order
+# cores.
 for a in sys.argv:
     if a.startswith("--split="): SPLIT = int(a.split("=")[1])
 # Below 29 the vector side broadcasts the pass-1 constants (mov32 + dup,
@@ -222,7 +223,7 @@ def vector_body():
     ins("// final half-round; D only on the rare path")
     half_round(C, D, roff(24))
 
-# ---- --skew (experimental): pipe-skewed order of the vector stream ----------
+# ---- pipe-skewed order of the vector stream (--skew) -----------------------
 # Every line of the vector stream is tagged with its pipe (each/load4/store4);
 # pipe p's j-th op gets priority (j + SKEW*p)*4 + p, so adjacent instructions
 # come from different pipes and different ops (the shifts are spread). The
@@ -377,13 +378,15 @@ def hi_lead_next():
     ins(f"str     {ST[0]}, [sp, #{SP_HI}]")
 
 # ==========================================================================
+SKEWNOTE = (f"\n// The vector stream is skewed (pipe p runs {SKEW}*p ops behind pipe 0) so that"
+            "\n// adjacent instructions use different units." if SKEW else "")
 e(f"""// RC5-72 scalar + NEON core for AArch64, 16 keys per batch (MIX NEON HYBRID)
 // Created by Mix. Based on the structure of Didier Levet's PPC KKS7450
 // core, rebalanced for AArch64.
 //
 // While 4 NEON pipes x 4 lanes run key-schedule steps k={SPLIT}..77 and the
 // encryption for one batch, the scalar units run steps k=3..{SPLIT-1} of the next
-// batch into a second S table; the two instruction streams are interleaved.
+// batch into a second S table; the two instruction streams are interleaved.{SKEWNOTE}
 // x30 is used as a scratch pointer inside the loop. Needs MINIMUM_ITERATIONS
 // to be a multiple of 16.
 //
