@@ -22,7 +22,7 @@ jobs:
       run: |
         B=$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin
         echo "NDK: $(grep Pkg.Revision $ANDROID_NDK_LATEST_HOME/source.properties)"
-        SHELL=/bin/sh ./configure linux-arm64 > cfg.log 2>&1
+        SHELL=/bin/sh ./configure linux-arm64 > cfg.log 2>&1 || { echo "configure exit $?"; tail -40 cfg.log; exit 1; }
         OPTS=$(sed -n '/^OPTS_CLANGCC="/,/"$/p' configure | tr -d '\\\n' | sed 's/^OPTS_CLANGCC="//; s/"$//')
         mkdir -p output kit
         G=rc5-72/arm64/tools/gen_hybrid.py
