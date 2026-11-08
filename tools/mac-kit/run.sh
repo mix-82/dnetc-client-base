@@ -32,7 +32,7 @@ log "# dnetc Apple-silicon kit results (kit v1)"
 log "date: $(date -u)"
 log "chip: $(sysctl -n machdep.cpu.brand_string 2>/dev/null); $(sysctl -n hw.ncpu) cpus, perf levels: $(sysctl -n hw.nperflevels 2>/dev/null)"
 for l in 0 1; do
-  n=$(sysctl -n hw.perflevel$l.physicalcpu 2>/dev/null) || continue
+  n=$(sysctl -n hw.perflevel$l.physicalcpu 2>/dev/null); [ -n "$n" ] || continue
   log "  perflevel $l: $(sysctl -n hw.perflevel$l.name 2>/dev/null) x$n, L1I $(sysctl -n hw.perflevel$l.l1icachesize 2>/dev/null) B"
 done
 log "macOS: $(sw_vers -productVersion 2>/dev/null) $(uname -r)"
@@ -48,10 +48,10 @@ for b in dnetc dnetc-old dnetc-new; do
   [ "$n" -eq 0 ] && { log "  dnetc said:"; head -5 t.log | sed 's/^/    /' | tee -a "$OUT"; }
 done
 
-log ""; log "## 2. keyrates, P then E, 3 rounds, order rotated (dnetc = current tree; old/new = hybrid variants)"
+log ""; log "## 2. keyrates, P then E, 3 rounds, order rotated (hyb-new(tree-build) is the tree's own build of the new default: a consistency check)"
 log "| core type | round | build | core | keys/sec | GHz before / after | cycles/key |"
 log "|---|---|---|---|---|---|---|"
-JOBS="dnetc:7:MIX-NEON dnetc-old:8:hyb-old(26) dnetc-new:8:hyb-new(25,skew) dnetc:8:hyb-tree"
+JOBS="dnetc:7:MIX-NEON dnetc-old:8:hyb-old(26) dnetc-new:8:hyb-new(25,skew) dnetc:8:hyb-new(tree-build)"
 for ct in P E; do
   r=0; while [ $r -lt 3 ]; do r=$((r + 1))
     order=$(echo $JOBS | awk -v s=$((r - 1)) '{for (i = 0; i < NF; i++) printf "%s ", $(((i + s) % NF) + 1)}')
