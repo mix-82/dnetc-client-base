@@ -1,0 +1,54 @@
+name: Mac kit build (Apple silicon, hyb-skew)
+
+# Builds the Apple-silicon kit's programs natively on a macOS arm64 runner:
+# dnetc from the tree, dnetc-old (MIX NEON HYBRID split 26, plain order),
+# dnetc-new (split 25, skew 2), plus vmix and clockcal. Then runs the kit's
+# own script on the runner as a dry run and uploads the tarball.
+on:
+  push:
+    branches: [mac-kit-run]
+    paths: ['.github/workflows/mac-kit-build.yml', 'tools/mac-kit/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  kit:
+    runs-on: macos-15
+    timeout-minutes: 75
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: |
+        set -e
+        ./configure macosx-arm64 > cfg.log 2>&1 || { tail -20 cfg.log; exit 1; }
+        K=dnetc-mac-kit; mkdir -p $K
+        G=rc5-72/arm64/tools/gen_hybrid.py
+        for v in "dnetc:" "dnetc-old:--split=26 --skew=0" "dnetc-new:--split=25 --skew=2"; do
+          n=${v%%:*}; a=${v#*:}
+          python3 $G $a > rc5-72/arm64/r72-neon-hyb.S
+          rm -f output/r72-neon-hyb.s.o dnetc
+          make -j3 > build-$n.log 2>&1 || { grep -iE -m10 "error" build-$n.log; exit 1; }
+          cp dnetc $K/$n; echo "$n ($a): $(file -b dnetc | cut -c1-60)"
+        done
+        git checkout -- rc5-72/arm64/r72-neon-hyb.S
+        cc -O2 tools/ci-bench/vmix.c tools/ci-bench/vmix.S -o $K/vmix
+        cc -O2 tools/ci-bench/clockcal.c -o $K/clockcal
+        cp tools/mac-kit/run.sh tools/mac-kit/README.txt $K/
+        chmod +x $K/run.sh
+        tar czf dnetc-mac-kit.tar.gz $K
+        md5sum $K/* 2>/dev/null || md5 $K/*
+    - name: Dry run of the exact tarball
+      run: |
+        mkdir dry && cd dry && tar xzf ../dnetc-mac-kit.tar.gz && cd dnetc-mac-kit
+        ls > ../before.txt
+        sh run.sh
+        ls > ../after.txt; diff ../before.txt ../after.txt || true
+        cp mac-*.txt ../../dry-results.txt
+    - uses: actions/upload-artifact@v4
+      with:
+        name: dnetc-mac-kit
+        path: |
+          dnetc-mac-kit.tar.gz
+          dry-results.txt
