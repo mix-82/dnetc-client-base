@@ -29,6 +29,12 @@ jobs:
         # for OS_ANDROID). Build-only change.
         sed -i 's|^#if (defined(__GLIBC__) \&\& (__GLIBC__ >= 2)) \\$|#if (defined(__GLIBC__) \&\& (__GLIBC__ >= 2)) \|\| defined(__ANDROID__) \\|' common/netbase.cpp
         grep -n '__ANDROID__) \\$' common/netbase.cpp
+        # Android: CliGetMonotonicClock reads /proc/sys/kernel/osrelease, which apps
+        # cannot read, so dnetc fails with "unable to initialize timers". Apply the
+        # timer-probe fix (commit d67c344d). Build-only change.
+        git fetch -q --depth=2 origin timer-probe
+        git diff d67c344d~1 d67c344d | git apply
+        grep -n 'probe; /\* ask the kernel' common/clitime.cpp
         mkdir -p output kit
         G=rc5-72/arm64/tools/gen_hybrid.py
         for v in "dnetc:" "dnetc-skew26:--split=26 --skew=2" "dnetc-skew25:--split=25 --skew=2"; do
