@@ -17,7 +17,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Sweep
-      run: SPLITS="26 26s1 26s2 26s3 29s2 26 26s1 26s2 26s3 29s2" sh tools/ci-bench/hybrid-sweep.sh sweep-out 3
+      run: SPLITS="22s2 24s2 25s2 26s2 27s2 28s2 22s2 24s2 25s2 26s2 27s2 28s2" sh tools/ci-bench/hybrid-sweep.sh sweep-out 3
     - name: Summary
       if: always()
       run: cat sweep-out/results.md >> "$GITHUB_STEP_SUMMARY" || true
