@@ -1,0 +1,46 @@
+name: MIX NEON evidence (PR build)
+
+# master + the MIX NEON commit (+ the linux-arm64 configure fix, needed to build
+# on Linux with optimized C cores). Produces a dnetc log per runner with
+# -cpuinfo, -test rc5-72, -stress rc5-72 6 (MIX NEON) and -bench rc5-72.
+on:
+  push:
+    branches: [mix-neon-evidence]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  evidence:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04-arm, macos-15, macos-26]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: |
+        case "$RUNNER_OS" in Linux) t=linux-arm64 ;; macOS) t=macosx-arm64 ;; esac
+        ./configure $t > cfg.log 2>&1 || { tail -20 cfg.log; exit 1; }
+        make -j3 > build.log 2>&1 || [ -x dnetc ] || { grep -iE -m20 error build.log; exit 1; }
+        ./dnetc -version 2>&1 | head -3
+    - name: Evidence
+      run: |
+        L=dnetc-${{ matrix.os }}.log
+        { echo "### dnetc -cpuinfo"; ./dnetc -cpuinfo
+          echo; echo "### dnetc -test rc5-72"; ./dnetc -test rc5-72
+          echo; echo "### dnetc -stress rc5-72 6 (MIX NEON)"; ./dnetc -stress rc5-72 6
+          echo; echo "### dnetc -bench rc5-72"; ./dnetc -bench rc5-72
+        } < /dev/null 2>&1 | tee $L
+        echo "--- summary"
+        echo "-test passes: $(grep -c '32/32 Tests Passed' $L)"
+        sed -E 's/^\[[^]]*\] //' $L | grep -iE 'stress.*(pass|fail|success)|core #6' | tail -4
+        sed -E 's/^\[[^]]*\] //' $L | grep -E 'Benchmark for core|keys/sec' | tail -14
+    - uses: actions/upload-artifact@v4
+      with:
+        name: evidence-${{ matrix.os }}
+        path: dnetc-*.log
