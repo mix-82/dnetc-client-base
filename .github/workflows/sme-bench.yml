@@ -1,0 +1,77 @@
+name: SME RC5-72 probe
+
+# Test branch only, not for merge. Builds and runs tools/sme-bench/sme_rc5_bench.c,
+# a stand-alone probe that does no distributed.net work, and commits what it
+# prints to tools/sme-bench/ci-logs.
+
+on:
+  push:
+    branches: [sme-bench-test]
+    paths:
+      - 'tools/sme-bench/sme_rc5_bench.c'
+      - '.github/workflows/sme-bench.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-26, macos-15, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Machine
+        run: |
+          {
+            uname -a
+            if [ "$(uname)" = Darwin ]; then
+              sysctl -n machdep.cpu.brand_string
+              sw_vers
+              sysctl hw.optional.arm | grep -E 'SME|SVE|sme' || echo "no SME or SVE keys under hw.optional.arm"
+              cc --version
+            else
+              lscpu
+              cc --version
+            fi
+          } 2>&1 | tee machine-${{ matrix.os }}.log
+
+      - name: Build
+        run: cc -O2 -Wall -Wextra -o sme_rc5_bench tools/sme-bench/sme_rc5_bench.c -lpthread 2>&1 | tee build-${{ matrix.os }}.log
+
+      - name: Run
+        run: ./sme_rc5_bench 2>&1 | tee run-${{ matrix.os }}.log
+
+      - name: Run again, forcing the SVE kernels
+        run: ./sme_rc5_bench 0.2 force 2>&1 | tee run-force-${{ matrix.os }}.log
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: logs-${{ matrix.os }}
+          path: '*.log'
+
+  collect:
+    needs: probe
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: tools/sme-bench/ci-logs
+          merge-multiple: true
+      - name: Commit the logs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/sme-bench/ci-logs
+          git commit -m "SME probe: unedited logs from run ${{ github.run_id }} [skip ci]" || echo "nothing to commit"
+          git push
