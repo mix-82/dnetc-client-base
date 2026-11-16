@@ -33,19 +33,19 @@ Checks (every kernel against the plain C version, 768 keys or more)
   NEON 8x4               ok
 
 Speed, one thread (1.00 s each; names are streams x keys per stream)
-  scalar C                    4302714 keys/s
-  NEON 1x4                    9162954 keys/s
-  NEON 2x4                   16067129 keys/s
-  NEON 4x4                   26106228 keys/s
-  NEON 8x4                   29864180 keys/s
+  scalar C                    4707867 keys/s
+  NEON 1x4                    9932960 keys/s
+  NEON 2x4                   18010927 keys/s
+  NEON 4x4                   26715705 keys/s
+  NEON 8x4                   29783700 keys/s
 
 Speed, several threads at once (total keys/s; 3 performance cores, 3 cores)
-  NEON 8x4                1 thread       32032977 keys/s  (32032977 per thread)
-  NEON 8x4                2 threads      59640054 keys/s  (29820027 per thread)
-  NEON 8x4                3 threads      91261014 keys/s  (30420338 per thread)
+  NEON 8x4                1 thread       31992353 keys/s  (31992353 per thread)
+  NEON 8x4                2 threads      74069757 keys/s  (37034878 per thread)
+  NEON 8x4                3 threads      94074046 keys/s  (31358015 per thread)
 
 Summary
-  best NEON kernel here:  NEON 8x4               29864180 keys/s on one thread
+  best NEON kernel here:  NEON 8x4               29783700 keys/s on one thread
   SME streaming mode is not available on this machine.
   The NEON kernels here are plain C, not the client's tuned cores. For the real
   comparison, also run "dnetc -bench rc5-72" and note its per-core rate.

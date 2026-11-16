@@ -33,29 +33,29 @@ Checks (every kernel against the plain C version, 768 keys or more)
   SVE 4x4 usra           ok
 
 Speed, one thread (1.00 s each; names are streams x keys per stream)
-  scalar C                    6333648 keys/s
-  NEON 1x4                    9595862 keys/s
-  NEON 2x4                   16152595 keys/s
-  NEON 4x4                   21486565 keys/s
-  NEON 8x4                   19772436 keys/s
-  SVE 1x4 xar                 9569168 keys/s
-  SVE 1x4 usra                8780486 keys/s
-  SVE 2x4 xar                16864620 keys/s
-  SVE 2x4 usra               13828788 keys/s
-  SVE 4x4 xar                22282039 keys/s
-  SVE 4x4 usra               20922942 keys/s
+  scalar C                    6331379 keys/s
+  NEON 1x4                    9597031 keys/s
+  NEON 2x4                   16147709 keys/s
+  NEON 4x4                   21481231 keys/s
+  NEON 8x4                   19772181 keys/s
+  SVE 1x4 xar                 9567759 keys/s
+  SVE 1x4 usra                8786085 keys/s
+  SVE 2x4 xar                16862379 keys/s
+  SVE 2x4 usra               13826186 keys/s
+  SVE 4x4 xar                22279101 keys/s
+  SVE 4x4 usra               20923304 keys/s
 
 Speed, several threads at once (total keys/s; 4 performance cores, 4 cores)
-  NEON 4x4                1 thread       21483318 keys/s  (21483318 per thread)
-  NEON 4x4                2 threads      42955098 keys/s  (21477549 per thread)
-  NEON 4x4                4 threads      85671854 keys/s  (21417964 per thread)
-  SVE 4x4 xar             1 thread       22273890 keys/s  (22273890 per thread)
-  SVE 4x4 xar             2 threads      44555985 keys/s  (22277993 per thread)
-  SVE 4x4 xar             4 threads      88575141 keys/s  (22143785 per thread)
+  NEON 4x4                1 thread       21478136 keys/s  (21478136 per thread)
+  NEON 4x4                2 threads      42949736 keys/s  (21474868 per thread)
+  NEON 4x4                4 threads      85647844 keys/s  (21411961 per thread)
+  SVE 4x4 xar             1 thread       22277648 keys/s  (22277648 per thread)
+  SVE 4x4 xar             2 threads      44545829 keys/s  (22272915 per thread)
+  SVE 4x4 xar             4 threads      88738636 keys/s  (22184659 per thread)
 
 Summary
-  best NEON kernel here:  NEON 4x4               21486565 keys/s on one thread
+  best NEON kernel here:  NEON 4x4               21481231 keys/s on one thread
   SME streaming mode is not available on this machine.
-  best plain SVE kernel:  SVE 4x4 xar            22282039 keys/s on one thread (1.04x the NEON kernel)
+  best plain SVE kernel:  SVE 4x4 xar            22279101 keys/s on one thread (1.04x the NEON kernel)
   The NEON kernels here are plain C, not the client's tuned cores. For the real
   comparison, also run "dnetc -bench rc5-72" and note its per-core rate.
