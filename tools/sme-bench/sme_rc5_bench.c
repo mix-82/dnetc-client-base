@@ -52,7 +52,7 @@
 #include <ucontext.h>
 #endif
 
-#define BENCH_VERSION "1"
+#define BENCH_VERSION "2"
 
 #define P 0xB7E15163u
 #define Q 0x9E3779B9u
@@ -2328,6 +2328,10 @@ BLOB_END(k_sve_w4_sli, 20040)
 
 typedef uint64_t (*stub_t)(void (*fn)(void), void *arg);
 
+/* call_sm and call_plain, set in main() through volatile pointers so that no
+   compiler sees a call through a cast of the blob's declaration */
+static stub_t stub_sm, stub_plain;
+
 /* ---- plain C reference --------------------------------------------------- */
 
 static inline uint32_t rotl32(uint32_t x, uint32_t s)
@@ -2490,9 +2494,9 @@ static void run_kernel(const variant_t *v, kargs_t *a)
   if (v->kind == KIND_C)
     ((void (*)(const kargs_t *))v->fn)(a);
   else if (v->kind == KIND_SME)
-    ((stub_t)call_sm)(v->fn, a);
+    (stub_sm)(v->fn, a);
   else
-    ((stub_t)call_plain)(v->fn, a);
+    (stub_plain)(v->fn, a);
 }
 
 /* ---- catching illegal instructions ------------------------------------------ */
@@ -2735,7 +2739,7 @@ static int check_variant(variant_t *v, const bufs_t *b)
   memset(b->out_b, 0x55, n * 4);
   if (v->kind == KIND_C)
     run_kernel(v, &a);
-  else if (guarded_call(v->kind == KIND_SME ? (stub_t)call_sm : (stub_t)call_plain, v->fn, &a, NULL) != 0)
+  else if (guarded_call(v->kind == KIND_SME ? stub_sm : stub_plain, v->fn, &a, NULL) != 0)
     return -1;
   for (idx = 0; idx < n; idx++)
   {
@@ -2910,6 +2914,12 @@ int main(int argc, char **argv)
     ks_consts[i] = P + (uint32_t)i * Q;
   bufs_alloc(&bufs);
   install_handlers();
+  {
+    void (*volatile p)(void) = call_sm;
+    void (*volatile q)(void) = call_plain;
+    stub_sm = (stub_t)p;
+    stub_plain = (stub_t)q;
+  }
 
   printf("sme_rc5_bench version " BENCH_VERSION ": RC5-72 with NEON and with SME streaming SVE\n");
   printf("This is a probe. Any result is useful; please send back everything it prints.\n\n");
@@ -2924,20 +2934,20 @@ int main(int argc, char **argv)
   }
 
   printf("Probes (each instruction kind is tried once; a fault is reported, not fatal)\n");
-  have_sme = probe("smstart / smstop", (stub_t)call_sm, p_nop, p_nop_size, 1, NULL);
+  have_sme = probe("smstart / smstop", stub_sm, p_nop, p_nop_size, 1, NULL);
   if (have_sme)
   {
     int ok = 1;
-    ok &= probe("streaming: cntw (32-bit lanes per vector)", (stub_t)call_sm, p_cntw, p_cntw_size, 0, &sm_lanes);
-    ok &= probe("streaming: SVE add", (stub_t)call_sm, p_add, p_add_size, 12, NULL);
-    ok &= probe("streaming: SVE2 usra (rotate by 3, 2 instr.)", (stub_t)call_sm, p_usra, p_usra_size, 8, NULL);
-    ok &= probe("streaming: SVE lslr (variable shift)", (stub_t)call_sm, p_shift, p_shift_size, 8, NULL);
+    ok &= probe("streaming: cntw (32-bit lanes per vector)", stub_sm, p_cntw, p_cntw_size, 0, &sm_lanes);
+    ok &= probe("streaming: SVE add", stub_sm, p_add, p_add_size, 12, NULL);
+    ok &= probe("streaming: SVE2 usra (rotate by 3, 2 instr.)", stub_sm, p_usra, p_usra_size, 8, NULL);
+    ok &= probe("streaming: SVE lslr (variable shift)", stub_sm, p_shift, p_shift_size, 8, NULL);
     sm_basic = ok && sm_lanes >= 4 && sm_lanes <= 64;
-    sm_xar = probe("streaming: SVE2 xar (rotate by 3, 1 instr.)", (stub_t)call_sm, p_xar, p_xar_size, 8, NULL);
+    sm_xar = probe("streaming: SVE2 xar (rotate by 3, 1 instr.)", stub_sm, p_xar, p_xar_size, 8, NULL);
     if (force)
       sm_basic = sm_xar = 1;
     printf("  (information only) NEON inside streaming mode:\n");
-    probe("streaming: NEON add", (stub_t)call_sm, p_neon, p_neon_size, 18, NULL);
+    probe("streaming: NEON add", stub_sm, p_neon, p_neon_size, 18, NULL);
   }
 #if !defined(__APPLE__)
   try_plain_sve = (getauxval(AT_HWCAP) & (1ul << 22)) != 0;
@@ -2951,15 +2961,15 @@ int main(int argc, char **argv)
 #else
     printf("  (plain SVE outside streaming mode)\n");
 #endif
-    have_sve = probe("plain: cntw (32-bit lanes per vector)", (stub_t)call_plain, p_cntw, p_cntw_size, 0, &sve_lanes);
+    have_sve = probe("plain: cntw (32-bit lanes per vector)", stub_plain, p_cntw, p_cntw_size, 0, &sve_lanes);
     if (have_sve)
     {
       int ok = 1;
-      ok &= probe("plain: SVE add", (stub_t)call_plain, p_add, p_add_size, 12, NULL);
-      ok &= probe("plain: SVE2 usra", (stub_t)call_plain, p_usra, p_usra_size, 8, NULL);
-      ok &= probe("plain: SVE lslr", (stub_t)call_plain, p_shift, p_shift_size, 8, NULL);
+      ok &= probe("plain: SVE add", stub_plain, p_add, p_add_size, 12, NULL);
+      ok &= probe("plain: SVE2 usra", stub_plain, p_usra, p_usra_size, 8, NULL);
+      ok &= probe("plain: SVE lslr", stub_plain, p_shift, p_shift_size, 8, NULL);
       sve_basic = ok && sve_lanes >= 4 && sve_lanes <= 64;
-      sve_xar = probe("plain: SVE2 xar", (stub_t)call_plain, p_xar, p_xar_size, 8, NULL);
+      sve_xar = probe("plain: SVE2 xar", stub_plain, p_xar, p_xar_size, 8, NULL);
       if (force)
         sve_basic = sve_xar = 1;
     }
