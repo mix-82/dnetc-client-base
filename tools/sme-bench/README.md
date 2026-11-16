@@ -60,13 +60,16 @@ The embedded code also assembles as a Mach-O object (`--target=arm64-apple-macos
 ## Runs on GitHub runners (2026-11-15, version 2)
 
 Branch `sme-bench-test` of mix-82/dnetc-client-base, workflow `.github/workflows/sme-bench.yml`,
-run 43787675320. Unedited output is in `ci-logs/`.
+run 43788333267. Unedited output is in `ci-logs/`.
 
 | Runner | CPU | Build | Result |
 |---|---|---|---|
 | `macos-26` | Apple M1 (Virtual), Apple clang 21 | no warnings | no SME: `smstart` fault reported; NEON kernels pass |
-| `macos-15` | Apple M1 (Virtual), Apple clang | no warnings | same |
+| `macos-15` | Apple M1 (Virtual), Apple clang 17 | no warnings | same |
 | `ubuntu-24.04-arm` | Neoverse N2 (SVE2, 128-bit), GCC 13.3 | no warnings | 6 SVE kernels pass natively; SVE 4x4 xar 22.3 M keys/s against NEON 4x4 21.5 M |
+
+On all three runners `gen_kernels.py` and `make_single.py` reproduce the committed
+`sme_rc5_bench.c` byte for byte (`ci-logs/regen-*.log`).
 
 This confirms on real macOS: the file compiles with Apple's toolchain, the `sysctl` keys
 `hw.optional.arm.FEAT_SME`, `FEAT_SME2` and `sme_max_svl_b` exist (all 0 on M1), and an illegal

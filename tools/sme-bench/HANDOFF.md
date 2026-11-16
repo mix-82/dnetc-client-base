@@ -40,7 +40,8 @@ zebe decides what is worth doing. The task list is the order I would try things,
 
 Verified:
 
-- `sme_rc5_bench.c` builds without warnings with Apple clang 21 (macOS 15 and 26) and GCC 13.
+- `sme_rc5_bench.c` builds without warnings with Apple clang 17 (macOS 15), Apple clang 21
+  (macOS 26) and GCC 13.
 - On Apple M1 (no SME) it reports the `smstart` fault and continues with NEON only.
 - macOS has the `sysctl` keys `hw.optional.arm.FEAT_SME`, `hw.optional.arm.FEAT_SME2` and
   `hw.optional.arm.sme_max_svl_b` (all 0 on M1).
@@ -116,8 +117,8 @@ cc -O2 -o sme_rc5_bench sme_rc5_bench.c -lpthread && ./sme_rc5_bench
 ```
 
 The generator assembles with `clang --target=aarch64-linux-gnu` and reads the ELF object, so it
-needs no SME support in Apple's assembler. It has not been run on macOS yet; if Apple's clang
-refuses that target, assemble natively and adapt `elf_text_and_symbols()`.
+needs no SME support in Apple's assembler. With Apple clang 17 and 21 on GitHub's macOS runners it
+reproduces the committed `sme_rc5_bench.c` byte for byte.
 
 Rules for kernel code:
 
