@@ -8,7 +8,8 @@ on:
   push:
     branches: [sme-bench-test]
     paths:
-      - 'tools/sme-bench/sme_rc5_bench.c'
+      - 'tools/sme-bench/**'
+      - '!tools/sme-bench/ci-logs/**'
       - '.github/workflows/sme-bench.yml'
   workflow_dispatch:
 
@@ -51,6 +52,25 @@ jobs:
 
       - name: Run again, forcing the SVE kernels
         run: ./sme_rc5_bench 0.2 force 2>&1 | tee run-force-${{ matrix.os }}.log
+
+      - name: Regenerate the kernels and compare with the committed files
+        run: |
+          {
+            if ! command -v clang >/dev/null; then echo "no clang on this runner: not checked"; exit 0; fi
+            clang --version | head -1
+            cd tools/sme-bench
+            cp sme_rc5_bench.c /tmp/committed.c
+            cp gen/kernels.inc /tmp/committed.inc
+            cp gen/kernels.S /tmp/committed.S
+            python3 gen_kernels.py clang gen
+            python3 make_single.py
+            fail=0
+            cmp gen/kernels.S /tmp/committed.S && echo "kernels.S: identical" || { echo "kernels.S: DIFFERENT"; fail=1; }
+            cmp gen/kernels.inc /tmp/committed.inc && echo "kernels.inc: identical" || { echo "kernels.inc: DIFFERENT"; fail=1; }
+            cmp sme_rc5_bench.c /tmp/committed.c && echo "sme_rc5_bench.c: identical" || { echo "sme_rc5_bench.c: DIFFERENT"; fail=1; }
+            if [ $fail = 1 ]; then diff /tmp/committed.inc gen/kernels.inc | head -20; fi
+            exit $fail
+          } 2>&1 | tee regen-${{ matrix.os }}.log
 
       - uses: actions/upload-artifact@v4
         if: always()

@@ -1,0 +1,46 @@
+sme_rc5_bench version 2: RC5-72 with NEON and with SME streaming SVE
+This is a probe. Any result is useful; please send back everything it prints.
+
+System
+  Linux HWCAP SVE                    yes
+  Linux HWCAP2 SVE2                  no
+  Linux HWCAP2 SME                   no
+  online CPUs                        12
+  compiler                           Ubuntu Clang 18.1.3 (1ubuntu1)
+
+Plain C RC5-72 against 3 distributed.net test keys: ok
+
+Probes (each instruction kind is tried once; a fault is reported, not fatal)
+  smstart / smstop                             FAULT: illegal instruction in the smstart/smstop stub at offset 0x20 (instruction word 0xd503437f)
+  (plain SVE outside streaming mode)
+  plain: cntw (32-bit lanes per vector)        ok (16)
+  plain: SVE add                               ok
+  plain: SVE2 usra                             FAULT: illegal instruction at code offset 0x8 (instruction word 0x4543e401)
+  plain: SVE lslr                              ok
+  plain: SVE2 xar                              FAULT: illegal instruction at code offset 0x8 (instruction word 0x04633420)
+
+Checks (every kernel against the plain C version, 768 keys or more)
+  scalar C               ok
+  NEON 1x4               ok
+  NEON 2x4               ok
+  NEON 4x4               ok
+  NEON 8x4               ok
+
+Speed, one thread (0.02 s each; names are streams x keys per stream)
+  scalar C                    2537945 keys/s
+  NEON 1x4                    5843456 keys/s
+  NEON 2x4                    4514467 keys/s
+  NEON 4x4                    4087736 keys/s
+  NEON 8x4                    3072416 keys/s
+
+Speed, several threads at once (total keys/s; 12 performance cores, 12 cores)
+  NEON 1x4                1 thread        5123238 keys/s  (5123238 per thread)
+  NEON 1x4                2 threads      11052764 keys/s  (5526382 per thread)
+  NEON 1x4                4 threads      21546202 keys/s  (5386551 per thread)
+  NEON 1x4               12 threads      36886707 keys/s  (3073892 per thread)
+
+Summary
+  best NEON kernel here:  NEON 1x4                5843456 keys/s on one thread
+  SME streaming mode is not available on this machine.
+  The NEON kernels here are plain C, not the client's tuned cores. For the real
+  comparison, also run "dnetc -bench rc5-72" and note its per-core rate.

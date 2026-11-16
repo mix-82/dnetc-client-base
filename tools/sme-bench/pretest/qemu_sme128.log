@@ -1,0 +1,86 @@
+sme_rc5_bench version 2: RC5-72 with NEON and with SME streaming SVE
+This is a probe. Any result is useful; please send back everything it prints.
+
+System
+  Linux HWCAP SVE                    yes
+  Linux HWCAP2 SVE2                  yes
+  Linux HWCAP2 SME                   yes
+  online CPUs                        12
+  compiler                           Ubuntu Clang 18.1.3 (1ubuntu1)
+
+Plain C RC5-72 against 3 distributed.net test keys: ok
+
+Probes (each instruction kind is tried once; a fault is reported, not fatal)
+  smstart / smstop                             ok
+  streaming: cntw (32-bit lanes per vector)    ok (4)
+  streaming: SVE add                           ok
+  streaming: SVE2 usra (rotate by 3, 2 instr.) ok
+  streaming: SVE lslr (variable shift)         ok
+  streaming: SVE2 xar (rotate by 3, 1 instr.)  ok
+  (information only) NEON inside streaming mode:
+  streaming: NEON add                          FAULT: illegal instruction at code offset 0x0 (instruction word 0x4f000520)
+  (plain SVE outside streaming mode)
+  plain: cntw (32-bit lanes per vector)        ok (16)
+  plain: SVE add                               ok
+  plain: SVE2 usra                             ok
+  plain: SVE lslr                              ok
+  plain: SVE2 xar                              ok
+
+Checks (every kernel against the plain C version, 768 keys or more)
+  scalar C               ok
+  NEON 1x4               ok
+  NEON 2x4               ok
+  NEON 4x4               ok
+  NEON 8x4               ok
+  SME 1x4 xar            ok
+  SME 1x4 usra           ok
+  SME 2x4 xar            ok
+  SME 2x4 usra           ok
+  SME 4x4 xar            ok
+  SME 4x4 usra           ok
+  SVE 1x16 xar           ok
+  SVE 1x16 usra          ok
+  SVE 2x16 xar           ok
+  SVE 2x16 usra          ok
+  SVE 4x16 xar           ok
+  SVE 4x16 usra          ok
+
+Speed, one thread (0.02 s each; names are streams x keys per stream)
+  scalar C                    2531733 keys/s
+  NEON 1x4                    5837387 keys/s
+  NEON 2x4                    4500444 keys/s
+  NEON 4x4                    4096649 keys/s
+  NEON 8x4                    3283492 keys/s
+  SME 1x4 xar                  757284 keys/s
+  SME 1x4 usra                 748598 keys/s
+  SME 2x4 xar                  772506 keys/s
+  SME 2x4 usra                 774407 keys/s
+  SME 4x4 xar                  761518 keys/s
+  SME 4x4 usra                 763796 keys/s
+  SVE 1x16 xar                 896279 keys/s
+  SVE 1x16 usra                897477 keys/s
+  SVE 2x16 xar                1204662 keys/s
+  SVE 2x16 usra               1239111 keys/s
+  SVE 4x16 xar                1536673 keys/s
+  SVE 4x16 usra               1526527 keys/s
+
+Speed, several threads at once (total keys/s; 12 performance cores, 12 cores)
+  NEON 1x4                1 thread        5909762 keys/s  (5909762 per thread)
+  NEON 1x4                2 threads       9723464 keys/s  (4861732 per thread)
+  NEON 1x4                4 threads      22412188 keys/s  (5603047 per thread)
+  NEON 1x4               12 threads      39080335 keys/s  (3256695 per thread)
+  SME 2x4 usra            1 thread         621596 keys/s  (621596 per thread)
+  SME 2x4 usra            2 threads       1390244 keys/s  (695122 per thread)
+  SME 2x4 usra            4 threads       2935478 keys/s  (733870 per thread)
+  SME 2x4 usra           12 threads       4540965 keys/s  (378414 per thread)
+  SVE 4x16 xar            1 thread        1437664 keys/s  (1437664 per thread)
+  SVE 4x16 xar            2 threads       2829072 keys/s  (1414536 per thread)
+  SVE 4x16 xar            4 threads       5627121 keys/s  (1406780 per thread)
+  SVE 4x16 xar           12 threads       9794945 keys/s  (816245 per thread)
+
+Summary
+  best NEON kernel here:  NEON 1x4                5837387 keys/s on one thread
+  best SME kernel:        SME 2x4 usra             774407 keys/s on one thread (0.13x the NEON kernel)
+  best plain SVE kernel:  SVE 4x16 xar            1536673 keys/s on one thread (0.26x the NEON kernel)
+  The NEON kernels here are plain C, not the client's tuned cores. For the real
+  comparison, also run "dnetc -bench rc5-72" and note its per-core rate.
