@@ -1,0 +1,51 @@
+sme_rc5_bench version 1: RC5-72 with NEON and with SME streaming SVE
+This is a probe. Any result is useful; please send back everything it prints.
+
+System
+  machdep.cpu.brand_string           Apple M1 (Virtual)
+  hw.model                           VirtualMac2,1
+  kern.osproductversion              26.7.2
+  hw.ncpu                            3
+  hw.perflevel0.physicalcpu          3
+  hw.perflevel1.physicalcpu          (not present)
+  hw.optional.arm.FEAT_SME           0
+  hw.optional.arm.FEAT_SME2          0
+  hw.optional.arm.FEAT_SME_F64F64    0
+  hw.optional.arm.FEAT_SME_I16I64    0
+  hw.optional.arm.sme_max_svl_b      0
+  hw.optional.arm.FEAT_SVE           (not present)
+  hw.optional.arm.FEAT_SVE2          (not present)
+  hw.optional.arm.FEAT_SHA3          1
+  compiler                           Apple LLVM 21.0.0 (clang-2100.1.1.101)
+
+Plain C RC5-72 against 3 distributed.net test keys: ok
+
+Probes (each instruction kind is tried once; a fault is reported, not fatal)
+  smstart / smstop                             FAULT: illegal instruction in the smstart/smstop stub at offset 0x20 (instruction word 0xd503437f)
+  (plain SVE outside streaming mode; a fault here is expected on Apple M4)
+  plain: cntw (32-bit lanes per vector)        FAULT: illegal instruction at code offset 0x0 (instruction word 0x04a0e3e0)
+
+Checks (every kernel against the plain C version, 768 keys or more)
+  scalar C               ok
+  NEON 1x4               ok
+  NEON 2x4               ok
+  NEON 4x4               ok
+  NEON 8x4               ok
+
+Speed, one thread (0.20 s each; names are streams x keys per stream)
+  scalar C                    4696667 keys/s
+  NEON 1x4                   10483498 keys/s
+  NEON 2x4                   17350730 keys/s
+  NEON 4x4                   31581012 keys/s
+  NEON 8x4                   37632772 keys/s
+
+Speed, several threads at once (total keys/s; 3 performance cores, 3 cores)
+  NEON 8x4                1 thread       33174614 keys/s  (33174614 per thread)
+  NEON 8x4                2 threads      59041744 keys/s  (29520872 per thread)
+  NEON 8x4                3 threads      89870068 keys/s  (29956689 per thread)
+
+Summary
+  best NEON kernel here:  NEON 8x4               37632772 keys/s on one thread
+  SME streaming mode is not available on this machine.
+  The NEON kernels here are plain C, not the client's tuned cores. For the real
+  comparison, also run "dnetc -bench rc5-72" and note its per-core rate.

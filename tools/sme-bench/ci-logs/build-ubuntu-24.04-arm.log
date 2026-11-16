@@ -1,0 +1,7 @@
+tools/sme-bench/sme_rc5_bench.c: In function ‘run_kernel’:
+tools/sme-bench/sme_rc5_bench.c:2493:6: warning: function called through a non-compatible type
+ 2493 |     ((stub_t)call_sm)(v->fn, a);
+      |     ~^~~~~~~~~~~~~~~~
+tools/sme-bench/sme_rc5_bench.c:2495:6: warning: function called through a non-compatible type
+ 2495 |     ((stub_t)call_plain)(v->fn, a);
+      |     ~^~~~~~~~~~~~~~~~~~~
