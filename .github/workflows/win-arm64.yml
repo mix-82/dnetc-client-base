@@ -20,7 +20,7 @@ jobs:
   native:
     name: native build + tests (windows-11-arm)
     runs-on: windows-11-arm
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
     - uses: actions/checkout@v4
     - name: Probe
@@ -46,6 +46,14 @@ jobs:
       if: always()
       shell: bash
       run: bash tools/win-arm64-ci/run.sh ./dnetc.exe ci-out windows-11-arm full
+    - name: Stack-growth test (MIX cores, with control)
+      if: always()
+      shell: cmd
+      run: tools\win-arm64-ci\stackprobe.cmd
+    - name: Extra tests (stress on all cores, auto core selection, disk buffers, console stub)
+      if: always()
+      shell: bash
+      run: bash tools/win-arm64-ci/extra.sh . ci-out/extra
     - uses: actions/upload-artifact@v4
       if: always()
       with:
