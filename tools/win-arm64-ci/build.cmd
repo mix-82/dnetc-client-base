@@ -43,4 +43,15 @@ for %%f in (dnetc.exe dnetc.com dnetc.scr) do (
     echo --- %%f: NOT BUILT
   )
 )
+if not "%MAKEARCH%"=="ARM64" exit /b %RC%
+echo --- exe compressor check: a dry run with UPX defined must not call upx
+nmake -nologo -n -a -f makefile.vc PROCESSOR_ARCHITECTURE=ARM64 UPX=C:\upx > %LOGDIR%\dryrun-upx.txt 2>&1
+echo dry run: nmake exit code %ERRORLEVEL%
+findstr /i /c:"link " %LOGDIR%\dryrun-upx.txt | find /c /v ""
+findstr /i /c:"upx.exe" %LOGDIR%\dryrun-upx.txt
+if not errorlevel 1 (
+  echo FAIL: the ARM64 build would run the exe compressor
+  exit /b 1
+)
+echo ok: no exe compressor in the ARM64 build
 exit /b %RC%
