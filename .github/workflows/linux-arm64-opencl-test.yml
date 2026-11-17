@@ -1,0 +1,50 @@
+name: Linux arm64 OpenCL test
+
+on:
+  push:
+    branches: [ "ci-linux-arm64-opencl" ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    timeout-minutes: 90
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Machine
+      run: |
+        uname -a
+        lscpu | head -20
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y g++ make file ocl-icd-opencl-dev opencl-headers pocl-opencl-icd clinfo
+    - name: OpenCL devices
+      run: clinfo -l
+    - name: configure
+      env:
+        SHELL: /bin/sh
+      run: ./configure linux-arm64-opencl
+    - name: make (branch as committed)
+      run: make
+    - name: binary
+      run: |
+        file dnetc
+        ./dnetc -version
+    - name: gpuinfo (branch as committed; CPU device is not listed)
+      run: ./dnetc -gpuinfo
+    # Test only: the client's own debug switch, so it accepts PoCL's CPU device
+    - name: rebuild with the CPU debug switch
+      run: |
+        sed -i 's|^// #undef  CL_DEVICE_TYPE_GPU|#undef  CL_DEVICE_TYPE_GPU|; s|^// #define CL_DEVICE_TYPE_GPU CL_DEVICE_TYPE_ALL|#define CL_DEVICE_TYPE_GPU CL_DEVICE_TYPE_ALL|' plat/opencl/ocl_setup.cpp
+        grep -n "CL_DEVICE_TYPE_GPU CL_DEVICE_TYPE_ALL" plat/opencl/ocl_setup.cpp
+        make
+    - name: gpuinfo
+      run: ./dnetc -gpuinfo
+    - name: test
+      run: ./dnetc -test rc5-72
+    - name: stress
+      run: ./dnetc -stress rc5-72
+    - name: bench
+      run: ./dnetc -bench rc5-72
