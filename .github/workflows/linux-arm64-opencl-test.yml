@@ -41,10 +41,32 @@ jobs:
         grep -n "CL_DEVICE_TYPE_GPU CL_DEVICE_TYPE_ALL" plat/opencl/ocl_setup.cpp
         make
     - name: gpuinfo
-      run: ./dnetc -gpuinfo
+      run: |
+        ./dnetc -gpuinfo 2>&1 | tee gpuinfo.log
+        for k in "Platform Version" "Type" "Name" "Max compute units" "OpenCL C version"; do
+          v=$(grep -m1 "^ *$k:" gpuinfo.log | sed 's/^ *//')
+          echo "::notice title=gpuinfo::$v"
+        done
+        grep -q "Device Info" gpuinfo.log
     - name: test
-      run: ./dnetc -test rc5-72
+      run: |
+        ./dnetc -test rc5-72 2>&1 | tr '\r' '\n' | tee test.log
+        cores=$(grep -c "using core" test.log)
+        passed=$(grep -c "32/32 Tests Passed" test.log)
+        echo "::notice title=test::$passed of $cores cores passed 32/32"
+        grep -o "using core.*" test.log | while read -r l; do echo "::notice title=test core::$l"; done
+        if grep -qi "failed" test.log; then echo "::error title=failure::a test failed"; exit 1; fi
+        [ "$cores" -gt 0 ] && [ "$passed" -eq "$cores" ]
     - name: stress
-      run: ./dnetc -stress rc5-72
+      run: |
+        ./dnetc -stress rc5-72 2>&1 | tr '\r' '\n' | tee stress.log
+        cores=$(grep -c "using core" stress.log)
+        last=$(grep -c "Stress-test 4 passed" stress.log)
+        total=$(grep -c "Stress-test [0-9]* passed" stress.log)
+        echo "::notice title=stress::$cores cores, $total stress tests passed, $last cores passed stress-test 4"
+        if grep -qi "failed" stress.log; then echo "::error title=failure::a test failed"; exit 1; fi
+        [ "$cores" -gt 0 ] && [ "$last" -eq "$cores" ]
     - name: bench
-      run: ./dnetc -bench rc5-72
+      run: |
+        ./dnetc -bench rc5-72 2>&1 | tr '\r' '\n' | tee bench.log
+        grep -E "keys/sec" bench.log | sed 's/^ *//' | head -8 | while read -r l; do echo "::notice title=bench::$l"; done
