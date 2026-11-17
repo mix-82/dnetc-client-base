@@ -3,8 +3,11 @@ name: Windows ARM64 client
 # Builds the Windows ARM64 client (makefile.vc, PROCESSOR_ARCHITECTURE=ARM64:
 # MSVC + LLVM clang for the arm64 cores) natively on windows-11-arm and as a
 # cross build on windows-latest (x64), and runs -cpuinfo, -test, -stress,
-# -bench and a short offline crunch on the ARM runner. No work units are
-# fetched or returned.
+# -bench and a short offline crunch on the ARM runner. Regression: the x64
+# and 32-bit x86 clients are built before (dcti master) and after the change
+# and their warnings compared; those clients are also benchmarked under
+# emulation on the ARM runner (what Windows on ARM users run today). Linux
+# and macOS arm64 builds run -test. No work units are fetched or returned.
 on:
   push:
     branches: [win-arm64-ci]
@@ -38,7 +41,7 @@ jobs:
         Get-Command bash, git, clang, clang-cl, timeout -ErrorAction SilentlyContinue | Format-Table Name, Source -AutoSize
     - name: Build
       shell: cmd
-      run: tools\win-arm64-ci\build.cmd arm64 ci-out
+      run: tools\win-arm64-ci\build.cmd arm64 ARM64 ci-out
     - name: Test
       if: always()
       shell: bash
@@ -63,7 +66,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: Build
       shell: cmd
-      run: tools\win-arm64-ci\build.cmd amd64_arm64 ci-out
+      run: tools\win-arm64-ci\build.cmd amd64_arm64 ARM64 ci-out
     - uses: actions/upload-artifact@v4
       if: always()
       with:
@@ -92,3 +95,116 @@ jobs:
       with:
         name: cross-test
         path: ci-out/
+
+  x64-x86:
+    name: ${{ matrix.makearch }} build before/after (windows-latest)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - vcarch: x64
+            makearch: AMD64
+            name: amd64
+          - vcarch: x86
+            makearch: x86
+            name: x86
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Install NASM, YASM and ISPC
+      shell: pwsh
+      run: |
+        choco install nasm yasm -y --no-progress
+        "C:\Program Files\NASM" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        if ("${{ matrix.name }}" -eq "amd64") {
+          $v = "1.32.0"
+          $zip = "$env:RUNNER_TEMP\ispc.zip"
+          Invoke-WebRequest -Uri "https://github.com/ispc/ispc/releases/download/v$v/ispc-v$v-windows.zip" -OutFile $zip
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne "148d5cd96abe7501c730d5fbd00f1f0c893b96bfeada38d1811c9b6251e86a5c") { throw "ispc.zip sha256 mismatch: $hash" }
+          Expand-Archive $zip -DestinationPath $env:RUNNER_TEMP
+          "$env:RUNNER_TEMP\ispc-v$v-windows\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        }
+    - name: Check out the base commit (dcti master before the change)
+      shell: bash
+      run: |
+        git fetch --no-tags -q https://github.com/dcti/dnetc-client-base master
+        base=$(git merge-base HEAD FETCH_HEAD)
+        echo "base commit: $(git log -1 --format='%h %s' $base)"
+        git worktree add -q ../before $base
+    - name: Build after
+      shell: cmd
+      run: tools\win-arm64-ci\build.cmd ${{ matrix.vcarch }} ${{ matrix.makearch }} ci-out
+    - name: Build before
+      if: always()
+      shell: cmd
+      run: |
+        cd ..\before
+        %GITHUB_WORKSPACE%\tools\win-arm64-ci\build.cmd ${{ matrix.vcarch }} ${{ matrix.makearch }} %GITHUB_WORKSPACE%\ci-out\before
+    - name: Compare warnings
+      if: always()
+      shell: bash
+      run: bash tools/win-arm64-ci/compare-warnings.sh ci-out/before/build.log ci-out/build.log | tee ci-out/compare-warnings.txt
+    - name: Test (native x64 host)
+      shell: bash
+      run: bash tools/win-arm64-ci/run.sh ./dnetc.exe ci-out/native windows-latest-${{ matrix.name }} quick any
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: build-${{ matrix.name }}
+        path: |
+          ci-out/
+          dnetc.exe
+        if-no-files-found: warn
+
+  emulated:
+    name: x64 and x86 clients under emulation (windows-11-arm)
+    needs: x64-x86
+    runs-on: windows-11-arm
+    timeout-minutes: 40
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/download-artifact@v4
+      with:
+        name: build-amd64
+        path: emu-amd64
+    - uses: actions/download-artifact@v4
+      with:
+        name: build-x86
+        path: emu-x86
+    - name: x64 client under emulation
+      if: always()
+      shell: bash
+      run: bash tools/win-arm64-ci/run.sh ./emu-amd64/dnetc.exe ci-out/amd64 emulated-amd64 bench any
+    - name: x86 client under emulation
+      if: always()
+      shell: bash
+      run: bash tools/win-arm64-ci/run.sh ./emu-x86/dnetc.exe ci-out/x86 emulated-x86 bench any
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: emulated
+        path: ci-out/
+
+  unix:
+    name: ${{ matrix.os }} build + -test
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04-arm, macos-15]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build and test
+      run: |
+        case "$RUNNER_OS" in Linux) t=linux-arm64 ;; macOS) t=macosx-arm64 ;; esac
+        ./configure $t > cfg.log 2>&1 || { tail -20 cfg.log; exit 1; }
+        make -j3 > build.log 2>&1 || [ -x dnetc ] || { grep -iE -m20 error build.log; exit 1; }
+        ./dnetc -test rc5-72 < /dev/null > test.log 2>&1
+        n=$(grep -c 'using core #' test.log); p=$(grep -c '32/32 Tests Passed' test.log)
+        echo "-test: $p of $n cores pass 32/32"
+        [ "$n" = 8 ] && [ "$p" = 8 ]

@@ -1,15 +1,18 @@
 @echo off
-rem Build the Windows ARM64 client with makefile.vc.
-rem   build.cmd <vcvarsall arch: arm64 (native) or amd64_arm64 (cross)> <log dir>
+rem Build a Windows client with makefile.vc in the current directory.
+rem   build.cmd <vcvarsall arch> <makefile.vc PROCESSOR_ARCHITECTURE> <log dir>
+rem e.g. arm64 ARM64 (native ARM64), amd64_arm64 ARM64 (cross), x64 AMD64, x86 x86
 setlocal
 set VCARCH=%1
-set LOGDIR=%2
+set MAKEARCH=%2
+set LOGDIR=%3
 if not exist %LOGDIR% mkdir %LOGDIR%
 for /f "usebackq delims=" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath`) do set "VSDIR=%%i"
 echo VSDIR=%VSDIR%
 call "%VSDIR%\VC\Auxiliary\Build\vcvarsall.bat" %VCARCH%
 if errorlevel 1 exit /b 1
 
+if not "%MAKEARCH%"=="ARM64" goto haveclang
 where clang.exe >nul 2>&1 && goto haveclang
 if exist "%VSDIR%\VC\Tools\Llvm\ARM64\bin\clang.exe" set "PATH=%VSDIR%\VC\Tools\Llvm\ARM64\bin;%PATH%"
 where clang.exe >nul 2>&1 && goto haveclang
@@ -27,7 +30,7 @@ clang --version
 cl 2>&1 | findstr /i version
 echo --- build
 if not exist output mkdir output
-nmake -nologo -f makefile.vc /K PROCESSOR_ARCHITECTURE=ARM64 > %LOGDIR%\build.log 2>&1
+nmake -nologo -f makefile.vc /K PROCESSOR_ARCHITECTURE=%MAKEARCH% > %LOGDIR%\build.log 2>&1
 set RC=%ERRORLEVEL%
 type %LOGDIR%\build.log
 echo nmake exit code %RC%
