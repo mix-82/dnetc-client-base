@@ -8,12 +8,17 @@
  * every possible way. A core that skipped the guard page would crash with
  * an access violation.
  *
- * "stackprobe bad" is the control: a function that moves sp down two pages
- * and writes there without touching the page in between. It must crash.
+ * "stackprobe info" prints how a fresh thread's stack is laid out
+ * (committed, guard and reserved regions).
+ * "stackprobe bad N" is the control: a function that moves sp down N pages
+ * and writes there without touching the pages in between. Run for growing
+ * N, it shows how far below sp a write is tolerated on this system; the
+ * first N that crashes is the limit a core must stay under.
  */
 #include <windows.h>
 #include <malloc.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 typedef unsigned int u32;
@@ -26,9 +31,12 @@ typedef struct {
 
 extern int rc5_72_unit_func_neon_mix(RC5_72UnitWork *, u32 *, void *);
 extern int rc5_72_unit_func_neon_hyb(RC5_72UnitWork *, u32 *, void *);
-extern int bad_probe(void *);
+extern int bad_probe(size_t pages, void *);
 
-struct job { int core; size_t k; int result; u32 iters; };
+struct job { int core; size_t k; int result; u32 iters; size_t pages; };
+
+static MEMORY_BASIC_INFORMATION g_m[4];
+static char *g_sp;
 
 static DWORD WINAPI thr(LPVOID arg)
 {
@@ -39,7 +47,17 @@ static DWORD WINAPI thr(LPVOID arg)
   p[0] = 1;                       /* commit down to here; guard page is next */
   memset(&w, 0, sizeof w);
   w.cypher.lo = 0x12345678; w.cypher.hi = 0x9abcdef0;
-  if (j->core == 2) { j->result = bad_probe(&w); return 0; }
+  if (j->core == 2) { j->result = bad_probe(j->pages, &w); return 0; }
+  if (j->core == 3) {             /* info: regions at and below sp */
+    char *a = (char *)&w;
+    int i;
+    g_sp = a;
+    for (i = 0; i < 4; i++) {
+      if (!VirtualQuery(a, &g_m[i], sizeof g_m[i])) break;
+      a = (char *)g_m[i].BaseAddress - 1;
+    }
+    return 0;
+  }
   it = (j->core == 0) ? 32 : 16;
   j->result = (j->core == 0) ? rc5_72_unit_func_neon_mix(&w, &it, 0)
                              : rc5_72_unit_func_neon_hyb(&w, &it, 0);
@@ -63,11 +81,24 @@ int main(int argc, char **argv)
   long n = 0;
   SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
   setvbuf(stdout, NULL, _IONBF, 0);
-  if (argc > 1 && strcmp(argv[1], "bad") == 0) {
-    printf("control: skipping the guard page (expect a crash)...\n");
-    j.core = 2; j.k = 0; j.result = 0;
+  if (argc > 1 && strcmp(argv[1], "info") == 0) {
+    int i;
+    j.core = 3; j.k = 0;
     run(&j);
-    printf("control did NOT crash (result %d): the test cannot detect a skipped guard page\n", j.result);
+    printf("fresh thread (CreateThread, 4096 bytes commit requested): address in frame %p\n", g_sp);
+    for (i = 0; i < 4; i++)
+      printf("  region %d: %p .. %p  %7llu bytes  %s%s\n", i, g_m[i].BaseAddress,
+             (char *)g_m[i].BaseAddress + g_m[i].RegionSize, (unsigned long long)g_m[i].RegionSize,
+             g_m[i].State == MEM_COMMIT ? "committed" : g_m[i].State == MEM_RESERVE ? "reserved" : "free",
+             (g_m[i].Protect & PAGE_GUARD) ? " GUARD" : "");
+    printf("  bytes committed below the frame address: %llu\n",
+           (unsigned long long)(g_sp - (char *)g_m[0].BaseAddress));
+    return 0;
+  }
+  if (argc > 2 && strcmp(argv[1], "bad") == 0) {
+    j.core = 2; j.k = 0; j.result = 0; j.pages = (size_t)atoi(argv[2]);
+    run(&j);
+    printf("control: write %u pages below sp did not crash\n", (unsigned)j.pages);
     return 0;
   }
   for (core = 0; core < 2; core++)
