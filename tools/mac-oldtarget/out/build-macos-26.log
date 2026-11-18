@@ -1,0 +1,1054 @@
+Xcode: /Applications/Xcode_26.6.app
+Xcode 26.6
+Build version 17F113
+Platform target for "macosx-amd64-opencl" recognized.
+Building test program...
+cc -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.7 -DMACOSX_DEPLOYMENT_TARGET=10.7 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES common/testplat.cpp -mmacosx-version-min=10.7 -DMACOSX_DEPLOYMENT_TARGET=10.7 -arch x86_64 -framework IOKit -framework CoreFoundation -framework OpenCL -o testplat
+common/testplat.cpp:25:12: warning: explicitly assigning value of variable of type 'char *' to itself [-Wself-assign]
+   25 |   foundbuf = foundbuf;
+      |   ~~~~~~~~ ^ ~~~~~~~~
+common/testplat.cpp:64:12: warning: explicitly assigning value of variable of type 'const char *' to itself [-Wself-assign]
+   64 |   filename = filename;
+      |   ~~~~~~~~ ^ ~~~~~~~~
+2 warnings generated.
+Checking test program...
+Scanning common C/C++ dependencies...
+  plat/macosx/c_install.cpp -> output/c_install.o
+  plat/macosx/temperature.cpp -> output/temperature.o
+  common/lurk.cpp -> output/lurk.o
+  common/core_r72.cpp -> output/core_r72.o
+  common/buffpub.cpp -> output/buffpub.o
+  common/iniread.cpp -> output/iniread.o
+  common/buffbase.cpp -> output/buffbase.o
+  common/mail.cpp -> output/mail.o
+  common/random.cpp -> output/random.o
+  common/clicdata.cpp -> output/clicdata.o
+  common/clitime.cpp -> output/clitime.o
+  common/disphelp.cpp -> output/disphelp.o
+  common/clievent.cpp -> output/clievent.o
+  common/cpucheck.cpp -> output/cpucheck.o
+  common/pathwork.cpp -> output/pathwork.o
+  common/cliident.cpp -> output/cliident.o
+  common/logstuff.cpp -> output/logstuff.o
+  common/triggers.cpp -> output/triggers.o
+  common/coremem.cpp -> output/coremem.o
+  common/selcore.cpp -> output/selcore.o
+  common/cmdline.cpp -> output/cmdline.o
+  common/selftest.cpp -> output/selftest.o
+  common/pollsys.cpp -> output/pollsys.o
+  common/setprio.cpp -> output/setprio.o
+  common/console.cpp -> output/console.o
+  common/modereq.cpp -> output/modereq.o
+  common/confmenu.cpp -> output/confmenu.o
+  common/confrwv.cpp -> output/confrwv.o
+  common/confopt.cpp -> output/confopt.o
+  common/checkpt.cpp -> output/checkpt.o
+  common/util.cpp -> output/util.o
+  common/base64.cpp -> output/base64.o
+  common/netbase.cpp -> output/netbase.o
+  common/netconn.cpp -> output/netconn.o
+  common/client.cpp -> output/client.o
+  common/projdata.cpp -> output/projdata.o
+  common/bench.cpp -> output/bench.o
+  common/probman.cpp -> output/probman.o
+  common/probfill.cpp -> output/probfill.o
+  common/clirun.cpp -> output/clirun.o
+  common/problem.cpp -> output/problem.o
+  rc5-72/stress.cpp -> output/stress.o
+Scanning additional C/C++ dependencies...
+  plat/opencl/ocl_info.cpp -> output/ocl_info.o
+  plat/opencl/ocl_setup.cpp -> output/ocl_setup.o
+  rc5-72/opencl/ocl_common.cpp -> output/ocl_common.o
+  rc5-72/opencl/ocl_ref.cpp -> output/ocl_ref.o
+  rc5-72/opencl/ocl_1pipe.cpp -> output/ocl_1pipe.o
+Generating buildvars.mk...
+Generating output Makefile prologue code...
+Generating Makefile production targets...
+Generating Makefile dependency targets...
+Makefile auto-generation complete!
+
+Makefile deployment flags after the change:
+   2 -mmacosx-version-min=10.13
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl plat/macosx/c_install.cpp -o output/c_install.o
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl plat/macosx/temperature.cpp -o output/temperature.o
+plat/macosx/temperature.cpp:365:17: warning: implicit conversion from 'SInt32' (aka 'int') to 'float' may lose precision [-Wimplicit-int-float-conversion]
+  365 |       float k = temp / 100.0f;
+      |                 ^~~~ ~
+1 warning generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/lurk.cpp -o output/lurk.o
+common/lurk.cpp:1537:16: warning: cast from 'caddr_t' (aka 'char *') to 'struct ifreq *' increases required alignment from 1 to 8 [-Wcast-align]
+ 1537 |          ifr = (struct ifreq *)((caddr_t)ifr + ifrsize);
+      |                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1 warning generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/core_r72.cpp -o output/core_r72.o
+common/core_r72.cpp:376:24: warning: variable 'detected_flags' set but not used [-Wunused-but-set-variable]
+  376 |   static unsigned long detected_flags = 0;
+      |                        ^
+1 warning generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/buffpub.cpp -o output/buffpub.o
+common/buffpub.cpp:30:10: warning: explicitly assigning value of variable of type 'Client *' (aka 'Client_struct *') to itself [-Wself-assign]
+   30 |   client = client;
+      |   ~~~~~~ ^ ~~~~~~
+common/buffpub.cpp:40:10: warning: explicitly assigning value of variable of type 'Client *' (aka 'Client_struct *') to itself [-Wself-assign]
+   40 |   client = client;
+      |   ~~~~~~ ^ ~~~~~~
+common/buffpub.cpp:210:16: warning: cast from 'ContestWork *' to 'u32 *' (aka 'unsigned int *') increases required alignment from 1 to 4 [-Wcast-align]
+  210 |       u32 *w = (u32 *)(&(dest->work));
+      |                ^~~~~~~~~~~~~~~~~~~~~~
+3 warnings generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/iniread.cpp -o output/iniread.o
+common/iniread.cpp:711:36: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  711 |   char buffer[(sizeof(long)+1)*3]; sprintf(buffer, "%lu", ((long)(value)) );
+      |                                    ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+1 warning generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/buffbase.cpp -o output/buffbase.o
+common/buffbase.cpp:917:9: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  917 |         sprintf(scratch, "(%lu.%02lu stats units) ",
+      |         ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/buffbase.cpp:762:17: warning: variable 'totaltrans_wu' set but not used [-Wunused-but-set-variable]
+  762 |   unsigned long totaltrans_wu = 0, totaltrans_pkts = 0;
+      |                 ^
+common/buffbase.cpp:1057:54: warning: variable 'net_state_shown' set but not used [-Wunused-but-set-variable]
+ 1057 |   int check_flags, updatefailflags, updatemodeflags, net_state_shown = 0;
+      |                                                      ^
+3 warnings generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/mail.cpp -o output/mail.o
+common/mail.cpp:474:3: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  474 |   sprintf( timestring, "%s, %02d %s %04d %02d:%02d:%02d %c%02d%02d" ,
+      |   ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/mail.cpp:524:5: warning: misleading indentation; statement is not part of the previous 'if' [-Wmisleading-indentation]
+  524 |     if (fromid)
+      |     ^
+common/mail.cpp:521:3: note: previous statement is here
+  521 |   if (!destid)
+      |   ^
+common/mail.cpp:534:5: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  534 |     sprintf( buffer, "From: %s", ((fromid)?(fromid):("<>")) );
+      |     ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/mail.cpp:541:5: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  541 |     sprintf( buffer, "\r\nTo: %s", ((destid)?(destid):("<>")));
+      |     ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/mail.cpp:550:7: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  550 |       sprintf( buffer,"\r\nErrors-to: %s", statsid );
+      |       ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/mail.cpp:555:9: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  555 |         sprintf( buffer,"\r\nReply-to: %s", statsid );
+      |         ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/mail.cpp:564:5: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  564 |     sprintf( buffer, "\r\nDate: %s"
+      |     ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/mail.cpp:1084:9: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+ 1084 |         register char *p;
+      |         ^~~~~~~~
+8 warnings generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/random.cpp -o output/random.o
+common/random.cpp:75:30: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+   75 | static void IL_MixRandomSeed(register s32 (*rand_fn)())
+      |                              ^~~~~~~~
+common/random.cpp:229:3: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+  229 |   register u32 tmp;
+      |   ^~~~~~~~
+common/random.cpp:235:5: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+  235 |     register unsigned int i;
+      |     ^~~~~~~~
+3 warnings generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/clicdata.cpp -o output/clicdata.o
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/clitime.cpp -o output/clitime.o
+common/clitime.cpp:341:42: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+  341 | inline void __clks2tv( unsigned long hz, register unsigned long ticks,
+      |                                          ^~~~~~~~
+common/clitime.cpp:344:3: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+  344 |   register unsigned long sadj = 0, wadj = 0;
+      |   ^~~~~~~~
+common/clitime.cpp:344:3: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+  344 |   register unsigned long sadj = 0, wadj = 0;
+      |   ^~~~~~~~
+common/clitime.cpp:987:7: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+  987 |       register char *ss = spacestring;
+      |       ^~~~~~~~
+common/clitime.cpp:1003:5: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1003 |     sprintf( hourstring,  "%d.%02d:%02d:%02d.%02d", (int) (longtime / 86400UL),
+      |     ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/clitime.cpp:1044:7: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1044 |       sprintf( timestring3,      "%04d/%02d/%02d %02d:%02d:%02d",
+      |       ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/clitime.cpp:1052:7: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1052 |       sprintf( timestring4,     "%02d%02d%02d%02d",
+      |       ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/clitime.cpp:1061:7: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1061 |       sprintf( timestringX,    "%02d/%02d/%02d %02d:%02d:%02d GMT",
+      |       ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/clitime.cpp:1071:7: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1071 |       sprintf( timestring1,     "%s %02d %02d:%02d:%02d %s",
+      |       ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+9 warnings generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/disphelp.cpp -o output/disphelp.o
+common/disphelp.cpp:511:19: warning: format string is not a string literal (potentially insecure) [-Wformat-security]
+  511 |     LogScreenRaw( linebuffer );
+      |                   ^~~~~~~~~~
+common/disphelp.cpp:511:19: note: treat the string as an argument to avoid this
+  511 |     LogScreenRaw( linebuffer );
+      |                   ^
+      |                   "%s", 
+common/disphelp.cpp:520:19: warning: format string is not a string literal (potentially insecure) [-Wformat-security]
+  520 |     LogScreenRaw( linebuffer );
+      |                   ^~~~~~~~~~
+common/disphelp.cpp:520:19: note: treat the string as an argument to avoid this
+  520 |     LogScreenRaw( linebuffer );
+      |                   ^
+      |                   "%s", 
+2 warnings generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/clievent.cpp -o output/clievent.o
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/cpucheck.cpp -o output/cpucheck.o
+common/cpucheck.cpp:2915:5: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 2915 |     sprintf(namebuf, "%ld\n\tname: %s", rawid, cpuid_s );
+      |     ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+1 warning generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/pathwork.cpp -o output/pathwork.o
+common/pathwork.cpp:85:20: warning: cast from 'const char *' to 'char *' drops const qualifier [-Wcast-qual]
+   85 |     slash = (char*)strrchr( fullpath, '/' );
+      |                    ^
+1 warning generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl `sh common/buildinfo.sh` common/cliident.cpp -o output/cliident.o
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/logstuff.cpp -o output/logstuff.o
+common/logstuff.cpp:212:13: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  212 |             sprintf( rotsuffix, "%02d%s", (tm_year%100), monnames[tm_mon] );
+      |             ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/logstuff.cpp:216:13: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  216 |             sprintf( rotsuffix, "%04d", tm_year+1900 );
+      |             ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/logstuff.cpp:235:13: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  235 |             sprintf( rotsuffix, "%02dw%02d", (year % 100), week );
+      |             ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/logstuff.cpp:260:13: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  260 |             sprintf( rotsuffix, "%02d%02d%02d", (year%100), month, day );
+      |             ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/logstuff.cpp:182:51: warning: variable 'tm_yday' set but not used [-Wunused-but-set-variable]
+  182 |         int tm_year = 0, tm_mon = 0, tm_mday = 0, tm_yday = 0;
+      |                                                   ^
+common/logstuff.cpp:1012:11: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1012 |       i = sprintf(buffer,"\r%s: rate: ", CliGetContestNameFromID(cont_i));
+      |           ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/logstuff.cpp:1097:15: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1097 |               sprintf(buffer, "%s #%c:%s [%s]", info.name, ProblemLetterId(prob_i), info.cwpbuf,
+      |               ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/logstuff.cpp:1102:15: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1102 |               sprintf(buffer, "%s:%s [%s]", info.name, info.cwpbuf,
+      |               ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/logstuff.cpp:1184:9: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1184 |       { sprintf( bufptr, "%d%%", (int)(percent) ); bufptr+=3; }
+      |         ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/logstuff.cpp:1201:20: warning: implicit conversion loses integer precision: 'unsigned int' to 'char' [-Wimplicit-int-conversion]
+ 1201 |               ch = ProblemLetterId(prob_i);
+      |                  ~ ^~~~~~~~~~~~~~~~~~~~~~~
+common/problem.h:288:90: note: expanded from macro 'ProblemLetterId'
+  288 | #define ProblemLetterId(n)  ((n) >= PROBLEM_PRINTABLE_ID_COUNT ? '~' : (n) >= 26 ? (n)-26+'A' : (n)+'a')
+      |                                                                                    ~~~~~~^~~~
+common/logstuff.cpp:1201:20: warning: implicit conversion loses integer precision: 'unsigned int' to 'char' [-Wimplicit-int-conversion]
+ 1201 |               ch = ProblemLetterId(prob_i);
+      |                  ~ ^~~~~~~~~~~~~~~~~~~~~~~
+common/problem.h:288:100: note: expanded from macro 'ProblemLetterId'
+  288 | #define ProblemLetterId(n)  ((n) >= PROBLEM_PRINTABLE_ID_COUNT ? '~' : (n) >= 26 ? (n)-26+'A' : (n)+'a')
+      |                                                                                                 ~~~^~~~
+common/logstuff.cpp:1235:7: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1235 |       sprintf(buffer, "%u%%\n", endperc);
+      |       ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+12 warnings generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/triggers.cpp -o output/triggers.o
+common/triggers.cpp:173:37: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+  173 | void *RegisterPollDrivenBreakCheck( register void (*proc)(int) )
+      |                                     ^~~~~~~~
+common/triggers.cpp:175:3: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+  175 |   register void (*oldproc)(int);
+      |   ^~~~~~~~
+2 warnings generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/coremem.cpp -o output/coremem.o
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/selcore.cpp -o output/selcore.o
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/cmdline.cpp -o output/cmdline.o
+common/cmdline.cpp:568:39: warning: implicit conversion loses integer precision: 'int' to 'char' [-Wimplicit-int-conversion]
+  568 |                   buffer[linelen++] = ch;
+      |                                     ~ ^~
+common/cmdline.cpp:580:15: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  580 |               sprintf( buffer, "%s failed. Unable to get pid list", thisarg );
+      |               ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/cmdline.cpp:582:15: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  582 |               sprintf(buffer,"No distributed.net clients were found. "
+      |               ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/cmdline.cpp:585:15: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  585 |               sprintf(buffer,"%u distributed.net client%s %s. %u failure%s%s%s%s.",
+      |               ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/cmdline.cpp:759:9: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  759 |         sprintf(scratch,"%s is not supported for this platform.\n",thisarg);
+      |         ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/cmdline.cpp:982:17: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  982 |                 sprintf(scratch,"%d hour%s", n, ((n==1)?(""):("s")) );
+      |                 ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/cmdline.cpp:1003:21: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1003 |                     sprintf(scratch,"%d",n);
+      |                     ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/cmdline.cpp:1725:13: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1725 |             sprintf(scratch, "Unknown contest \"%.30s\".\n", argvalue);
+      |             ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/cmdline.cpp:1887:19: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1887 |                   sprintf(scratch, "Core #%d is not available on this machine.\n",
+      |                   ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/cmdline.cpp:1897:17: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1897 |                 sprintf(scratch, "Core #%d doesn't exist for contest \"%.30s\".\n",
+      |                 ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/cmdline.cpp:2116:9: warning: explicitly assigning value of variable of type 'const char *' to itself [-Wself-assign]
+ 2116 |   argv0 = argv0; multiok = multiok; retcodeP = retcodeP; client = client;
+      |   ~~~~~ ^ ~~~~~
+common/cmdline.cpp:2116:26: warning: explicitly assigning value of variable of type 'int *' to itself [-Wself-assign]
+ 2116 |   argv0 = argv0; multiok = multiok; retcodeP = retcodeP; client = client;
+      |                  ~~~~~~~ ^ ~~~~~~~
+common/cmdline.cpp:2116:46: warning: explicitly assigning value of variable of type 'int *' to itself [-Wself-assign]
+ 2116 |   argv0 = argv0; multiok = multiok; retcodeP = retcodeP; client = client;
+      |                                     ~~~~~~~~ ^ ~~~~~~~~
+common/cmdline.cpp:2116:65: warning: explicitly assigning value of variable of type 'Client *' (aka 'Client_struct *') to itself [-Wself-assign]
+ 2116 |   argv0 = argv0; multiok = multiok; retcodeP = retcodeP; client = client;
+      |                                                          ~~~~~~ ^ ~~~~~~
+14 warnings generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/selftest.cpp -o output/selftest.o
+common/selftest.cpp:158:73: warning: unused parameter 'stress' [-Wunused-parameter]
+  158 | static long SelfTestInternal( Client *client, unsigned int contest, int stress )
+      |                                                                         ^
+1 warning generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/pollsys.cpp -o output/pollsys.o
+common/pollsys.cpp:201:9: warning: explicitly assigning value of variable of type 'void *' to itself [-Wself-assign]
+  201 |   dummy = dummy;
+      |   ~~~~~ ^ ~~~~~
+common/pollsys.cpp:254:3: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+  254 |   register void (*proc)(void *) = NULL;
+      |   ^~~~~~~~
+2 warnings generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/setprio.cpp -o output/setprio.o
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/console.cpp -o output/console.o
+common/console.cpp:84:15: warning: explicitly assigning value of variable of type 'int' to itself [-Wself-assign]
+   84 |   waitforuser = waitforuser;
+      |   ~~~~~~~~~~~ ^ ~~~~~~~~~~~
+1 warning generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/modereq.cpp -o output/modereq.o
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/confmenu.cpp -o output/confmenu.o
+common/confmenu.cpp:212:17: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  212 |           len = sprintf(label, "%2d) ", idx);
+      |                 ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/confmenu.cpp:251:11: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  251 |           sprintf(contnamepad, "%-6.6s:", CliGetContestNameFromID(cont_i));
+      |           ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/confmenu.cpp:921:17: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  921 |                 sprintf(parm, "%d:%02u", (t/60),
+      |                 ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/confmenu.cpp:951:19: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  951 |                   sprintf(parm, "%d", thevar );
+      |                   ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/confmenu.cpp:967:26: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  967 |                 optlen = sprintf(parm2, "%2u) %s%s", optioncount,
+      |                          ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/confmenu.cpp:992:34: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  992 |             if (ConInStr( chbuf, sprintf(chbuf,"%d",optioncount)+1, 0 )!=0)
+      |                                  ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/confmenu.cpp:1103:13: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1103 |             sprintf(defaultbuff,"%ld) ", selmax );
+      |             ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/confmenu.cpp:1107:15: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1107 |               sprintf(defaultbuff,"%ld) ", selmin );
+      |               ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/confmenu.cpp:1152:13: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1152 |             sprintf(parm, "%d", *((int *)conf_options[editthis].thevariable) );
+      |             ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/confmenu.cpp:1153:13: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1153 |             sprintf(defaultbuff, "%d", atoi(conf_options[editthis].defaultsetting));
+      |             ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/confmenu.cpp:1257:11: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1257 |           sprintf(parm,"%d:%02u", (t/60),
+      |           ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+11 warnings generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/confrwv.cpp -o output/confrwv.o
+common/confrwv.cpp:218:13: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  218 |             sprintf(&hostbuf[len], ":%d", portnum);
+      |             ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/confrwv.cpp:251:18: warning: ISO C++11 does not allow conversion from string literal to 'char *' [-Wwritable-strings]
+  251 |       hostname = "";
+      |                  ^
+common/confrwv.cpp:256:7: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  256 |       sprintf(hostbuf, "*:%d;", foundport);
+      |       ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/confrwv.cpp:384:15: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  384 |               sprintf(&(client->httpproxy[strlen(client->httpproxy)]),":%d",i);
+      |               ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/confrwv.cpp:424:12: warning: ISO C++11 does not allow conversion from string literal to 'char *' [-Wwritable-strings]
+  424 |     that = "";
+      |            ^
+common/confrwv.cpp:426:14: warning: ISO C++11 does not allow conversion from string literal to 'char *' [-Wwritable-strings]
+  426 |       that = "uue";
+      |              ^
+common/confrwv.cpp:430:12: warning: ISO C++11 does not allow conversion from string literal to 'char *' [-Wwritable-strings]
+  430 |     that = "";
+      |            ^
+common/confrwv.cpp:432:14: warning: ISO C++11 does not allow conversion from string literal to 'char *' [-Wwritable-strings]
+  432 |       that = "http";
+      |              ^
+common/confrwv.cpp:434:14: warning: ISO C++11 does not allow conversion from string literal to 'char *' [-Wwritable-strings]
+  434 |       that = "socks4";
+      |              ^
+common/confrwv.cpp:436:14: warning: ISO C++11 does not allow conversion from string literal to 'char *' [-Wwritable-strings]
+  436 |       that = "socks5";
+      |              ^
+common/confrwv.cpp:548:7: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  548 |       sprintf(buffer,"%u:%02u",((unsigned)minutes/60),((unsigned)minutes%60));
+      |       ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/confrwv.cpp:620:35: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  620 |   char buffer[(sizeof(int)+2)*3]; sprintf(buffer,"%d",val);
+      |                                   ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/confrwv.cpp:673:9: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  673 |         sprintf(&(buffer[strlen(buffer)]),":%d",i);
+      |         ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/confrwv.cpp:1408:7: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1408 |       sprintf(buffer,"%ld",(long)newval);
+      |       ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+14 warnings generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/confopt.cpp -o output/confopt.o
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/checkpt.cpp -o output/checkpt.o
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/util.cpp -o output/util.o
+common/util.cpp:32:3: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+   32 |   register const char *q = (const char *)0;
+      |   ^~~~~~~~
+common/util.cpp:33:3: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+   33 |   register const char *p = "";
+      |   ^~~~~~~~
+common/util.cpp:195:17: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  195 |           len = sprintf(single,"%s%s=%d:%d",delim, p,
+      |                 ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/util.cpp:198:17: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  198 |           len = sprintf(single,"%s%s=%d",delim, p, (int)table1[contest] );
+      |                 ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/util.cpp:1282:37: warning: implicit conversion loses integer precision: 'int' to 'char' [-Wimplicit-int-conversion]
+ 1282 |                 buffer[linelen++] = ch;
+      |                                   ~ ^~
+common/util.cpp:1308:28: warning: variable 'domain' set but not used [-Wunused-but-set-variable]
+ 1308 |   const char *c = userid, *domain = NULL;
+      |                            ^
+6 warnings generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/base64.cpp -o output/base64.o
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/netbase.cpp -o output/netbase.o
+common/netbase.cpp:982:16: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  982 |     int slen = sprintf( scratch, "error %d: ", syserr );
+      |                ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/netbase.cpp:993:5: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  993 |     sprintf( scratch, "error %d: (no error description available)", ps_errnum );
+      |     ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/netbase.cpp:1014:28: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+ 1014 | static int net_match_errno(register int which_ps_err)
+      |                            ^~~~~~~~
+common/netbase.cpp:1178:10: warning: explicitly assigning value of variable of type 'int' to itself [-Wself-assign]
+ 1178 |   events = events; revents = revents; mstimeout = mstimeout;
+      |   ~~~~~~ ^ ~~~~~~
+common/netbase.cpp:1178:28: warning: explicitly assigning value of variable of type 'int *' to itself [-Wself-assign]
+ 1178 |   events = events; revents = revents; mstimeout = mstimeout;
+      |                    ~~~~~~~ ^ ~~~~~~~
+common/netbase.cpp:1178:49: warning: explicitly assigning value of variable of type 'int' to itself [-Wself-assign]
+ 1178 |   events = events; revents = revents; mstimeout = mstimeout;
+      |                                       ~~~~~~~~~ ^ ~~~~~~~~~
+common/netbase.cpp:3049:22: warning: cast from 'char **' to 'const char **' must have all intermediate pointers const qualified to be safe [-Wcast-qual]
+ 3049 |     *((const char **)&data) = __data; /* drop const without compiler warning*/
+      |                      ^
+common/netbase.cpp:3074:24: warning: cast from 'char **' to 'const char **' must have all intermediate pointers const qualified to be safe [-Wcast-qual]
+ 3074 |       *((const char **)&data) = __data; /* drop const */
+      |                        ^
+common/netbase.cpp:3228:3: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 3228 |   sprintf( buff, "%d.%d.%d.%d",
+      |   ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/netbase.cpp:3265:7: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+ 3265 |       register unsigned long val = 0;
+      |       ^~~~~~~~
+common/netbase.cpp:3285:9: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+ 3285 |         register int c = (int)*cp;
+      |         ^~~~~~~~
+common/netbase.cpp:3266:32: warning: variable 'len' set but not used [-Wunused-but-set-variable]
+ 3266 |       unsigned int radix = 10, len = 0;
+      |                                ^
+common/netbase.cpp:3339:7: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+ 3339 |       register int n;
+      |       ^~~~~~~~
+13 warnings generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/netconn.cpp -o output/netconn.o
+common/netconn.cpp:1824:14: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1824 |     hdrlen = sprintf( allocbuf,
+      |              ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/netconn.cpp:2434:13: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 2434 |             sprintf( &proxyname[strlen(proxyname)], "%d", fallback_port );
+      |             ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+2 warnings generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/client.cpp -o output/client.o
+common/client.cpp:399:5: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  399 |     sprintf(buf, "%d.%d%02d-%d-", CLIENT_MAJOR_VER, CLIENT_CONTEST,
+      |     ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/client.cpp:433:56: warning: cast from 'char **' to 'const char **' must have all intermediate pointers const qualified to be safe [-Wcast-qual]
+  433 |     if (!ParseCommandline(client,0,argc,(const char **)argv,&retcode,restarted))
+      |                                                        ^
+common/client.cpp:509:73: warning: cast from 'char **' to 'const char **' must have all intermediate pointers const qualified to be safe [-Wcast-qual]
+  509 |                       ParseCommandline( client, 1, argc, (const char **)argv,
+      |                                                                         ^
+common/client.cpp:598:7: warning: variable 'needchange' set but not used [-Wunused-but-set-variable]
+  598 |   int needchange = 0;
+      |       ^
+4 warnings generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/projdata.cpp -o output/projdata.o
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/bench.cpp -o output/bench.o
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/probman.cpp -o output/probman.o
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/probfill.cpp -o output/probfill.o
+common/probfill.cpp:523:11: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  523 |           sprintf(info_name, "%s #%c", info.name, ProblemLetterId(prob_i));
+      |           ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/probfill.cpp:551:15: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  551 |               sprintf( dcountbuf, "%u.%02u stats units",
+      |               ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/probfill.cpp:555:15: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  555 |               sprintf( dcountbuf, "%u.%u0%% done", info.c_permille/10, info.c_permille%10);
+      |               ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/probfill.cpp:825:15: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+  825 |               sprintf(perdone, " (%u.%u0%% done)", (info.s_permille/10), (info.s_permille%10));
+      |               ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/probfill.cpp:1248:17: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1248 |           len = sprintf(buffer, "%s: %ld packet%s ",
+      |                 ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/probfill.cpp:1251:20: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1251 |             len += sprintf( &buffer[len], "(%lu.%02lu stats units) ",
+      |                    ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/probfill.cpp:1253:18: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1253 |           len += sprintf( &buffer[len], "%s in\n%s",
+      |                  ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/probfill.cpp:1287:22: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1287 |               len += sprintf(&buffer[len],
+      |                      ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/probfill.cpp:916:16: warning: variable 'norandom_count' set but not used [-Wunused-but-set-variable]
+  916 |   unsigned int norandom_count, getbuff_errs, empty_problems;
+      |                ^
+9 warnings generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/clirun.cpp -o output/clirun.o
+common/clirun.cpp:1242:17: warning: cast from 'void (*)(void *)' to 'void *(*)(void *)' converts to incompatible function type [-Wcast-function-type-mismatch]
+ 1242 |                 (void *(*)(void*)) Go_mt, (void *)thrparams ) == 0)
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~
+common/clirun.cpp:1266:29: warning: cast to '_opaque_pthread_t *' from smaller integer type 'int' [-Wint-to-pointer-cast]
+ 1266 |       thrparams->threadID = (THREADID)RegPolledProcedure(Go_mt,
+      |                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 1267 |                                 (void *)thrparams , NULL, 0 );
+      |                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+common/clirun.cpp:1720:9: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 1720 |         sprintf( srange, " ('a'%s'%c')",
+      |         ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+3 warnings generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl common/problem.cpp -o output/problem.o
+common/problem.cpp:264:21: warning: taking address of packed member 'copy_lock' of class or structure 'SuperProblem' may result in an unaligned pointer value [-Waddress-of-packed-member]
+  264 |     fastlock_init(&(thisprob->copy_lock));
+      |                     ^~~~~~~~~~~~~~~~~~~
+common/problem.cpp:318:19: warning: taking address of packed member 'copy_lock' of class or structure 'SuperProblem' may result in an unaligned pointer value [-Waddress-of-packed-member]
+  318 |   fastlock_lock(&(p->copy_lock));
+      |                   ^~~~~~~~~~~~
+common/problem.cpp:324:21: warning: taking address of packed member 'copy_lock' of class or structure 'SuperProblem' may result in an unaligned pointer value [-Waddress-of-packed-member]
+  324 |   fastlock_unlock(&(p->copy_lock));
+      |                     ^~~~~~~~~~~~
+common/problem.cpp:363:5: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+  363 |     register u32 tempkeylo = *lo;
+      |     ^~~~~~~~
+common/problem.cpp:364:5: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+  364 |     register u32 tempkeymid = *mid;
+      |     ^~~~~~~~
+common/problem.cpp:365:5: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+  365 |     register u32 tempkeyhi = *hi;
+      |     ^~~~~~~~
+common/problem.cpp:1090:12: warning: explicitly assigning value of variable of type 'int' to itself [-Wself-assign]
+ 1090 |   dontwait = dontwait; /* no longer neccesary since we have full locks now */
+      |   ~~~~~~~~ ^ ~~~~~~~~
+common/problem.cpp:1100:12: warning: explicitly assigning value of variable of type 'InternalProblem *' to itself [-Wself-assign]
+ 1100 |   thisprob = thisprob;
+      |   ~~~~~~~~ ^ ~~~~~~~~
+common/problem.cpp:1101:15: warning: explicitly assigning value of variable of type 'u32 *' (aka 'unsigned int *') to itself [-Wself-assign]
+ 1101 |   iterationsP = iterationsP;
+      |   ~~~~~~~~~~~ ^ ~~~~~~~~~~~
+common/problem.cpp:1180:12: warning: explicitly assigning value of variable of type 'InternalProblem *' to itself [-Wself-assign]
+ 1180 |   thisprob = thisprob;
+      |   ~~~~~~~~ ^ ~~~~~~~~
+common/problem.cpp:1181:15: warning: explicitly assigning value of variable of type 'u32 *' (aka 'unsigned int *') to itself [-Wself-assign]
+ 1181 |   iterationsP = iterationsP;
+      |   ~~~~~~~~~~~ ^ ~~~~~~~~~~~
+common/problem.cpp:2053:15: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 2053 |         len = sprintf( numbuf, "%lu", (((unsigned long)hi)<<32UL)+((unsigned long)lo));
+      |               ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/problem.cpp:2552:17: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 2552 |                 sprintf( info->sigbuf, "%02lX:%08lX:%08lX:%u*2^%u",
+      |                 ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+common/problem.cpp:2561:17: warning: 'sprintf' is deprecated: This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead. [-Wdeprecated-declarations]
+ 2561 |                 sprintf( info->cwpbuf, "%02lX:%08lX:%08lX:%u*2^%u",
+      |                 ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h:278:1: note: 'sprintf' has been explicitly marked deprecated here
+  278 | __deprecated_msg("This function is provided for compatibility reasons only.  Due to security concerns inherent in the design of sprintf(3), it is highly recommended that you use snprintf(3) instead.")
+      | ^
+/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h:227:48: note: expanded from macro '__deprecated_msg'
+  227 |         #define __deprecated_msg(_msg) __attribute__((__deprecated__(_msg)))
+      |                                                       ^
+14 warnings generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl rc5-72/stress.cpp -o output/stress.o
+rc5-72/stress.cpp:116:5: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+  116 |     register u32 tempkeylo = *lo;
+      |     ^~~~~~~~
+rc5-72/stress.cpp:117:5: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+  117 |     register u32 tempkeymid = *mid;
+      |     ^~~~~~~~
+rc5-72/stress.cpp:118:5: warning: 'register' storage class specifier is deprecated and incompatible with C++17 [-Wdeprecated-register]
+  118 |     register u32 tempkeyhi = *hi;
+      |     ^~~~~~~~
+3 warnings generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl plat/opencl/ocl_info.cpp -o output/ocl_info.o
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl plat/opencl/ocl_setup.cpp -o output/ocl_setup.o
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl rc5-72/opencl/ocl_common.cpp -o output/ocl_common.o
+rc5-72/opencl/ocl_common.cpp:504:79: warning: cast from 'unsigned char **' to 'const char **' must have all intermediate pointers const qualified to be safe [-Wcast-qual]
+  504 |   cont->program = clCreateProgramWithSource(cont->clcontext, 1, (const char**)&decompressed_src, NULL, &status);
+      |                                                                               ^
+1 warning generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl rc5-72/opencl/ocl_ref.cpp -o output/ocl_ref.o
+rc5-72/opencl/ocl_ref.cpp:390:27: warning: implicit conversion from 'cl_ulong' (aka 'unsigned long long') to 'double' may lose precision [-Wimplicit-int-float-conversion]
+  390 |       d = 1e-6 * (endTime - startTime);
+      |                ~  ~~~~~~~~^~~~~~~~~~~
+rc5-72/opencl/ocl_ref.cpp:473:15: warning: taking address of packed member 'L0' of class or structure 'RC5_72UnitWork' may result in an unaligned pointer value [-Waddress-of-packed-member]
+  473 |     key_incr(&tmp_unit.L0.hi, &tmp_unit.L0.mid, &tmp_unit.L0.lo, rest0);
+      |               ^~~~~~~~~~~~~~
+rc5-72/opencl/ocl_ref.cpp:473:32: warning: taking address of packed member 'L0' of class or structure 'RC5_72UnitWork' may result in an unaligned pointer value [-Waddress-of-packed-member]
+  473 |     key_incr(&tmp_unit.L0.hi, &tmp_unit.L0.mid, &tmp_unit.L0.lo, rest0);
+      |                                ^~~~~~~~~~~~~~~
+rc5-72/opencl/ocl_ref.cpp:473:50: warning: taking address of packed member 'L0' of class or structure 'RC5_72UnitWork' may result in an unaligned pointer value [-Waddress-of-packed-member]
+  473 |     key_incr(&tmp_unit.L0.hi, &tmp_unit.L0.mid, &tmp_unit.L0.lo, rest0);
+      |                                                  ^~~~~~~~~~~~~~
+4 warnings generated.
+cc -c -W -Wall -Wpointer-arith -Wcast-align -Wconversion -Winline -Waggregate-return -Wcast-qual -Woverloaded-virtual -Os -Wno-shorten-64-to-32 -Wno-sign-conversion -fno-exceptions -fno-rtti -DASM_AMD64 -DOPENCL -DDYN_TIMESLICE -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 -DHAVE_IPV6 -DLURK -DHAVE_RC5_72_CORES -I./common -I./plat/opencl rc5-72/opencl/ocl_1pipe.cpp -o output/ocl_1pipe.o
+rc5-72/opencl/ocl_1pipe.cpp:402:27: warning: implicit conversion from 'cl_ulong' (aka 'unsigned long long') to 'double' may lose precision [-Wimplicit-int-float-conversion]
+  402 |       d = 1e-6 * (endTime - startTime);
+      |                ~  ~~~~~~~~^~~~~~~~~~~
+rc5-72/opencl/ocl_1pipe.cpp:436:15: warning: taking address of packed member 'L0' of class or structure 'RC5_72UnitWork' may result in an unaligned pointer value [-Waddress-of-packed-member]
+  436 |     key_incr(&tmp_unit.L0.hi, &tmp_unit.L0.mid, &tmp_unit.L0.lo, rest0 * pipes_count);
+      |               ^~~~~~~~~~~~~~
+rc5-72/opencl/ocl_1pipe.cpp:436:32: warning: taking address of packed member 'L0' of class or structure 'RC5_72UnitWork' may result in an unaligned pointer value [-Waddress-of-packed-member]
+  436 |     key_incr(&tmp_unit.L0.hi, &tmp_unit.L0.mid, &tmp_unit.L0.lo, rest0 * pipes_count);
+      |                                ^~~~~~~~~~~~~~~
+rc5-72/opencl/ocl_1pipe.cpp:436:50: warning: taking address of packed member 'L0' of class or structure 'RC5_72UnitWork' may result in an unaligned pointer value [-Waddress-of-packed-member]
+  436 |     key_incr(&tmp_unit.L0.hi, &tmp_unit.L0.mid, &tmp_unit.L0.lo, rest0 * pipes_count);
+      |                                                  ^~~~~~~~~~~~~~
+4 warnings generated.
+cc -mmacosx-version-min=10.13 -DMACOSX_DEPLOYMENT_TARGET=10.13 -arch x86_64 output/c_install.o output/temperature.o output/lurk.o output/core_r72.o output/buffpub.o output/iniread.o output/buffbase.o output/mail.o output/random.o output/clicdata.o output/clitime.o output/disphelp.o output/clievent.o output/cpucheck.o output/pathwork.o output/cliident.o output/logstuff.o output/triggers.o output/coremem.o output/selcore.o output/cmdline.o output/selftest.o output/pollsys.o output/setprio.o output/console.o output/modereq.o output/confmenu.o output/confrwv.o output/confopt.o output/checkpt.o output/util.o output/base64.o output/netbase.o output/netconn.o output/client.o output/projdata.o output/bench.o output/probman.o output/probfill.o output/clirun.o output/problem.o output/stress.o output/ocl_info.o output/ocl_setup.o output/ocl_common.o output/ocl_ref.o output/ocl_1pipe.o  -framework IOKit -framework CoreFoundation -framework OpenCL -o dnetc
+strip dnetc
+./dnetc -genman
+test -s dnetc.1

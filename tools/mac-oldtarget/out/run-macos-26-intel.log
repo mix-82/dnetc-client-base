@@ -1,0 +1,132 @@
++ ./dnetc -cpuinfo
+
+distributed.net client for OpenCL on Mac OS X Copyright 1997-2026, distribu ...
+Please visit https://www.distributed.net/ for up-to-date contest information.
+Start the client with '-help' for a list of valid command line options.
+
+
+dnetc v2.9116-525-CTR-59533dff for OpenCL on Mac OS X (Darwin 25.6.0).
+Please provide the *entire* version descriptor when submitting bug reports.
+The distributed.net bug report pages are at https://bugs.distributed.net/
+
+[Nov 18 23:40:11 UTC] No OpenCL compatible devices found
+
+Unrecognized option '-cpuinfo'
+
+The following list of command line switches may be obtained
+at any time by running the client with the '-help' option.
+
+distributed.net v2.9116-525 client for OpenCL on Mac OS X
+Visit https://faq.distributed.net/ for in-depth command line help
+-------------------------------------------------------------------------
+Mode commands: (the client will execute the option and then exit)
+-config            start the configuration menu
+-flush             flush all output buffers
+-fetch             fill all input buffers
+-update            fetch + flush
+-benchmark [prj]   16-20 sec speed check [optional: only project prj]
+-benchmark2 [prj]  half (8-10 sec) and slightly inaccurate -benchmark
+-bench [prj [cn]]  -benchmark all cores [optional: only project prj]
+                   [optional: only core cn, must be used with prj]
+-test [prj [cn]]   tests for core errors [optional: only project prj]
+                   [optional: only core cn, must be used with prj]
+-stress [prj [cn]] more thorough and longer running variant of -test
+-gpuinfo           print information about the detected gpu(s)
+-restart           restart all active clients
+-shutdown          gracefully shut down all active clients
+-pause             pause all active clients
+-unpause           unpause all active clients
+-install           install the client in the StartupItems folder
+-uninstall         remove the client from the StartupItems folder
+-import <filename> import packets from file <filename> into client buffers
+-forceunlock <fn>  unlock buffer file <fn>
+-help              display this text
+-version           print version information
+
+Project and buffer related options:
+
+-ini <filename>    override default name of INI file
+-e <address>       the email id by which you are known to distributed.net
+-nodisk            don't use disk buffer files
+-n <count>         packets to complete. -1 forces exit when buffer is empty.
+-runbuffers        set -n == -1 (exit when buffers are empty)
+-frequent          frequently check if buffers need topping-up
+-inbase <fname>    input buffer basename (ie without 'extension'/suffix)
+-outbase <fname>   output buffer basename (ie without 'extension'/suffix)
+-ckpoint <fname>   set the name of the checkpoint file
+-bin <prj> <n>     set fetch buffer threshold to <n> work units
+-btime [prj] <n>   set fetch time threshold to <n> hours
+                   If not specified, project name <prj> defaults to RC5
+
+Network update related options:
+
+-runoffline        disable network access
+-runonline         enable network access
+-nettimeout <secs> set the network timeout. Use -1 to force blocking mode
+-a <address>       keyserver name or IP address
+-p <port>          keyserver port number
+-nofallback        don't fallback to a distributed.net keyserver
+-u <method>        use this UUE/HTTP encoding method (see -config)
+-ha <address>      http/socks proxy name or IP address
+-hp <port>         http/socks proxy port
+-lurk              automatically detect modem connections
+-lurkonly          perform buffer updates only when a connection is detected
+-interfaces <list> limit the interfaces to monitor for online/offline status
+
+Performance related options:
+
+-c [prj] <n>       core number (run -config for a list of valid core numbers)
+                   project name "prj" defaults to RC5
+-numcpu <n>        run <n> threads/run on <n> cpus. 0 forces single-threading.
+-devicenum <n>     run on device <n> only.
+-gpusleep          sleep while waiting for the GPU (default, less CPU usage)
+-nogpusleep        wait for the GPU in the driver's default way
+-priority <0-9>    scheduling priority from 0 (lowest/idle) to 9 (normal/user)
+
+Logging options:
+
+-l <filename>      name of the log file
+-smtplen <len>     max size (in bytes) of a mail message (0 means no mail)
+-smtpsrvr <host>   name or IP address of mail (SMTP) server
+-smtpport <port>   mail (SMTP) server port number
+-smtpfrom <id>     who the client should say is sending the message
+-smtpdest <id>     who the client should send mail to
+
+Miscellaneous runtime options:
+
+-h <hours[:min]>   time limit in hours
+-until <HH:MM>     quit at HH:MM (eg 07:30)
+-noexitfilecheck   override .ini exit flagfile setting
+-pausefile <fn>    name of file that causes the client to pause
+-exitfile <fn>     name of file that causes the client to exit
+-multiok[=|:][0|1] allow/disallow multiple instances of the client to run
+                   The default is 'allow' for all platforms but Windows.
+-percentoff        don't display work completion as a running percentage
+-quiet/-hide       suppress screen output (== detach for some clients)
+-noquiet           don't suppress screen output (override ini quiet setting)
++ ./dnetc -gpuinfo
+
+distributed.net client for OpenCL on Mac OS X Copyright 1997-2026, distribu ...
+Please visit https://www.distributed.net/ for up-to-date contest information.
+Start the client with '-help' for a list of valid command line options.
+
+
+dnetc v2.9116-525-CTR-59533dff for OpenCL on Mac OS X (Darwin 25.6.0).
+Please provide the *entire* version descriptor when submitting bug reports.
+The distributed.net bug report pages are at https://bugs.distributed.net/
+
+[Nov 18 23:40:11 UTC] No OpenCL compatible devices found
+No compatible devices found
++ ./dnetc -test rc5-72
+
+distributed.net client for OpenCL on Mac OS X Copyright 1997-2026, distribu ...
+Please visit https://www.distributed.net/ for up-to-date contest information.
+Start the client with '-help' for a list of valid command line options.
+
+
+dnetc v2.9116-525-CTR-59533dff for OpenCL on Mac OS X (Darwin 25.6.0).
+Please provide the *entire* version descriptor when submitting bug reports.
+The distributed.net bug report pages are at https://bugs.distributed.net/
+
+[Nov 18 23:40:11 UTC] No OpenCL compatible devices found
+exit code 0

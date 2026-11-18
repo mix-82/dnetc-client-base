@@ -1,0 +1,32 @@
+Wanted minimum macOS: 10.13
+Runner: 15.7.9 x86_64
+
+Xcode 16.1  (/Applications/Xcode_16.1.app)
+  macOS SDK 15.1, MinimumDeploymentTarget 10.13
+  test build for 10.13: minos 10.13
+Xcode 16.2  (/Applications/Xcode_16.2.app)
+  macOS SDK 15.2, MinimumDeploymentTarget 10.13
+  test build for 10.13: minos 10.13
+Xcode 16.3  (/Applications/Xcode_16.3.app)
+  macOS SDK 15.4, MinimumDeploymentTarget 10.13
+  test build for 10.13: minos 10.13
+Xcode 16.4  (/Applications/Xcode_16.4.app)
+  macOS SDK 15.5, MinimumDeploymentTarget 10.13
+  test build for 10.13: minos 10.13
+Xcode 16.0  (/Applications/Xcode_16.app)
+  macOS SDK 15.0, MinimumDeploymentTarget 10.13
+  test build for 10.13: minos 10.13
+Xcode 26.0.1  (/Applications/Xcode_26.0.1.app)
+  macOS SDK 26.0, MinimumDeploymentTarget 10.13
+  test build for 10.13: minos 10.13
+Xcode 26.1.1  (/Applications/Xcode_26.1.1.app)
+  macOS SDK 26.1, MinimumDeploymentTarget 10.13
+  test build for 10.13: minos 10.13
+Xcode 26.2  (/Applications/Xcode_26.2.app)
+  macOS SDK 26.2, MinimumDeploymentTarget 10.13
+  test build for 10.13: minos 10.13
+Xcode 26.3  (/Applications/Xcode_26.3.app)
+  macOS SDK 26.2, MinimumDeploymentTarget 10.13
+  test build for 10.13: minos 10.13
+
+Newest Xcode that builds for macOS 10.13: 26.3 (/Applications/Xcode_26.3.app)

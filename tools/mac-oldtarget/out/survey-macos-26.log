@@ -1,0 +1,26 @@
+Wanted minimum macOS: 10.13
+Runner: 26.7.2 arm64
+
+Xcode 26.0.1  (/Applications/Xcode_26.0.1.app)
+  macOS SDK 26.0, MinimumDeploymentTarget 10.13
+  test build for 10.13: minos 10.13
+Xcode 26.1.1  (/Applications/Xcode_26.1.1.app)
+  macOS SDK 26.1, MinimumDeploymentTarget 10.13
+  test build for 10.13: minos 10.13
+Xcode 26.2  (/Applications/Xcode_26.2.app)
+  macOS SDK 26.2, MinimumDeploymentTarget 10.13
+  test build for 10.13: minos 10.13
+Xcode 26.3  (/Applications/Xcode_26.3.app)
+  macOS SDK 26.2, MinimumDeploymentTarget 10.13
+  test build for 10.13: minos 10.13
+Xcode 26.4.1  (/Applications/Xcode_26.4.1.app)
+  macOS SDK 26.4, MinimumDeploymentTarget 10.13
+  test build for 10.13: minos 10.13
+Xcode 26.5  (/Applications/Xcode_26.5.app)
+  macOS SDK 26.5, MinimumDeploymentTarget 10.13
+  test build for 10.13: minos 10.13
+Xcode 26.6  (/Applications/Xcode_26.6.app)
+  macOS SDK 26.5, MinimumDeploymentTarget 10.13
+  test build for 10.13: minos 10.13
+
+Newest Xcode that builds for macOS 10.13: 26.6 (/Applications/Xcode_26.6.app)

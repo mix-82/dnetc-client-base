@@ -1,0 +1,13 @@
+dnetc: Mach-O 64-bit executable x86_64
+--- load commands that record the minimum macOS
+      cmd LC_VERSION_MIN_MACOSX
+  cmdsize 16
+  version 10.13
+      sdk 26.5
+Load command 10
+--- linked libraries and frameworks
+dnetc:
+	/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit (compatibility version 1.0.0, current version 275.0.0)
+	/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation (compatibility version 150.0.0, current version 5026.5.4)
+	/System/Library/Frameworks/OpenCL.framework/Versions/A/OpenCL (compatibility version 1.0.0, current version 1.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1356.0.0)
