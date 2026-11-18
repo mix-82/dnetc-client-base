@@ -5,11 +5,11 @@ Please visit https://www.distributed.net/ for up-to-date contest information.
 Start the client with '-help' for a list of valid command line options.
 
 
-dnetc v2.9116-525-CTR-59533dff for OpenCL on Mac OS X (Darwin 24.6.0).
+dnetc v2.9116-525-CTR-4b67cb39 for OpenCL on Mac OS X (Darwin 24.6.0).
 Please provide the *entire* version descriptor when submitting bug reports.
 The distributed.net bug report pages are at https://bugs.distributed.net/
 
-[Nov 18 23:48:41 UTC] No OpenCL compatible devices found
+[Nov 18 23:51:36 UTC] No OpenCL compatible devices found
 
 Unrecognized option '-cpuinfo'
 
@@ -111,11 +111,11 @@ Please visit https://www.distributed.net/ for up-to-date contest information.
 Start the client with '-help' for a list of valid command line options.
 
 
-dnetc v2.9116-525-CTR-59533dff for OpenCL on Mac OS X (Darwin 24.6.0).
+dnetc v2.9116-525-CTR-4b67cb39 for OpenCL on Mac OS X (Darwin 24.6.0).
 Please provide the *entire* version descriptor when submitting bug reports.
 The distributed.net bug report pages are at https://bugs.distributed.net/
 
-[Nov 18 23:48:41 UTC] No OpenCL compatible devices found
+[Nov 18 23:51:36 UTC] No OpenCL compatible devices found
 No compatible devices found
 + arch -x86_64 ./dnetc -test rc5-72
 
@@ -124,9 +124,9 @@ Please visit https://www.distributed.net/ for up-to-date contest information.
 Start the client with '-help' for a list of valid command line options.
 
 
-dnetc v2.9116-525-CTR-59533dff for OpenCL on Mac OS X (Darwin 24.6.0).
+dnetc v2.9116-525-CTR-4b67cb39 for OpenCL on Mac OS X (Darwin 24.6.0).
 Please provide the *entire* version descriptor when submitting bug reports.
 The distributed.net bug report pages are at https://bugs.distributed.net/
 
-[Nov 18 23:48:41 UTC] No OpenCL compatible devices found
+[Nov 18 23:51:36 UTC] No OpenCL compatible devices found
 exit code 0
