@@ -1,0 +1,117 @@
+name: macOS OpenCL client for old Macs
+
+# Test branch only, not for merge. Finds the oldest macOS each installed
+# Xcode can target, builds macosx-amd64-opencl from this branch (dcti master)
+# for macOS 10.13 with the newest Xcode that allows it, checks the binary,
+# runs -cpuinfo, -gpuinfo and -test, and commits the client and the
+# unedited logs to tools/mac-oldtarget/out. No distributed.net work.
+
+on:
+  push:
+    branches: [mac-opencl-1013-test]
+    paths:
+      - '.github/workflows/mac-oldtarget.yml'
+      - 'tools/mac-oldtarget/*.sh'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  WANT_MACOS: '10.13'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15-intel, macos-26-intel, macos-15, macos-26]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Xcode survey
+        run: |
+          mkdir -p out
+          bash tools/mac-oldtarget/xcode_survey.sh "$WANT_MACOS" xcode.txt 2>&1 | tee out/survey-${{ matrix.os }}.log
+
+      - name: Build macosx-amd64-opencl for macOS ${{ env.WANT_MACOS }}
+        id: build
+        run: |
+          set +e
+          X=$(cat xcode.txt)
+          if [ -z "$X" ]; then echo "no suitable Xcode" | tee out/build-${{ matrix.os }}.log; exit 1; fi
+          export DEVELOPER_DIR="$X/Contents/Developer"
+          {
+            echo "Xcode: $X"
+            xcodebuild -version
+            SHELL=/bin/sh ./configure macosx-amd64-opencl
+            sed -i '' -e "s/-mmacosx-version-min=10\.7/-mmacosx-version-min=$WANT_MACOS/g" \
+                      -e "s/MACOSX_DEPLOYMENT_TARGET=10\.7/MACOSX_DEPLOYMENT_TARGET=$WANT_MACOS/g" Makefile
+            echo "Makefile deployment flags after the change:"
+            grep -o -- '-mmacosx-version-min=[0-9.]*' Makefile | sort | uniq -c
+            make
+          } > out/build-${{ matrix.os }}.log 2>&1
+          rc=$?
+          tail -30 out/build-${{ matrix.os }}.log
+          exit $rc
+
+      - name: Check the binary
+        run: |
+          {
+            file dnetc
+            echo "--- load commands that record the minimum macOS"
+            otool -l dnetc | grep -A4 -E 'LC_VERSION_MIN_MACOSX|LC_BUILD_VERSION'
+            echo "--- linked libraries and frameworks"
+            otool -L dnetc
+          } 2>&1 | tee out/check-${{ matrix.os }}.log
+
+      - name: Run -cpuinfo, -gpuinfo and -test
+        continue-on-error: true
+        run: |
+          set +e
+          RUN=./dnetc
+          if [ "$(uname -m)" = arm64 ]; then RUN="arch -x86_64 ./dnetc"; fi
+          {
+            echo "+ $RUN -cpuinfo"; $RUN -cpuinfo
+            echo "+ $RUN -gpuinfo"; $RUN -gpuinfo
+            echo "+ $RUN -test rc5-72"; perl -e 'alarm 900; exec @ARGV' $RUN -test rc5-72
+            echo "exit code $?"
+          } > out/run-${{ matrix.os }}.log 2>&1
+          tail -40 out/run-${{ matrix.os }}.log
+
+      - name: Package
+        run: |
+          V=$(git rev-parse --short=8 HEAD)
+          D=dnetc-macosx-amd64-opencl-macos$WANT_MACOS-$V
+          mkdir -p "$D" && cp dnetc docs/readme.osx.html docs/readme.opencl "$D"/
+          tar czf out/$D-${{ matrix.os }}.tar.gz "$D"
+          shasum -a 256 out/*.tar.gz | tee out/sha256-${{ matrix.os }}.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: out-${{ matrix.os }}
+          path: out/
+
+  collect:
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: tools/mac-oldtarget/out
+          merge-multiple: true
+      - name: Commit the results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/mac-oldtarget/out
+          git commit -m "macOS old-target build: client and unedited logs from run ${{ github.run_id }} [skip ci]" || echo "nothing to commit"
+          git push
