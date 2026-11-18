@@ -112,6 +112,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tools/mac-oldtarget/out
+          git add -f tools/mac-oldtarget/out   # -f: .gitignore excludes dnetc*.tar.gz
           git commit -m "macOS old-target build: client and unedited logs from run ${{ github.run_id }} [skip ci]" || echo "nothing to commit"
           git push
