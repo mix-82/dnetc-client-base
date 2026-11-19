@@ -1,0 +1,63 @@
+name: macOS amd64 AVX-512 detection test
+
+on:
+  push:
+    branches: [ "ci-avx512-macos" ]
+  workflow_dispatch:
+
+jobs:
+  macos-intel:
+    timeout-minutes: 45
+    runs-on: macos-15-intel
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Machine
+      run: |
+        uname -a
+        sw_vers
+        echo "::notice title=machine::$(sysctl -n machdep.cpu.brand_string), macOS $(sw_vers -productVersion), $(uname -m), $(sysctl -n hw.ncpu) cpus"
+        echo "::notice title=sysctl::$(sysctl hw.optional.avx2_0 hw.optional.avx512f 2>&1 | tr '\n' ' ')"
+        echo "::notice title=leaf7::$(sysctl -n machdep.cpu.leaf7_features 2>&1)"
+    - name: Probe
+      run: |
+        clang -O1 -o probe tools/macos-avx512-ci/probe.c -lpthread
+        ./probe | tee probe.log
+        while read -r l; do echo "::notice title=probe::$l"; done < probe.log
+    - name: Install nasm and ispc
+      run: |
+        brew install nasm ispc
+        echo "::notice title=tools::$(nasm -v), $(ispc --version | head -1), $(clang --version | head -1)"
+    - name: configure
+      env:
+        SHELL: /bin/sh
+      run: ./configure macosx-amd64
+    - name: make
+      run: |
+        make 2>&1 | tee make.log
+        rc=${PIPESTATUS[0]}
+        grep -n -E "error|Error" make.log | head -8 | while read -r l; do echo "::error title=make::$l"; done
+        echo "::notice title=make::exit $rc, $(grep -c 'warning:' make.log) warnings, x86id.cpp warnings: $(grep -c 'x86id.cpp.*warning' make.log)"
+        exit $rc
+    - name: binary
+      run: |
+        file dnetc
+        echo "::notice title=binary::$(file dnetc | cut -d: -f2-)"
+        ./dnetc -version || true
+    - name: cpuinfo
+      run: |
+        ./dnetc -cpuinfo 2>&1 | tr '\r' '\n' | tee cpuinfo.log
+        grep -i -E "feature|identif|name|processors" cpuinfo.log | sed 's/^ *//' | head -8 | while read -r l; do echo "::notice title=cpuinfo::$l"; done
+    - name: test
+      run: |
+        ./dnetc -test rc5-72 2>&1 | tr '\r' '\n' | tee test.log
+        cores=$(grep -c "using core" test.log)
+        passed=$(grep -c "32/32 Tests Passed" test.log)
+        echo "::notice title=test::$passed of $cores cores passed 32/32"
+        echo "::notice title=test cores::$(grep -o 'using core.*' test.log | tr '\n' ';')"
+        if grep -qi "failed" test.log; then echo "::error title=failure::a test failed"; exit 1; fi
+        [ "$cores" -gt 0 ] && [ "$passed" -eq "$cores" ]
+    - name: bench
+      run: |
+        ./dnetc -bench rc5-72 2>&1 | tr '\r' '\n' | tee bench.log
+        grep -E "using core|keys/sec" bench.log | sed 's/^ *//' | head -6 | while read -r l; do echo "::notice title=bench::$l"; done
