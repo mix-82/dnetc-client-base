@@ -7,7 +7,9 @@ name: Windows ARM64 client
 # and 32-bit x86 clients are built before (dcti master) and after the change
 # and their warnings compared; those clients are also benchmarked under
 # emulation on the ARM runner (what Windows on ARM users run today). Linux
-# and macOS arm64 builds run -test. No work units are fetched or returned.
+# and macOS arm64 builds run -test. Informational: the native client is
+# also packed with UPX 5.3.0 (not done by the build) and tested again. No
+# work units are fetched or returned.
 on:
   push:
     branches: [win-arm64-ci]
@@ -102,6 +104,37 @@ jobs:
       if: always()
       with:
         name: cross-test
+        path: ci-out/
+
+  packed:
+    name: UPX-packed client, informational (windows-11-arm)
+    needs: native
+    runs-on: windows-11-arm
+    timeout-minutes: 40
+    continue-on-error: true
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/download-artifact@v4
+      with:
+        name: native
+        path: native
+    - name: Get UPX 5.3.0 (x64 build, runs under emulation)
+      shell: pwsh
+      run: |
+        $v = "5.3.0"
+        $zip = "$env:RUNNER_TEMP\upx.zip"
+        Invoke-WebRequest -Uri "https://github.com/upx/upx/releases/download/v$v/upx-$v-win64.zip" -OutFile $zip
+        $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+        if ($hash -ne "d127996c76615e431be810e9c8d2910dbe3dd400600c5c0c50276fc5a17a9705") { throw "upx.zip sha256 mismatch: $hash" }
+        Expand-Archive $zip -DestinationPath $env:RUNNER_TEMP
+        Get-ChildItem "$env:RUNNER_TEMP\upx-$v-win64" | Select-Object Name, Length
+    - name: Pack and test
+      shell: bash
+      run: bash tools/win-arm64-ci/upxtest.sh native/dnetc.exe "$RUNNER_TEMP/upx-5.3.0-win64/upx.exe" ci-out/upx
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: packed
         path: ci-out/
 
   x64-x86:
