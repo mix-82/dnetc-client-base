@@ -70,3 +70,54 @@ jobs:
       run: |
         ./dnetc -bench rc5-72 2>&1 | tr '\r' '\n' | tee bench.log
         grep -E "keys/sec" bench.log | sed 's/^ *//' | head -8 | while read -r l; do echo "::notice title=bench::$l"; done
+
+  # Test build for a Raspberry Pi: built in a Debian 11 container so the
+  # binaries also run on systems with an older C library than the runner's.
+  # Builds the OpenCL client and, for comparison, the CPU client.
+  pi-build:
+    name: build in Debian 11 (arm64) for older systems
+    timeout-minutes: 30
+    runs-on: ubuntu-24.04-arm
+    container: debian:bullseye
+
+    steps:
+    - name: Install build tools
+      run: |
+        apt-get update
+        apt-get install -y --no-install-recommends g++ make file binutils ocl-icd-opencl-dev opencl-headers ca-certificates git
+        g++ --version | head -1
+        ldd --version | head -1
+    - uses: actions/checkout@v4
+    - name: CPU client (linux-arm64)
+      env:
+        SHELL: /bin/sh
+      run: |
+        cp -r . ../cpu
+        cd ../cpu
+        ./configure linux-arm64 > cfg.log 2>&1 || { tail -20 cfg.log; exit 1; }
+        make -j4 > build.log 2>&1 || [ -x dnetc ] || { grep -iE -m20 error build.log; exit 1; }
+        file dnetc
+        ./dnetc -test rc5-72 < /dev/null 2>&1 | tr '\r' '\n' | grep -E "using core|Tests Passed"
+    - name: OpenCL client (linux-arm64-opencl)
+      env:
+        SHELL: /bin/sh
+      run: |
+        ./configure linux-arm64-opencl
+        make
+        file dnetc
+        ./dnetc -gpuinfo || true
+    - name: Package
+      run: |
+        mkdir -p kit
+        cp dnetc kit/dnetc-opencl
+        cp ../cpu/dnetc kit/dnetc-cpu
+        for f in kit/dnetc-opencl kit/dnetc-cpu
+        do
+          echo "$f: newest glibc symbol needed: $(objdump -T $f | grep -o 'GLIBC_[0-9.]*' | sort -V | tail -1)"
+          ldd $f
+        done | tee kit/build-info.txt
+        sha256sum kit/dnetc-opencl kit/dnetc-cpu | tee -a kit/build-info.txt
+    - uses: actions/upload-artifact@v4
+      with:
+        name: pi-kit
+        path: kit/
