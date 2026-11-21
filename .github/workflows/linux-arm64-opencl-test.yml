@@ -106,17 +106,31 @@ jobs:
         make
         file dnetc
         ./dnetc -gpuinfo || true
-    - name: Package
+    # Same layout as the Makefile's release packaging (TARGET_ARCTYPE tgzdir):
+    # dnetc<build>-<target>/ holding dnetc, the man page and docs/.
+    - name: Package in the release format
       run: |
-        mkdir -p kit
-        cp dnetc kit/dnetc-opencl
-        cp ../cpu/dnetc kit/dnetc-cpu
-        for f in kit/dnetc-opencl kit/dnetc-cpu
-        do
-          echo "$f: newest glibc symbol needed: $(objdump -T $f | grep -o 'GLIBC_[0-9.]*' | sort -V | tail -1)"
-          ldd $f
-        done | tee kit/build-info.txt
-        sha256sum kit/dnetc-opencl kit/dnetc-cpu | tee -a kit/build-info.txt
+        OUT=$(pwd)/kit
+        mkdir -p "$OUT"
+        pack()
+        {
+          (
+            cd "$1"
+            full=dnetc$(grep " CLIENT_BUILD_FRAC " common/version.h | tr -dc 0123456789)-$2
+            docs=$(sed -n 's/^DOCFILES = //p' Makefile)
+            test -s dnetc.1
+            rm -rf "$full"
+            mkdir "$full"
+            mkdir "$full/docs"
+            for file in dnetc $docs; do cp "$file" "$full/$file"; done
+            tar -cvf - "$full" | gzip -9 > "$full.tar.gz"
+            cp "$full.tar.gz" "$OUT/"
+            echo "$full: needs $(objdump -T dnetc | grep -o 'GLIBC_[0-9.]*' | sort -V | tail -1); DOCFILES = $docs"
+          )
+        }
+        pack ../cpu linux-arm64 | tee -a "$OUT/build-info.txt"
+        pack . linux-arm64-opencl | tee -a "$OUT/build-info.txt"
+        ( cd "$OUT" && sha256sum *.tar.gz | tee -a build-info.txt )
     - uses: actions/upload-artifact@v4
       with:
         name: pi-kit
