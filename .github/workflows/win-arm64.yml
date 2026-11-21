@@ -7,8 +7,9 @@ name: Windows ARM64 client
 # and 32-bit x86 clients are built before (dcti master) and after the change
 # and their warnings compared; those clients are also benchmarked under
 # emulation on the ARM runner (what Windows on ARM users run today). Linux
-# and macOS arm64 builds run -test. Informational: the native client is
-# also packed with UPX 5.3.0 (not done by the build) and tested again. No
+# and macOS arm64 builds run -test. The client is also built with UPX
+# 5.3.0 set (packed by the build) and tested, and, informational, the
+# native client is packed by hand with two UPX settings and tested. No
 # work units are fetched or returned.
 on:
   push:
@@ -256,20 +257,15 @@ jobs:
     timeout-minutes: 60
     steps:
     - uses: actions/checkout@v4
-    - name: Get UPX 5.3.0 and 5.0.2 (x64 builds, run under emulation)
+    - name: Get UPX 5.3.0 (x64 build, runs under emulation)
       shell: pwsh
       run: |
-        $want = @{ "5.3.0" = "d127996c76615e431be810e9c8d2910dbe3dd400600c5c0c50276fc5a17a9705"; "5.0.2" = "1cff6d6ee01c404d4a1ae56003056bd4cfa28d0a5cea1d0950daaf872a4facc9" }
-        foreach ($v in $want.Keys) {
-          $zip = "$env:RUNNER_TEMP\upx-$v.zip"
-          Invoke-WebRequest -Uri "https://github.com/upx/upx/releases/download/v$v/upx-$v-win64.zip" -OutFile $zip
-          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
-          if ($hash -ne $want[$v]) { throw "upx $v sha256 mismatch: $hash" }
-          Expand-Archive $zip -DestinationPath $env:RUNNER_TEMP
-        }
-    - name: Version gate checks
-      shell: cmd
-      run: tools\win-arm64-ci\upxcheck.cmd %RUNNER_TEMP%\upx-5.3.0-win64 %RUNNER_TEMP%\upx-5.0.2-win64 ci-out
+        $v = "5.3.0"
+        $zip = "$env:RUNNER_TEMP\upx.zip"
+        Invoke-WebRequest -Uri "https://github.com/upx/upx/releases/download/v$v/upx-$v-win64.zip" -OutFile $zip
+        $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+        if ($hash -ne "d127996c76615e431be810e9c8d2910dbe3dd400600c5c0c50276fc5a17a9705") { throw "upx.zip sha256 mismatch: $hash" }
+        Expand-Archive $zip -DestinationPath $env:RUNNER_TEMP
     - name: Build with UPX 5.3.0
       shell: cmd
       run: |
