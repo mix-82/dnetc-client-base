@@ -1,0 +1,236 @@
+name: Windows ARM64 OpenCL client
+
+# Test branch only, not for merge. Builds the Windows ARM64 OpenCL client
+# (makefile.vc, PROCESSOR_ARCHITECTURE=OPENCL_ARM64) on windows-11-arm against
+# the Khronos OpenCL headers and an ICD loader built here for ARM64, checks
+# the binaries and starts the client (-gpuinfo). The runner has no
+# GPU and no OpenCL driver. Informational: PoCL's CPU driver is installed and
+# the client rebuilt with its CPU debug switch to compile and run the
+# kernels (-test, -stress, -bench). Regression:
+# dry runs of the OPENCL32 and OPENCL64 targets before (the dcti master
+# commit this branch starts from) and after the change must print the same
+# commands. No work units are fetched
+# or returned.
+on:
+  push:
+    branches: [ci-win-arm64-opencl]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  KHRONOS_TAG: v2026.05.29
+  HEADERS_SHA: 6fe718c31a45fe25151362a72ef041c3a1047cbd
+  LOADER_SHA: b7bd2803acc779c03d96588e9ca9e9568a18698a
+
+jobs:
+  build:
+    name: build + start (windows-11-arm)
+    runs-on: windows-11-arm
+    timeout-minutes: 40
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: OpenCL headers and ICD loader for ARM64
+      shell: bash
+      run: |
+        set -e
+        T=$(cygpath -m "$RUNNER_TEMP")
+        git clone -q --depth 1 --branch "$KHRONOS_TAG" https://github.com/KhronosGroup/OpenCL-Headers "$T/OpenCL-Headers"
+        git clone -q --depth 1 --branch "$KHRONOS_TAG" https://github.com/KhronosGroup/OpenCL-ICD-Loader "$T/OpenCL-ICD-Loader"
+        h=$(git -C "$T/OpenCL-Headers" rev-parse HEAD)
+        l=$(git -C "$T/OpenCL-ICD-Loader" rev-parse HEAD)
+        echo "headers $h, loader $l"
+        [ "$h" = "$HEADERS_SHA" ] && [ "$l" = "$LOADER_SHA" ]
+        cmake -S "$T/OpenCL-ICD-Loader" -B "$T/icd-build" -A ARM64 -DOPENCL_ICD_LOADER_HEADERS_DIR="$T/OpenCL-Headers" -DBUILD_TESTING=OFF
+        cmake --build "$T/icd-build" --config Release --target OpenCL
+        mkdir -p "$T/ocl/include" "$T/ocl/lib/arm64" "$T/ocl/bin"
+        cp -r "$T/OpenCL-Headers/CL" "$T/ocl/include/"
+        cp "$T/icd-build/Release/OpenCL.lib" "$T/ocl/lib/arm64/"
+        cp "$T/icd-build/Release/OpenCL.dll" "$T/ocl/bin/"
+        ls -l "$T/ocl/lib/arm64" "$T/ocl/bin"
+
+    - name: Build
+      shell: cmd
+      run: |
+        if not exist ci-out mkdir ci-out
+        for /f "usebackq delims=" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath`) do set "VSDIR=%%i"
+        call "%VSDIR%\VC\Auxiliary\Build\vcvarsall.bat" arm64
+        if errorlevel 1 exit /b 1
+        cl 2>&1 | findstr /i version
+        if not exist output mkdir output
+        nmake -nologo -f makefile.vc /K PROCESSOR_ARCHITECTURE=OPENCL_ARM64 OPENCLDIR=%RUNNER_TEMP%\ocl\ > ci-out\build.log 2>&1
+        set RC=%ERRORLEVEL%
+        type ci-out\build.log
+        echo nmake exit code %RC%
+        for %%f in (dnetc.exe dnetc.com dnetc.scr) do (
+          if exist %%f (
+            echo --- %%f
+            dumpbin /nologo /headers %%f | findstr /i /c:"machine" /c:"subsystem"
+            dumpbin /nologo /dependents %%f | findstr /i ".dll"
+          ) else (
+            echo --- %%f: NOT BUILT
+          )
+        )
+        if not "%RC%"=="0" exit /b %RC%
+        dumpbin /nologo /headers dnetc.exe | findstr /c:"AA64 machine" >nul || (echo FAIL: dnetc.exe is not ARM64 & exit /b 1)
+        dumpbin /nologo /dependents dnetc.exe | findstr /i /c:"OpenCL.dll" >nul || (echo FAIL: dnetc.exe does not import OpenCL.dll & exit /b 1)
+        echo ok: ARM64 client that imports OpenCL.dll
+
+    - name: Start the client (no OpenCL driver on the runner)
+      shell: bash
+      run: |
+        mkdir -p run
+        cp dnetc.exe run/
+        cp "$(cygpath -u "$RUNNER_TEMP")/ocl/bin/OpenCL.dll" run/
+        cd run
+        for a in gpuinfo
+        do
+          echo "### dnetc -$a"
+          rc=0
+          timeout 300 ./dnetc.exe -l ../ci-out/log-$a.txt -$a > ../ci-out/console-$a.txt 2>&1 || rc=$?
+          echo "exit code $rc"
+          tr '\r' '\n' < ../ci-out/log-$a.txt || echo "(no log written)"
+          tr '\r' '\n' < ../ci-out/console-$a.txt | head -20
+        done
+        # the client's banner in the log shows it started and found OpenCL.dll
+        grep -a -q "dnetc v" ../ci-out/log-gpuinfo.txt
+
+    - name: Dry runs of OPENCL32 and OPENCL64, before and after
+      shell: cmd
+      run: |
+        git fetch --no-tags -q https://github.com/dcti/dnetc-client-base master
+        if errorlevel 1 exit /b 1
+        for /f %%b in ('git merge-base HEAD FETCH_HEAD') do set BASE=%%b
+        echo base commit %BASE%
+        git worktree add -q ..\before %BASE%
+        if errorlevel 1 exit /b 1
+        for /f "usebackq delims=" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath`) do set "VSDIR=%%i"
+        call "%VSDIR%\VC\Auxiliary\Build\vcvarsall.bat" arm64 >nul
+        set FAIL=0
+        for %%a in (OPENCL32 OPENCL64) do (
+          nmake -nologo -n -a -f makefile.vc PROCESSOR_ARCHITECTURE=%%a OPENCLDIR=C:\ocl\ > ci-out\dry-after-%%a.txt 2>&1
+          pushd ..\before
+          nmake -nologo -n -a -f makefile.vc PROCESSOR_ARCHITECTURE=%%a OPENCLDIR=C:\ocl\ > %GITHUB_WORKSPACE%\ci-out\dry-before-%%a.txt 2>&1
+          popd
+          fc ci-out\dry-before-%%a.txt ci-out\dry-after-%%a.txt >nul && (echo ok: %%a dry run unchanged) || (echo FAIL: %%a dry run differs & fc ci-out\dry-before-%%a.txt ci-out\dry-after-%%a.txt & set FAIL=1)
+          find /c /v "" ci-out\dry-after-%%a.txt
+        )
+        exit /b %FAIL%
+
+    - name: Keep the client as committed
+      shell: bash
+      run: |
+        mkdir -p ci-out/as-committed
+        cp dnetc.exe dnetc.com dnetc.scr ci-out/as-committed/
+
+    # Informational from here on. The runner has no OpenCL device, so PoCL's
+    # CPU driver (MSYS2 CLANGARM64 package) is installed and the client is
+    # rebuilt with its own debug switch that accepts a CPU device. This is
+    # the only way the kernels get compiled and run here; it says nothing
+    # about any GPU driver.
+    - name: PoCL from MSYS2 (CLANGARM64)
+      continue-on-error: true
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: CLANGARM64
+        update: true
+        install: mingw-w64-clang-aarch64-pocl
+    - name: Find PoCL
+      continue-on-error: true
+      shell: msys2 {0}
+      run: |
+        set +e +o pipefail
+        {
+          pacman -Q mingw-w64-clang-aarch64-pocl
+          pacman -Ql mingw-w64-clang-aarch64-pocl
+        } > ci-out/pocl-package.txt 2>&1
+        dll=
+        [ -f /clangarm64/bin/pocl.dll ] && dll=/clangarm64/bin/pocl.dll
+        {
+          echo "PoCL DLL in the package: ${dll:-none}"
+          echo "POCL_DLL=$(cygpath -w "$dll")"
+          echo "MSYS_BIN=$(cygpath -w /clangarm64/bin)"
+          echo "GITHUB_ENV=$GITHUB_ENV"
+        } 2>&1 | tee ci-out/pocl-find.txt
+        [ -n "$dll" ] || exit 1
+        echo "POCL_DLL=$(cygpath -w "$dll")" >> "$GITHUB_ENV"
+        echo "MSYS_BIN=$(cygpath -w /clangarm64/bin)" >> "$GITHUB_ENV"
+    - name: Register PoCL with the ICD loader; rebuild with the CPU debug switch
+      continue-on-error: true
+      shell: cmd
+      run: |
+        echo POCL_DLL=%POCL_DLL% > ci-out\pocl-register.txt
+        if "%POCL_DLL%"=="" (echo PoCL was not found & exit /b 1)
+        reg add "HKLM\SOFTWARE\Khronos\OpenCL\Vendors" /v "%POCL_DLL%" /t REG_DWORD /d 0 /f >> ci-out\pocl-register.txt 2>&1
+        reg query "HKLM\SOFTWARE\Khronos\OpenCL\Vendors" >> ci-out\pocl-register.txt 2>&1
+        type ci-out\pocl-register.txt
+        powershell -NoProfile -Command "$f='plat\opencl\ocl_setup.cpp'; (Get-Content $f) -replace '^// #undef  CL_DEVICE_TYPE_GPU','#undef  CL_DEVICE_TYPE_GPU' -replace '^// #define CL_DEVICE_TYPE_GPU CL_DEVICE_TYPE_ALL','#define CL_DEVICE_TYPE_GPU CL_DEVICE_TYPE_ALL' | Set-Content $f"
+        findstr /n /c:"CL_DEVICE_TYPE_GPU CL_DEVICE_TYPE_ALL" plat\opencl\ocl_setup.cpp
+        for /f "usebackq delims=" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath`) do set "VSDIR=%%i"
+        call "%VSDIR%\VC\Auxiliary\Build\vcvarsall.bat" arm64 >nul
+        nmake -nologo -f makefile.vc /K PROCESSOR_ARCHITECTURE=OPENCL_ARM64 OPENCLDIR=%RUNNER_TEMP%\ocl\ > ci-out\build-cpu-switch.log 2>&1
+        set RC=%ERRORLEVEL%
+        findstr /i /c:"ocl_setup" /c:"error" /c:"link " ci-out\build-cpu-switch.log
+        echo nmake exit code %RC%
+        exit /b %RC%
+    - name: gpuinfo, test, stress and bench on PoCL
+      continue-on-error: true
+      shell: bash
+      run: |
+        set +e +o pipefail
+        [ -n "${POCL_DLL:-}" ] || { echo "PoCL was not found"; exit 1; }
+        export PATH="$(cygpath -u "$MSYS_BIN"):$PATH"
+        cp dnetc.exe run/
+        cd run
+        go()
+        {
+          n=$1
+          shift
+          echo "### dnetc $*"
+          rc=0
+          timeout 1500 ./dnetc.exe -l ../ci-out/pocl-$n.txt "$@" > ../ci-out/pocl-console-$n.txt 2>&1 || rc=$?
+          echo "exit code $rc"
+          tr '\r' '\n' < ../ci-out/pocl-$n.txt || echo "(no log written)"
+        }
+        go gpuinfo -gpuinfo
+        go test -test rc5-72
+        go stress -stress rc5-72
+        go bench -bench rc5-72
+        c() { tr '\r' '\n' < "$1" | grep -a -c -E "$2" || true; }
+        cores=$(c ../ci-out/pocl-test.txt 'using core')
+        passed=$(c ../ci-out/pocl-test.txt '32/32 Tests Passed')
+        scores=$(c ../ci-out/pocl-stress.txt 'using core')
+        spassed=$(c ../ci-out/pocl-stress.txt 'Stress-test 4 passed')
+        echo "--- summary (PoCL CPU device, debug switch)"
+        echo "-test: $passed of $cores cores passed 32/32"
+        echo "-stress: $spassed of $scores cores passed stress-test 4"
+        echo "::notice title=PoCL test::$passed of $cores cores passed 32/32; stress-test 4 passed on $spassed of $scores cores"
+        [ "$cores" -gt 0 ] && [ "$passed" = "$cores" ] && [ "$scores" -gt 0 ] && [ "$spassed" = "$scores" ]
+
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: win-arm64-opencl
+        path: ci-out/
+        if-no-files-found: warn
+
+    # The logs are committed to this test branch, unedited, so they can be
+    # read without signing in to GitHub.
+    - name: Commit the logs to the branch
+      if: always()
+      shell: bash
+      run: |
+        set +e
+        d=tools/win-arm64-opencl-ci/out
+        rm -rf "$d"
+        mkdir -p "$d"
+        cp ci-out/*.txt ci-out/*.log "$d"/ 2>/dev/null
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add -f "$d"
+        git commit -q -m "CI logs from run $GITHUB_RUN_ID [skip ci]" || echo "nothing to commit"
+        git push origin HEAD:ci-win-arm64-opencl
