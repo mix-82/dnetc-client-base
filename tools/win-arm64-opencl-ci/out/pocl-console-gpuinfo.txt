@@ -1,0 +1,50 @@
+
+distributed.net client for OpenCL on Win64 Copyright 1997-2026, distributed.net
+Please visit https://www.distributed.net/ for up-to-date contest information.
+Start the client with '-help' for a list of valid command line options.
+
+Setting log file to ../ci-out/pocl-gpuinfo.txt
+
+dnetc v2.9116-525-CTR-6a8b73f9* for OpenCL on Win64 (WindowsNT 6.2).
+Please provide the *entire* version descriptor when submitting bug reports.
+The distributed.net bug report pages are at https://bugs.distributed.net/
+
+Automatic processor identification tag: 0
+	name: cpu 
+Estimated processor clock speed (0 if unknown): 0 MHz
+Number of processors detected by this client: 1
+Number of processors supported by this client: 512
+
+Platform info:
+--------------
+                 Platform Name: Portable Computing Language
+               Platform Vendor: The pocl project
+              Platform Version: OpenCL 3.0 PoCL 7.2  Windows ARM64, Release ...
+           Platform Extensions: cl_khr_icd cl_khr_priority_hints cl_khr_thr ...
+
+Device Info:
+--------------
+                          Type: CPU
+                          Name: cpu
+                 Max clockrate: 0
+             Max compute units: 4
+      Global memory cache size: 0
+      Global memory cache type: NONE
+      Unified memory subsystem: Yes
+                 Image support: Yes
+             Local memory size: 524288
+            Max workgroup size: 4096
+     native vector width (int): 4
+   native vector width (float): 4
+              OpenCL C version: OpenCL C 1.2 PoCL
+  Device timer resolution (ns): 1
+                 Device vendor: ARM
+              Device vendor id: 0x10006
+                Driver version: 7.2
+           Device address bits: 64
+             Device extensions: cl_khr_byte_addressable_store cl_khr_global ...
+
+Compiler Info:
+--------------
+              Built-in defined: __clang__
+             Parameter defined: 

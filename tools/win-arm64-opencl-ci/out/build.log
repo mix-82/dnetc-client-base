@@ -1,0 +1,249 @@
+Build environment for architecture: OPENCL_ARM64
+Could Not Find C:\a\dnetc-client-base\dnetc-client-base\output\*.o??
+	cl -c -O2 -nologo -D__WIN32__  -W4 -GR- -GA -GF -Gy  -DHAVE_SNPRINTF  -D_M_ARM64  -MT -DNDEBUG -EHs-c- -GS- -wd4996 -I"C:\a\_temp\ocl\include" -Iplat\opencl -Icommon -DLURK -Iplat/win -Iplat -DHAVE_IPV6 -DHAVE_RC5_72_CORES -DOPENCL -DDYN_TIMESLICE @output\buildinfo.rsp -Fooutput\ common\cliident.cpp
+cliident.cpp
+common\cliident.cpp(156): warning C4244: '=': conversion from 'time_t' to 'long', possible loss of data
+	rc  -i -d_Windows -d_M_ARM64 -Icommon -fooutput/dnetc.res plat\win\w32cons.rc
+Microsoft (R) Windows (R) Resource Compiler Version 10.0.10011.16384
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+	cl -c -Oxs -nologo -D__WIN32__  -W4 -GR- -GA -GF -Gy  -DHAVE_SNPRINTF  -D_M_ARM64  -MT -DNDEBUG -EHs-c- -GS- -wd4996 -I"C:\a\_temp\ocl\include" -Iplat\opencl -Icommon -DLURK -Iplat/win -Iplat -DHAVE_IPV6 -DHAVE_RC5_72_CORES -DOPENCL -DDYN_TIMESLICE -Fooutput\ plat/win\w32cons.cpp plat/win\w32pre.cpp plat/win\w32ras.cpp plat/win\w32sock.cpp plat/win\w32ss.cpp plat/win\w32svc.cpp plat/win\w32exe.cpp plat/win\w32ini.cpp plat/win\w32util.cpp 
+w32cons.cpp
+plat/win\w32cons.cpp(1713): warning C4311: 'type cast': pointer truncation from 'HMENU' to 'UINT'
+plat/win\w32cons.cpp(1713): warning C4302: 'type cast': truncation from 'HMENU' to 'UINT'
+plat/win\w32cons.cpp(1751): warning C4311: 'type cast': pointer truncation from 'HMENU' to 'UINT'
+plat/win\w32cons.cpp(1751): warning C4302: 'type cast': truncation from 'HMENU' to 'UINT'
+plat/win\w32cons.cpp(1768): warning C4311: 'type cast': pointer truncation from 'HMENU' to 'UINT'
+plat/win\w32cons.cpp(1768): warning C4302: 'type cast': truncation from 'HMENU' to 'UINT'
+plat/win\w32cons.cpp(1777): warning C4311: 'type cast': pointer truncation from 'HMENU' to 'UINT'
+plat/win\w32cons.cpp(1777): warning C4302: 'type cast': truncation from 'HMENU' to 'UINT'
+plat/win\w32cons.cpp(1789): warning C4311: 'type cast': pointer truncation from 'HMENU' to 'UINT'
+plat/win\w32cons.cpp(1789): warning C4302: 'type cast': truncation from 'HMENU' to 'UINT'
+plat/win\w32cons.cpp(3548): warning C4456: declaration of 'hwnd' hides previous local declaration
+plat/win\w32cons.cpp(2423): note: see declaration of 'hwnd'
+plat/win\w32cons.cpp(4339): warning C4456: declaration of 'i' hides previous local declaration
+plat/win\w32cons.cpp(4196): note: see declaration of 'i'
+plat/win\w32cons.cpp(5345): warning C4302: 'type cast': truncation from 'LPSTR' to 'WORD'
+plat/win\w32cons.cpp(6158): warning C4302: 'type cast': truncation from 'LPSTR' to 'WORD'
+plat/win\w32cons.cpp(6684): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+plat/win\w32cons.cpp(6692): warning C4311: 'type cast': pointer truncation from 'HANDLE' to 'unsigned long'
+plat/win\w32cons.cpp(6692): warning C4302: 'type cast': truncation from 'HANDLE' to 'unsigned long'
+plat/win\w32cons.cpp(6693): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+plat/win\w32cons.cpp(6990): warning C4456: declaration of 'len' hides previous local declaration
+plat/win\w32cons.cpp(6955): note: see declaration of 'len'
+plat/win\w32cons.cpp(7006): warning C4311: 'type cast': pointer truncation from 'HANDLE' to 'long'
+plat/win\w32cons.cpp(7006): warning C4302: 'type cast': truncation from 'HANDLE' to 'long'
+plat/win\w32cons.cpp(7079): warning C4302: 'type cast': truncation from 'LPSTR' to 'WORD'
+plat/win\w32cons.cpp(7226): warning C4312: 'type cast': conversion from 'long' to 'HANDLE' of greater size
+plat/win\w32cons.cpp(7273): warning C4312: 'type cast': conversion from 'long' to 'HANDLE' of greater size
+plat/win\w32cons.cpp(7278): warning C4312: 'type cast': conversion from 'long' to 'HANDLE' of greater size
+plat/win\w32cons.cpp(7315): warning C4477: 'sprintf' : format string '%08x' requires an argument of type 'unsigned int', but variadic argument 3 has type 'HMODULE'
+plat/win\w32cons.cpp(7315): warning C4313: 'sprintf': '%x' in format string conflicts with argument 3 of type 'HMODULE'
+plat/win\w32cons.cpp(7428): warning C4302: 'type cast': truncation from 'LPSTR' to 'WORD'
+plat/win\w32cons.cpp(7604): warning C4312: 'type cast': conversion from 'long' to 'HANDLE' of greater size
+plat/win\w32cons.cpp(7616): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+plat/win\w32cons.cpp(7619): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+w32pre.cpp
+plat/win\w32pre.cpp(64): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
+w32ras.cpp
+w32sock.cpp
+w32ss.cpp
+plat/win\w32ss.cpp(598): warning C4312: 'type cast': conversion from 'unsigned long' to 'void *' of greater size
+plat/win\w32ss.cpp(786): warning C4312: 'type cast': conversion from 'unsigned long' to 'void *' of greater size
+plat/win\w32ss.cpp(811): warning C4312: 'type cast': conversion from 'UINT' to 'HINSTANCE' of greater size
+plat/win\w32ss.cpp(883): warning C4312: 'type cast': conversion from 'unsigned long' to 'void *' of greater size
+plat/win\w32ss.cpp(1453): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+plat/win\w32ss.cpp(1528): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+plat/win\w32ss.cpp(1567): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+plat/win\w32ss.cpp(1728): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+plat/win\w32ss.cpp(1731): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+plat/win\w32ss.cpp(1813): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+plat/win\w32ss.cpp(2340): warning C4456: declaration of 'cmd' hides previous local declaration
+plat/win\w32ss.cpp(2092): note: see declaration of 'cmd'
+w32svc.cpp
+plat/win\w32svc.cpp(1471): warning C4100: 'argv': unreferenced parameter
+plat/win\w32svc.cpp(1471): warning C4100: 'argc': unreferenced parameter
+w32exe.cpp
+w32ini.cpp
+w32util.cpp
+Generating Code...
+	cl -c -Ox -Zl -nologo -D__WIN32__  -W4 -GR- -GA -GF -Gy  -DHAVE_SNPRINTF  -D_M_ARM64  -MT -DNDEBUG -EHs-c- -GS- -wd4996 -I"C:\a\_temp\ocl\include" -Iplat\opencl -Icommon -DLURK -Iplat/win -Iplat -DHAVE_IPV6 -DHAVE_RC5_72_CORES -DOPENCL -DDYN_TIMESLICE -Fooutput\ plat/win\w32snapp.c 
+w32snapp.c
+	cl -c -O2 -nologo -D__WIN32__  -W4 -GR- -GA -GF -Gy  -DHAVE_SNPRINTF  -D_M_ARM64  -MT -DNDEBUG -EHs-c- -GS- -wd4996 -I"C:\a\_temp\ocl\include" -Iplat\opencl -Icommon -DLURK -Iplat/win -Iplat -DHAVE_IPV6 -DHAVE_RC5_72_CORES -DOPENCL -DDYN_TIMESLICE -Fooutput\ common\base64.cpp common\bench.cpp common\buffbase.cpp common\checkpt.cpp common\clicdata.cpp common\client.cpp common\clievent.cpp common\clirun.cpp common\clitime.cpp common\cmdline.cpp common\confmenu.cpp common\confopt.cpp common\confrwv.cpp common\console.cpp common\coremem.cpp common\cpucheck.cpp common\disphelp.cpp common\iniread.cpp common\logstuff.cpp common\lurk.cpp common\mail.cpp common\modereq.cpp common\netbase.cpp common\netconn.cpp common\pathwork.cpp common\pollsys.cpp common\probfill.cpp common\problem.cpp common\projdata.cpp common\probman.cpp common\random.cpp common\selcore.cpp common\selftest.cpp common\setprio.cpp common\triggers.cpp common\util.cpp common\core_r72.cpp common\buffpub.cpp 
+base64.cpp
+bench.cpp
+buffbase.cpp
+common\buffbase.cpp(79): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\buffbase.cpp(94): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\buffbase.cpp(745): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\buffbase.cpp(749): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
+common\buffbase.cpp(1360): warning C4456: declaration of 'proj_state' hides previous local declaration
+common\buffbase.cpp(1353): note: see declaration of 'proj_state'
+checkpt.cpp
+common\checkpt.cpp(46): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+clicdata.cpp
+client.cpp
+clievent.cpp
+clirun.cpp
+common\clirun.cpp(1953): warning C4244: '+=': conversion from 'time_t' to 'unsigned int', possible loss of data
+clitime.cpp
+common\clitime.cpp(478): warning C4244: '=': conversion from 'time_t' to 'long', possible loss of data
+cmdline.cpp
+confmenu.cpp
+common\confmenu.cpp(214): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\confmenu.cpp(219): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\confmenu.cpp(319): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\confmenu.cpp(913): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+common\confmenu.cpp(926): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+common\confmenu.cpp(1133): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+confopt.cpp
+confrwv.cpp
+common\confrwv.cpp(219): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\confrwv.cpp(257): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\confrwv.cpp(344): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\confrwv.cpp(400): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\confrwv.cpp(449): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+console.cpp
+common\console.cpp(495): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+coremem.cpp
+cpucheck.cpp
+cl_version.h: CL_TARGET_OPENCL_VERSION is not defined. Defaulting to 310 (OpenCL 3.1)
+disphelp.cpp
+common\disphelp.cpp(515): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+iniread.cpp
+common\iniread.cpp(83): warning C4267: '+=': conversion from 'size_t' to 'long', possible loss of data
+common\iniread.cpp(115): warning C4267: '+=': conversion from 'size_t' to 'long', possible loss of data
+common\iniread.cpp(484): warning C4267: '=': conversion from 'size_t' to 'long', possible loss of data
+common\iniread.cpp(634): warning C4267: '=': conversion from 'size_t' to 'unsigned long', possible loss of data
+logstuff.cpp
+common\logstuff.cpp(157): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\logstuff.cpp(265): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\logstuff.cpp(403): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\logstuff.cpp(423): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\logstuff.cpp(528): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\logstuff.cpp(566): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\logstuff.cpp(612): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\logstuff.cpp(1201): warning C4244: '=': conversion from 'unsigned int' to 'char', possible loss of data
+common\logstuff.cpp(1330): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\logstuff.cpp(1383): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+lurk.cpp
+common\lurk.cpp(666): warning C4267: '+=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\lurk.cpp(830): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+Generating Code...
+Compiling...
+mail.cpp
+common\mail.cpp(325): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\mail.cpp(331): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\mail.cpp(346): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\mail.cpp(362): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\mail.cpp(381): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\mail.cpp(398): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\mail.cpp(535): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\mail.cpp(542): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\mail.cpp(551): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\mail.cpp(556): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\mail.cpp(567): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\mail.cpp(583): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+common\mail.cpp(605): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\mail.cpp(1131): warning C4267: '=': conversion from 'size_t' to 'unsigned long', possible loss of data
+common\mail.cpp(1142): warning C4267: '=': conversion from 'size_t' to 'unsigned long', possible loss of data
+common\mail.cpp(1191): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+modereq.cpp
+netbase.cpp
+common\netbase.cpp(741): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\netbase.cpp(1135): warning C4244: 'argument': conversion from 'SOCKET' to 'int', possible loss of data
+common\netbase.cpp(1307): warning C4244: 'argument': conversion from 'SOCKET' to 'int', possible loss of data
+common\netbase.cpp(1931): warning C4245: 'initializing': conversion from 'int' to 'SOCKET', signed/unsigned mismatch
+common\netbase.cpp(1968): warning C4245: '=': conversion from 'int' to 'SOCKET', signed/unsigned mismatch
+common\netbase.cpp(2015): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+common\netbase.cpp(2085): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+netconn.cpp
+common\netconn.cpp(386): warning C4244: '=': conversion from '__int64' to 'int', possible loss of data
+common\netconn.cpp(390): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+common\netconn.cpp(475): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\netconn.cpp(586): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\netconn.cpp(598): warning C4267: '+=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\netconn.cpp(1545): warning C4244: '=': conversion from '__int64' to 'unsigned int', possible loss of data
+common\netconn.cpp(1757): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+common\netconn.cpp(1792): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+common\netconn.cpp(1796): warning C4244: '=': conversion from '__int64' to 'unsigned int', possible loss of data
+common\netconn.cpp(1812): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\netconn.cpp(2364): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\netconn.cpp(2443): warning C4267: '+=': conversion from 'size_t' to 'unsigned int', possible loss of data
+pathwork.cpp
+common\pathwork.cpp(87): warning C4244: 'return': conversion from '__int64' to 'unsigned int', possible loss of data
+common\pathwork.cpp(325): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+pollsys.cpp
+probfill.cpp
+problem.cpp
+common\problem.cpp(252): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
+common\problem.cpp(252): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
+common\problem.cpp(272): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
+common\problem.cpp(272): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
+common\problem.cpp(277): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
+common\problem.cpp(277): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
+common\problem.cpp(282): warning C4311: 'type cast': pointer truncation from 'char *' to 'unsigned long'
+common\problem.cpp(282): warning C4302: 'type cast': truncation from 'char *' to 'unsigned long'
+common\problem.cpp(2024): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\problem.cpp(2090): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\problem.cpp(2138): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+projdata.cpp
+probman.cpp
+random.cpp
+selcore.cpp
+selftest.cpp
+common\selftest.cpp(158): warning C4100: 'stress': unreferenced parameter
+setprio.cpp
+triggers.cpp
+common\triggers.cpp(298): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+util.cpp
+common\util.cpp(54): warning C4244: '=': conversion from 'unsigned __int64' to 'unsigned int', possible loss of data
+common\util.cpp(56): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\util.cpp(140): warning C4244: '=': conversion from 'time_t' to 'long', possible loss of data
+common\util.cpp(164): warning C4244: '-=': conversion from 'time_t' to 'long', possible loss of data
+common\util.cpp(402): warning C4456: declaration of 'i' hides previous local declaration
+common\util.cpp(397): note: see declaration of 'i'
+common\util.cpp(539): warning C4456: declaration of 'i' hides previous local declaration
+common\util.cpp(397): note: see declaration of 'i'
+common\util.cpp(808): warning C4312: 'type cast': conversion from 'LONG' to 'HINSTANCE' of greater size
+common\util.cpp(813): warning C4311: 'type cast': pointer truncation from 'HMODULE' to 'DWORD'
+common\util.cpp(813): warning C4302: 'type cast': truncation from 'HMODULE' to 'DWORD'
+common\util.cpp(855): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\util.cpp(893): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+common\util.cpp(981): warning C4311: 'type cast': pointer truncation from 'HMODULE' to 'long'
+common\util.cpp(981): warning C4302: 'type cast': truncation from 'HMODULE' to 'long'
+core_r72.cpp
+buffpub.cpp
+Generating Code...
+	cl -c -O2 -nologo -D__WIN32__  -W4 -GR- -GA -GF -Gy  -DHAVE_SNPRINTF  -D_M_ARM64  -MT -DNDEBUG -EHs-c- -GS- -wd4996 -I"C:\a\_temp\ocl\include" -Iplat\opencl -Icommon -DLURK -Iplat/win -Iplat -DHAVE_IPV6 -DHAVE_RC5_72_CORES -DOPENCL -DDYN_TIMESLICE -Fooutput\ rc5-72\stress.cpp 
+stress.cpp
+	cl -c -nologo -D__WIN32__  -W4 -GR- -GA -GF -Gy  -DHAVE_SNPRINTF  -D_M_ARM64  -MT -DNDEBUG -EHs-c- -GS- -wd4996 -I"C:\a\_temp\ocl\include" -Iplat\opencl -Icommon -DLURK -Iplat/win -Iplat -DHAVE_IPV6 -DHAVE_RC5_72_CORES -DOPENCL -DDYN_TIMESLICE -Ox -Fooutput\ plat/opencl\ocl_info.cpp plat/opencl\ocl_setup.cpp 
+ocl_info.cpp
+cl_version.h: CL_TARGET_OPENCL_VERSION is not defined. Defaulting to 310 (OpenCL 3.1)
+plat/opencl\ocl_info.cpp(108): warning C4267: 'initializing': conversion from 'size_t' to 'u32', possible loss of data
+plat/opencl\ocl_info.cpp(114): warning C4267: 'initializing': conversion from 'size_t' to 'u32', possible loss of data
+ocl_setup.cpp
+cl_version.h: CL_TARGET_OPENCL_VERSION is not defined. Defaulting to 310 (OpenCL 3.1)
+Generating Code...
+	cl -c -O2 -nologo -D__WIN32__  -W4 -GR- -GA -GF -Gy  -DHAVE_SNPRINTF  -D_M_ARM64  -MT -DNDEBUG -EHs-c- -GS- -wd4996 -I"C:\a\_temp\ocl\include" -Iplat\opencl -Icommon -DLURK -Iplat/win -Iplat -DHAVE_IPV6 -DHAVE_RC5_72_CORES -DOPENCL -DDYN_TIMESLICE -Fooutput\ rc5-72/opencl\ocl_common.cpp rc5-72/opencl\ocl_ref.cpp rc5-72/opencl\ocl_1pipe.cpp 
+ocl_common.cpp
+cl_version.h: CL_TARGET_OPENCL_VERSION is not defined. Defaulting to 310 (OpenCL 3.1)
+rc5-72/opencl\ocl_common.cpp(497): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+rc5-72/opencl\ocl_common.cpp(497): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+ocl_ref.cpp
+cl_version.h: CL_TARGET_OPENCL_VERSION is not defined. Defaulting to 310 (OpenCL 3.1)
+rc5-72/opencl\ocl_ref.cpp(99): warning C4267: '=': conversion from 'size_t' to 'u32', possible loss of data
+ocl_1pipe.cpp
+cl_version.h: CL_TARGET_OPENCL_VERSION is not defined. Defaulting to 310 (OpenCL 3.1)
+rc5-72/opencl\ocl_1pipe.cpp(63): warning C4267: '=': conversion from 'size_t' to 'u32', possible loss of data
+Generating Code...
+	link /nologo /incremental:no  /machine:ARM64 /release /SUBSYSTEM:WINDOWS,3.10 /OUT:dnetc.exe /MAP:dnetc.map advapi32.lib user32.lib kernel32.lib gdi32.lib "C:\a\_temp\ocl\lib\arm64\OpenCL.lib" output/w32cons.obj     output/w32pre.obj      output/w32ras.obj      output/w32sock.obj     output/w32ss.obj       output/w32svc.obj      output/w32exe.obj      output/w32ini.obj      output/w32snapp.obj    output/w32util.obj output/base64.obj      output/bench.obj       output/buffbase.obj    output/checkpt.obj     output/clicdata.obj    output/client.obj      output/clievent.obj    output/cliident.obj    output/clirun.obj      output/clitime.obj     output/cmdline.obj     output/confmenu.obj    output/confopt.obj     output/confrwv.obj     output/console.obj     output/coremem.obj     output/cpucheck.obj    output/disphelp.obj    output/iniread.obj     output/logstuff.obj    output/lurk.obj        output/mail.obj        output/modereq.obj     output/netbase.obj     output/netconn.obj     output/pathwork.obj    output/pollsys.obj     output/probfill.obj    output/problem.obj     output/projdata.obj    output/probman.obj     output/random.obj      output/selcore.obj     output/selftest.obj    output/setprio.obj     output/stress.obj      output/triggers.obj    output/util.obj          output/core_r72.obj          output/buffpub.obj  output/ocl_info.obj  output/ocl_setup.obj  output/ocl_common.obj  output/ocl_ref.obj  output/ocl_1pipe.obj   output/dnetc.res
+LINK : warning LNK4010: invalid subsystem version number 3.10; default subsystem version assumed
+	cl -c -Ox -Zl -nologo -D__WIN32__  -W4 -GR- -GA -GF -Gy  -DHAVE_SNPRINTF  -D_M_ARM64  -MT -DNDEBUG -EHs-c- -GS- -wd4996 -I"C:\a\_temp\ocl\include" -Iplat\opencl -Icommon -DLURK -Iplat/win -Iplat -DHAVE_IPV6 -DHAVE_RC5_72_CORES -DOPENCL -DDYN_TIMESLICE -Fooutput\ plat/win\w32cuis.c 
+w32cuis.c
+	link /nologo /incremental:no  /machine:ARM64 /release /SUBSYSTEM:CONSOLE,3.10 /OUT:dnetc.com /NODEFAULTLIB advapi32.lib user32.lib kernel32.lib gdi32.lib "C:\a\_temp\ocl\lib\arm64\OpenCL.lib" output/w32cuis.obj
+LINK : warning LNK4010: invalid subsystem version number 3.10; default subsystem version assumed
+	cl -c -Oxs -nologo -D__WIN32__  -W4 -GR- -GA -GF -Gy  -DHAVE_SNPRINTF  -D_M_ARM64  -MT -DNDEBUG -EHs-c- -GS- -wd4996 -I"C:\a\_temp\ocl\include" -Iplat\opencl -Icommon -DLURK -Iplat/win -Iplat -DHAVE_IPV6 -DHAVE_RC5_72_CORES -DOPENCL -DDYN_TIMESLICE -Fooutput\ plat/win\w32ssb.cpp 
+w32ssb.cpp
+	link /nologo /incremental:no  /machine:ARM64 /release /SUBSYSTEM:WINDOWS,4.00 /OUT:dnetc.scr advapi32.lib user32.lib kernel32.lib gdi32.lib "C:\a\_temp\ocl\lib\arm64\OpenCL.lib" output/w32ss.obj       output/w32ssb.obj      output/w32exe.obj      output/w32ini.obj      output/w32util.obj output/dnetc.res
+LINK : warning LNK4010: invalid subsystem version number 4.00; default subsystem version assumed

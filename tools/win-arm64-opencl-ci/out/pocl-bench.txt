@@ -1,0 +1,21 @@
+
+dnetc v2.9116-525-CTR-6a8b73f9* for OpenCL on Win64 (WindowsNT 6.2).
+
+[Nov 21 02:12:39 UTC] RC5-72: using core #0 (CL ANSI 1-pipe).
+[Nov 21 02:12:58 UTC] RC5-72: Benchmark for core #0 (CL ANSI 1-pipe)
+                      0.00:00:16.54 [12,892,727 keys/sec]
+[Nov 21 02:12:58 UTC] RC5-72: using core #1 (CL 1-pipe).
+[Nov 21 02:13:16 UTC] RC5-72: Benchmark for core #1 (CL 1-pipe)
+                      0.00:00:16.63 [33,935,247 keys/sec]
+[Nov 21 02:13:16 UTC] RC5-72: using core #2 (CL 2-pipe).
+[Nov 21 02:13:35 UTC] RC5-72: Benchmark for core #2 (CL 2-pipe)
+                      0.00:00:16.90 [18,203,855 keys/sec]
+[Nov 21 02:13:35 UTC] RC5-72: using core #3 (CL 4-pipe).
+[Nov 21 02:13:55 UTC] RC5-72: Benchmark for core #3 (CL 4-pipe)
+                      0.00:00:16.64 [31,138,011 keys/sec]
+[Nov 21 02:13:55 UTC] RC5-72 benchmark summary :
+                      Default core : #-1 (undefined) 0 keys/sec
+                      Fastest core : #1 (CL 1-pipe) 33,935,247 keys/sec
+[Nov 21 02:13:55 UTC] Compare and share your rates in the speeds database at
+                      https://cgi.distributed.net/speed/
+                      (benchmark rates are for a single processor core)

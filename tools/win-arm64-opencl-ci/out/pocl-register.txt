@@ -1,0 +1,6 @@
+POCL_DLL=C:\a\_temp\msys64\clangarm64\bin\pocl.dll 
+The operation completed successfully.
+
+HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors
+    C:\a\_temp\msys64\clangarm64\bin\pocl.dll    REG_DWORD    0x0
+
