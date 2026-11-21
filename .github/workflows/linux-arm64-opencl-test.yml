@@ -71,14 +71,14 @@ jobs:
         ./dnetc -bench rc5-72 2>&1 | tr '\r' '\n' | tee bench.log
         grep -E "keys/sec" bench.log | sed 's/^ *//' | head -8 | while read -r l; do echo "::notice title=bench::$l"; done
 
-  # Test build for a Raspberry Pi: built in a Debian 11 container so the
+  # Test build for a Raspberry Pi: built in a Debian 12 container so the
   # binaries also run on systems with an older C library than the runner's.
   # Builds the OpenCL client and, for comparison, the CPU client.
   pi-build:
-    name: build in Debian 11 (arm64) for older systems
+    name: build in Debian 12 (arm64) for older systems
     timeout-minutes: 30
     runs-on: ubuntu-24.04-arm
-    container: debian:bullseye
+    container: debian:bookworm
 
     steps:
     - name: Install build tools
