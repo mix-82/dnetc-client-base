@@ -273,12 +273,15 @@ jobs:
     - name: Build with UPX 5.3.0
       shell: cmd
       run: |
-        set UPX=%RUNNER_TEMP%\upx-5.3.0-win64
+        rem UPX goes on the nmake command line, not into the environment:
+        rem upx.exe itself reads an environment variable UPX as its options.
+        set UPXDIR=%RUNNER_TEMP%\upx-5.3.0-win64
+        set NMAKE_EXTRA=UPX=%UPXDIR%
         call tools\win-arm64-ci\build.cmd arm64 ARM64 ci-out
         if errorlevel 1 exit /b 1
         echo --- packed?
-        "%UPX%\upx.exe" -t dnetc.exe dnetc.scr || exit /b 1
-        "%UPX%\upx.exe" --fileinfo dnetc.exe dnetc.scr
+        "%UPXDIR%\upx.exe" -t dnetc.exe dnetc.scr || exit /b 1
+        "%UPXDIR%\upx.exe" --fileinfo dnetc.exe dnetc.scr
         dir dnetc.exe dnetc.scr dnetc.com | findstr dnetc
     - name: Test the client as built (packed)
       shell: bash

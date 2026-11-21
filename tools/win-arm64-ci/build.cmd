@@ -1,6 +1,7 @@
 @echo off
 rem Build a Windows client with makefile.vc in the current directory.
 rem   build.cmd <vcvarsall arch> <makefile.vc PROCESSOR_ARCHITECTURE> <log dir>
+rem NMAKE_EXTRA (environment) is added to the nmake command line.
 rem e.g. arm64 ARM64 (native ARM64), amd64_arm64 ARM64 (cross), x64 AMD64, x86 x86
 setlocal
 set VCARCH=%1
@@ -30,7 +31,7 @@ clang --version
 cl 2>&1 | findstr /i version
 echo --- build
 if not exist output mkdir output
-nmake -nologo -f makefile.vc /K PROCESSOR_ARCHITECTURE=%MAKEARCH% > %LOGDIR%\build.log 2>&1
+nmake -nologo -f makefile.vc /K PROCESSOR_ARCHITECTURE=%MAKEARCH% %NMAKE_EXTRA% > %LOGDIR%\build.log 2>&1
 set RC=%ERRORLEVEL%
 type %LOGDIR%\build.log
 echo nmake exit code %RC%
