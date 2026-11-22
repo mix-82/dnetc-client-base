@@ -1,0 +1,37 @@
+name: Windows ARM64 OpenCL CI
+
+on:
+  push:
+    branches: [ "ci-win64-arm64-simple" ]
+
+jobs:
+  build:
+    timeout-minutes: 20
+
+    runs-on: windows-11-arm
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build OpenCL headers and ICD loader
+      shell: bash
+      working-directory: ${{ runner.temp }}
+      run: |
+        git clone --depth 1 --branch v2026.05.29 https://github.com/KhronosGroup/OpenCL-Headers
+        git clone --depth 1 --branch v2026.05.29 https://github.com/KhronosGroup/OpenCL-ICD-Loader
+        cmake -S OpenCL-ICD-Loader -B icd -A ARM64 -DOPENCL_ICD_LOADER_HEADERS_DIR="$(cygpath -m "$PWD")/OpenCL-Headers" -DBUILD_TESTING=OFF
+        cmake --build icd --config Release --target OpenCL
+        mkdir -p ocl/include ocl/lib/arm64
+        cp -r OpenCL-Headers/CL ocl/include/
+        cp icd/Release/OpenCL.lib ocl/lib/arm64/
+        cp icd/Release/OpenCL.dll "$GITHUB_WORKSPACE"
+    - name: nmake
+      shell: cmd
+      run: |
+        for /f "usebackq delims=" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath`) do set "VSDIR=%%i"
+        call "%VSDIR%\VC\Auxiliary\Build\vcvarsall.bat" arm64
+        nmake -nologo -f makefile.vc PROCESSOR_ARCHITECTURE=OPENCL_ARM64 OPENCLDIR=%RUNNER_TEMP%\ocl\
+    # The runner has no GPU or OpenCL driver, so this only shows that the
+    # client starts.
+    - name: gpuinfo
+      shell: bash
+      run: ./dnetc.exe -gpuinfo

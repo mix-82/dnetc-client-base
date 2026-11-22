@@ -1,0 +1,26 @@
+name: Windows ARM64 CI
+
+on:
+  push:
+    branches: [ "ci-win64-arm64-simple" ]
+
+jobs:
+  build:
+    timeout-minutes: 20
+
+    runs-on: windows-11-arm
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: nmake
+      shell: cmd
+      run: |
+        for /f "usebackq delims=" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath`) do set "VSDIR=%%i"
+        call "%VSDIR%\VC\Auxiliary\Build\vcvarsall.bat" arm64
+        nmake -nologo -f makefile.vc PROCESSOR_ARCHITECTURE=ARM64
+    - name: test
+      shell: bash
+      run: ./dnetc.exe -test
+    - name: cpuinfo
+      shell: bash
+      run: ./dnetc.exe -cpuinfo
