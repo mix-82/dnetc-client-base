@@ -5,7 +5,7 @@ Start the client with '-help' for a list of valid command line options.
 
 Setting log file to ../ci-out/pocl-gpuinfo.txt
 
-dnetc v2.9116-525-CTR-6a8b73f9* for OpenCL on Win64 (WindowsNT 6.2).
+dnetc v2.9116-525-CTR-88dcac3c* for OpenCL on Win64 (WindowsNT 6.2).
 Please provide the *entire* version descriptor when submitting bug reports.
 The distributed.net bug report pages are at https://bugs.distributed.net/
 

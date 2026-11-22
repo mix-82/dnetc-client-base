@@ -1,5 +1,5 @@
 
-dnetc v2.9116-525-CTR-6a8b73f9* for OpenCL on Win64 (WindowsNT 6.2).
+dnetc v2.9116-525-CTR-88dcac3c* for OpenCL on Win64 (WindowsNT 6.2).
 
 Automatic processor identification tag: 0
 	name: cpu 

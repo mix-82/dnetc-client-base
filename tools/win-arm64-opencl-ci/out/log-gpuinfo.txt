@@ -1,7 +1,7 @@
 
-dnetc v2.9116-525-CTR-6a8b73f9 for OpenCL on Win64 (WindowsNT 6.2).
+dnetc v2.9116-525-CTR-88dcac3c for OpenCL on Win64 (WindowsNT 6.2).
 
-[Nov 21 02:06:19 UTC] Error obtaining number of platforms (clGetPlatformIDs/1)
-[Nov 21 02:06:19 UTC] Error code -1001, message: Unknown
-[Nov 21 02:06:19 UTC] Unable to initialize OpenCL
+[Nov 22 12:14:29 UTC] Error obtaining number of platforms (clGetPlatformIDs/1)
+[Nov 22 12:14:29 UTC] Error code -1001, message: Unknown
+[Nov 22 12:14:29 UTC] Unable to initialize OpenCL
 No compatible devices found

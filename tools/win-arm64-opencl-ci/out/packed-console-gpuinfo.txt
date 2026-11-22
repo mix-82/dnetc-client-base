@@ -1,0 +1,15 @@
+
+distributed.net client for OpenCL on Win64 Copyright 1997-2026, distributed.net
+Please visit https://www.distributed.net/ for up-to-date contest information.
+Start the client with '-help' for a list of valid command line options.
+
+Setting log file to ../ci-out/packed-log-gpuinfo.txt
+
+dnetc v2.9116-525-CTR-88dcac3c for OpenCL on Win64 (WindowsNT 6.2).
+Please provide the *entire* version descriptor when submitting bug reports.
+The distributed.net bug report pages are at https://bugs.distributed.net/
+
+[Nov 22 12:15:09 UTC] Error obtaining number of platforms (clGetPlatformIDs/1)
+[Nov 22 12:15:09 UTC] Error code -1001, message: Unknown
+[Nov 22 12:15:09 UTC] Unable to initialize OpenCL
+No compatible devices found
