@@ -58,12 +58,13 @@ ocl_context_t *ocl_get_context(int device)
   return NULL;
 }
 
-// Test builds only (CI): define OCL_ALLOW_CPU_DEVICES to also accept
-// non-GPU devices such as PoCL's CPU driver. Release builds must not
-// define it.
+// Device types the client accepts. Test builds (CI) can define
+// OCL_ALLOW_CPU_DEVICES to also run on CPU devices such as PoCL.
+// Release builds must not define it.
 #ifdef OCL_ALLOW_CPU_DEVICES
-#undef  CL_DEVICE_TYPE_GPU
-#define CL_DEVICE_TYPE_GPU CL_DEVICE_TYPE_ALL
+#define CL_DEVICE_TYPE_WANTED CL_DEVICE_TYPE_ALL
+#else
+#define CL_DEVICE_TYPE_WANTED CL_DEVICE_TYPE_GPU
 #endif
 
 int InitializeOpenCL(void)
@@ -105,7 +106,7 @@ int InitializeOpenCL(void)
         {
           cl_uint devcnt;
 
-          status = clGetDeviceIDs(platforms[plat], CL_DEVICE_TYPE_GPU, 0, NULL, &devcnt);
+          status = clGetDeviceIDs(platforms[plat], CL_DEVICE_TYPE_WANTED, 0, NULL, &devcnt);
           if (status == CL_DEVICE_NOT_FOUND)  // Special case. No GPU devices but other may exist
           {
             status = CL_SUCCESS;
@@ -139,7 +140,7 @@ int InitializeOpenCL(void)
         if (offset >= devicesDetected)   /* Avoid call with bufferSize=0 for last platform without GPU devices */
           break;
 
-        status = clGetDeviceIDs(platforms[plat], CL_DEVICE_TYPE_GPU, devicesDetected - offset, devices + offset, &devcnt);
+        status = clGetDeviceIDs(platforms[plat], CL_DEVICE_TYPE_WANTED, devicesDetected - offset, devices + offset, &devcnt);
         if (status == CL_DEVICE_NOT_FOUND)  // Special case. No GPU devices but other may exist
         {
           status = CL_SUCCESS;
