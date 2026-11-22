@@ -1,4 +1,11 @@
 
-dnetc v2.9116-525-CTR-0b1790d2 for OpenCL on Win64 (WindowsNT 6.2).
+dnetc v2.9116-525-CTR-cf3405ab for OpenCL on Win64 (WindowsNT 6.2).
 
-[Nov 22 19:00:44 UTC] No OpenCL compatible devices found
+[Nov 22 19:07:34 UTC] RC5-72: using core #0 (CL ANSI 1-pipe).
+[Nov 22 19:07:36 UTC] RC5-72: 32/32 Tests Passed (1.366489 seconds)
+[Nov 22 19:07:36 UTC] RC5-72: using core #1 (CL 1-pipe).
+[Nov 22 19:07:37 UTC] RC5-72: 32/32 Tests Passed (1.183315 seconds)
+[Nov 22 19:07:37 UTC] RC5-72: using core #2 (CL 2-pipe).
+[Nov 22 19:07:38 UTC] RC5-72: 32/32 Tests Passed (1.208194 seconds)
+[Nov 22 19:07:38 UTC] RC5-72: using core #3 (CL 4-pipe).
+[Nov 22 19:07:39 UTC] RC5-72: 32/32 Tests Passed (1.124446 seconds)
