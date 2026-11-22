@@ -1,0 +1,30 @@
+name: Linux amd64 OpenCL CI
+
+on:
+  push:
+    branches: [ "ci-opencl-cpu-devices" ]
+
+jobs:
+  build:
+    timeout-minutes: 20
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install ocl-icd-opencl-dev pocl-opencl-icd
+    - name: configure
+      env:
+        SHELL: /bin/sh
+      run: ./configure linux-amd64-opencl
+    # The runner has no GPU, so the client is built to also accept CPU
+    # devices (test builds only) and run on PoCL's CPU driver.
+    - name: make
+      run: make CC="gcc -DOCL_ALLOW_CPU_DEVICES"
+    - name: gpuinfo
+      run: ./dnetc -gpuinfo
+    - name: test
+      run: ./dnetc -test
