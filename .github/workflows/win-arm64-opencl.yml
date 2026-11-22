@@ -218,7 +218,7 @@ jobs:
         type ci-out\pocl-register.txt
         rem the compiler reads extra options from the CL environment variable
         set CL=-DOCL_ALLOW_CPU_DEVICES
-        copy /b plat\opencl\ocl_setup.cpp +,, >nul
+        del output\ocl_setup.obj
         for /f "usebackq delims=" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath`) do set "VSDIR=%%i"
         call "%VSDIR%\VC\Auxiliary\Build\vcvarsall.bat" arm64 >nul
         nmake -nologo -f makefile.vc /K PROCESSOR_ARCHITECTURE=OPENCL_ARM64 OPENCLDIR=%RUNNER_TEMP%\ocl\ > ci-out\build-cpu-switch.log 2>&1
