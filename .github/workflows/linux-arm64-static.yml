@@ -1,0 +1,129 @@
+name: Linux arm64 static builds
+
+# Test branch only, not for merge. Does linux-arm64 build and run fully
+# static? glibc: built on the ARM runner. uClibc: cross-built with Bootlin's
+# toolchain, static and, as a control, dynamic. Every binary is described
+# with file and readelf and run with -test rc5-72 on the ARM runner, on the
+# host and in a busybox container that has no glibc. No work units are
+# fetched or returned.
+on:
+  push:
+    branches: [ci-linux-arm64-static]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  uclibc:
+    name: cross build with uClibc (x64 host)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v4
+    - name: Bootlin aarch64 uClibc toolchain
+      run: |
+        f=aarch64--uclibc--stable-2026.08-1
+        curl -sSL -o "$RUNNER_TEMP/tc.tar.xz" "https://toolchains.bootlin.com/downloads/releases/toolchains/aarch64/tarballs/$f.tar.xz"
+        echo "0ff5ef22c17463e9135eacddf95aa0b04e50d6328b848e488c739d0c7403da7c  $RUNNER_TEMP/tc.tar.xz" | sha256sum -c -
+        mkdir -p "$RUNNER_TEMP/tc"
+        tar -xf "$RUNNER_TEMP/tc.tar.xz" -C "$RUNNER_TEMP/tc" --strip-components=1
+        ls "$RUNNER_TEMP/tc/bin" | grep -E -- "-(g\+\+|gcc|strip)$"
+        echo "$RUNNER_TEMP/tc/bin" >> "$GITHUB_PATH"
+    - name: Build static and dynamic
+      env:
+        SHELL: /bin/sh
+      run: |
+        T=aarch64-buildroot-linux-uclibc
+        $T-g++ --version | head -1
+        mkdir -p "$RUNNER_TEMP/out"
+        build()
+        {
+          name=$1
+          shift
+          git clean -xfdq
+          ./configure linux-arm64 > cfg.log 2>&1 || { tail -20 cfg.log; exit 1; }
+          # the last step of the link rule runs the new binary (-genman),
+          # which cannot work in a cross build, so make's exit code is ignored
+          make -j4 CC=$T-g++ AS="$T-gcc -c" STRIP=$T-strip "$@" > "$RUNNER_TEMP/out/build-uclibc-$name.log" 2>&1 || true
+          [ -f dnetc ] || { tail -40 "$RUNNER_TEMP/out/build-uclibc-$name.log"; exit 1; }
+          cp dnetc "$RUNNER_TEMP/out/dnetc-uclibc-$name"
+          file dnetc
+          grep -E "LDFLAGS|-o dnetc" "$RUNNER_TEMP/out/build-uclibc-$name.log" | cut -c1-200 | tail -2
+        }
+        build static LDFLAGS=-static
+        build dynamic
+    - uses: actions/upload-artifact@v4
+      with:
+        name: uclibc
+        path: ${{ runner.temp }}/out/
+
+  run:
+    name: build with static glibc, run everything (ubuntu-24.04-arm)
+    needs: uclibc
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/download-artifact@v4
+      with:
+        name: uclibc
+        path: bin
+    - name: Build with glibc, dynamic (as shipped) and static
+      env:
+        SHELL: /bin/sh
+      run: |
+        ldd --version | head -1
+        g++ --version | head -1
+        build()
+        {
+          name=$1
+          shift
+          git clean -xfdq -e bin
+          ./configure linux-arm64 > cfg.log 2>&1 || { tail -20 cfg.log; exit 1; }
+          make -j4 "$@" > "bin/build-glibc-$name.log" 2>&1 || [ -x dnetc ] || { tail -40 "bin/build-glibc-$name.log"; exit 1; }
+          cp dnetc "bin/dnetc-glibc-$name"
+          echo "--- link warnings ($name)"
+          grep -E "warning: Using|statically linked" "bin/build-glibc-$name.log" | sort -u || true
+        }
+        build dynamic
+        build static LDFLAGS=-static
+    - name: Describe and run each binary
+      run: |
+        chmod +x bin/dnetc-*
+        status=0
+        : > bin/summary.txt
+        for b in glibc-dynamic glibc-static uclibc-static uclibc-dynamic
+        do
+          f=bin/dnetc-$b
+          echo "=================== $b"
+          file "$f"
+          echo "interpreter: $(readelf -l "$f" | grep -i 'interpreter' | sed 's/^ *//' || true)"
+          echo "needed: $(readelf -d "$f" 2>/dev/null | grep NEEDED | sed 's/.*\[//; s/\]//' | tr '\n' ' ')"
+          echo "--- on the host"
+          host=fail
+          if "$f" -test rc5-72 < /dev/null > "bin/test-host-$b.log" 2>&1
+          then
+            :
+          fi
+          n=$(tr '\r' '\n' < "bin/test-host-$b.log" | grep -c '32/32 Tests Passed' || true)
+          [ "$n" = 8 ] && host=ok
+          [ "$n" = 8 ] || head -3 "bin/test-host-$b.log"
+          echo "-test on the host: $n of 8 cores pass"
+          echo "--- in a busybox container (no glibc)"
+          box=fail
+          docker run --rm -v "$PWD/bin:/w" busybox "/w/dnetc-$b" -test rc5-72 < /dev/null > "bin/test-busybox-$b.log" 2>&1 || true
+          m=$(tr '\r' '\n' < "bin/test-busybox-$b.log" | grep -c '32/32 Tests Passed' || true)
+          [ "$m" = 8 ] && box=ok
+          [ "$m" = 8 ] || head -3 "bin/test-busybox-$b.log"
+          echo "-test in busybox: $m of 8 cores pass"
+          echo "$b: host $host ($n/8), busybox $box ($m/8), $(file -b "$f" | cut -d, -f1-5)" >> bin/summary.txt
+        done
+        echo "=================== summary"
+        cat bin/summary.txt
+        while read -r l; do echo "::notice title=static test::$l"; done < bin/summary.txt
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: results
+        path: bin/
