@@ -127,6 +127,54 @@ jobs:
         mkdir -p ci-out/as-committed
         cp dnetc.exe dnetc.com dnetc.scr ci-out/as-committed/
 
+    # The client as a release build makes it: UPX set, so the makefile packs
+    # dnetc.exe and dnetc.scr. Built in its own worktree.
+    - name: Get UPX 5.3.0 (x64 build, runs under emulation)
+      shell: pwsh
+      run: |
+        $v = "5.3.0"
+        $zip = "$env:RUNNER_TEMP\upx.zip"
+        Invoke-WebRequest -Uri "https://github.com/upx/upx/releases/download/v$v/upx-$v-win64.zip" -OutFile $zip
+        $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+        if ($hash -ne "d127996c76615e431be810e9c8d2910dbe3dd400600c5c0c50276fc5a17a9705") { throw "upx.zip sha256 mismatch: $hash" }
+        Expand-Archive $zip -DestinationPath $env:RUNNER_TEMP
+    - name: Build with UPX set (packed, as released)
+      shell: cmd
+      run: |
+        git worktree add -q ..\packed HEAD
+        if errorlevel 1 exit /b 1
+        cd ..\packed
+        for /f "usebackq delims=" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath`) do set "VSDIR=%%i"
+        call "%VSDIR%\VC\Auxiliary\Build\vcvarsall.bat" arm64 >nul
+        if errorlevel 1 exit /b 1
+        if not exist output mkdir output
+        rem upx.exe reads an environment variable UPX as its own options, so UPX
+        rem is defined inside a wrapper makefile (makefile macros are not exported).
+        echo UPX=%RUNNER_TEMP%\upx-5.3.0-win64> upxwrap.mak
+        echo !include makefile.vc>> upxwrap.mak
+        nmake -nologo -f upxwrap.mak /K PROCESSOR_ARCHITECTURE=OPENCL_ARM64 OPENCLDIR=%RUNNER_TEMP%\ocl\ > %GITHUB_WORKSPACE%\ci-out\build-packed.log 2>&1
+        set RC=%ERRORLEVEL%
+        findstr /i /c:"upx.exe" /c:" error " /c:"fatal" %GITHUB_WORKSPACE%\ci-out\build-packed.log
+        echo nmake exit code %RC%
+        if not "%RC%"=="0" exit /b %RC%
+        "%RUNNER_TEMP%\upx-5.3.0-win64\upx.exe" -t dnetc.exe dnetc.scr || exit /b 1
+        "%RUNNER_TEMP%\upx-5.3.0-win64\upx.exe" --fileinfo dnetc.exe dnetc.scr
+        mkdir %GITHUB_WORKSPACE%\ci-out\packed
+        for %%f in (dnetc.exe dnetc.com dnetc.scr) do copy /y %%f %GITHUB_WORKSPACE%\ci-out\packed\ >nul
+        dir %GITHUB_WORKSPACE%\ci-out\packed | findstr dnetc
+    - name: Start the packed client
+      shell: bash
+      run: |
+        mkdir -p run-packed
+        cp ci-out/packed/dnetc.exe run-packed/
+        cp "$(cygpath -u "$RUNNER_TEMP")/ocl/bin/OpenCL.dll" run-packed/
+        cd run-packed
+        rc=0
+        timeout 300 ./dnetc.exe -l ../ci-out/packed-log-gpuinfo.txt -gpuinfo > ../ci-out/packed-console-gpuinfo.txt 2>&1 || rc=$?
+        echo "exit code $rc"
+        tr '\r' '\n' < ../ci-out/packed-log-gpuinfo.txt
+        grep -a -q "dnetc v" ../ci-out/packed-log-gpuinfo.txt
+
     # Informational from here on. The runner has no OpenCL device, so PoCL's
     # CPU driver (MSYS2 CLANGARM64 package) is installed and the client is
     # rebuilt with its own debug switch that accepts a CPU device. This is
