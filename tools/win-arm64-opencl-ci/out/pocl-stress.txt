@@ -1,23 +1,4 @@
 
-dnetc v2.9116-525-CTR-88dcac3c* for OpenCL on Win64 (WindowsNT 6.2).
+dnetc v2.9116-525-CTR-0b1790d2 for OpenCL on Win64 (WindowsNT 6.2).
 
-[Nov 22 12:17:30 UTC] RC5-72: using core #0 (CL ANSI 1-pipe).
-[Nov 22 12:17:30 UTC] RC5-72: Stress-test 1 passed
-[Nov 22 12:17:31 UTC] RC5-72: Stress-test 2 passed
-[Nov 22 12:17:31 UTC] RC5-72: Stress-test 3 passed
-[Nov 22 12:18:57 UTC] RC5-72: Stress-test 4 passed
-[Nov 22 12:18:57 UTC] RC5-72: using core #1 (CL 1-pipe).
-[Nov 22 12:18:57 UTC] RC5-72: Stress-test 1 passed
-[Nov 22 12:18:57 UTC] RC5-72: Stress-test 2 passed
-[Nov 22 12:18:58 UTC] RC5-72: Stress-test 3 passed
-[Nov 22 12:19:29 UTC] RC5-72: Stress-test 4 passed
-[Nov 22 12:19:29 UTC] RC5-72: using core #2 (CL 2-pipe).
-[Nov 22 12:19:29 UTC] RC5-72: Stress-test 1 passed
-[Nov 22 12:19:30 UTC] RC5-72: Stress-test 2 passed
-[Nov 22 12:19:30 UTC] RC5-72: Stress-test 3 passed
-[Nov 22 12:20:25 UTC] RC5-72: Stress-test 4 passed
-[Nov 22 12:20:25 UTC] RC5-72: using core #3 (CL 4-pipe).
-[Nov 22 12:20:25 UTC] RC5-72: Stress-test 1 passed
-[Nov 22 12:20:26 UTC] RC5-72: Stress-test 2 passed
-[Nov 22 12:20:28 UTC] RC5-72: Stress-test 3 passed
-[Nov 22 12:20:55 UTC] RC5-72: Stress-test 4 passed
+[Nov 22 19:00:44 UTC] No OpenCL compatible devices found

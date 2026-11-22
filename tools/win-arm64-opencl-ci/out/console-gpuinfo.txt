@@ -5,11 +5,11 @@ Start the client with '-help' for a list of valid command line options.
 
 Setting log file to ../ci-out/log-gpuinfo.txt
 
-dnetc v2.9116-525-CTR-88dcac3c for OpenCL on Win64 (WindowsNT 6.2).
+dnetc v2.9116-525-CTR-0b1790d2 for OpenCL on Win64 (WindowsNT 6.2).
 Please provide the *entire* version descriptor when submitting bug reports.
 The distributed.net bug report pages are at https://bugs.distributed.net/
 
-[Nov 22 12:14:29 UTC] Error obtaining number of platforms (clGetPlatformIDs/1)
-[Nov 22 12:14:29 UTC] Error code -1001, message: Unknown
-[Nov 22 12:14:29 UTC] Unable to initialize OpenCL
+[Nov 22 18:58:30 UTC] Error obtaining number of platforms (clGetPlatformIDs/1)
+[Nov 22 18:58:30 UTC] Error code -1001, message: Unknown
+[Nov 22 18:58:30 UTC] Unable to initialize OpenCL
 No compatible devices found
