@@ -58,9 +58,13 @@ ocl_context_t *ocl_get_context(int device)
   return NULL;
 }
 
-// To debug on CPU...
-// #undef  CL_DEVICE_TYPE_GPU
-// #define CL_DEVICE_TYPE_GPU CL_DEVICE_TYPE_ALL
+// Test builds only (CI): define OCL_ALLOW_CPU_DEVICES to also accept
+// non-GPU devices such as PoCL's CPU driver. Release builds must not
+// define it.
+#ifdef OCL_ALLOW_CPU_DEVICES
+#undef  CL_DEVICE_TYPE_GPU
+#define CL_DEVICE_TYPE_GPU CL_DEVICE_TYPE_ALL
+#endif
 
 int InitializeOpenCL(void)
 {
