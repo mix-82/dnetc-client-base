@@ -35,7 +35,13 @@ static bool init_rc5_72_ocl_npipe(ocl_context_t *cont, unsigned core_ID, const c
     return false;
 
   //Create a command queue
+  cont->gpuProfiling = true;
   cont->cmdQueue = clCreateCommandQueue(cont->clcontext, cont->deviceID, CL_QUEUE_PROFILING_ENABLE, &status);
+  if (status == CL_INVALID_QUEUE_PROPERTIES) // no profiling on this device (Mesa rusticl on V3D)
+  {
+    cont->gpuProfiling = false;
+    cont->cmdQueue = clCreateCommandQueue(cont->clcontext, cont->deviceID, 0, &status);
+  }
   if (ocl_diagnose(status, "creating command queue", cont) != CL_SUCCESS)
     return false;
 
@@ -365,6 +371,13 @@ static s32 rc5_72_unit_func_ocl_npipe(RC5_72UnitWork *rc5_72unitwork, u32 *itera
     size_t globalWorkSize[1];
     globalWorkSize[0] = rest0;
 
+    cl_ulong startTime = 0;
+    cl_ulong endTime = 0;
+    cl_int   status_p1 = CL_PROFILING_INFO_NOT_AVAILABLE;
+    cl_int   status_p2 = CL_PROFILING_INFO_NOT_AVAILABLE;
+    if (!cont->gpuProfiling) // no profiling on the queue: time the kernel with the host clock
+      status_p1 = OCLGetHostProfilingInfo(CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &startTime, 0);
+
     cl_event ndrEvt;
     status = clEnqueueNDRangeKernel(cont->cmdQueue, cont->kernel, 1, NULL, globalWorkSize, NULL, 0, NULL, &ndrEvt);
     if (ocl_diagnose(status, "launching kernel", cont) != CL_SUCCESS)
@@ -382,11 +395,15 @@ static s32 rc5_72_unit_func_ocl_npipe(RC5_72UnitWork *rc5_72unitwork, u32 *itera
       return -1;          //err
     }
 
-    cl_ulong startTime;
-    cl_ulong endTime;
-    cl_int   status_p1, status_p2;
-    status_p1 = clGetEventProfilingInfo(ndrEvt, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &startTime, 0);
-    status_p2 = clGetEventProfilingInfo(ndrEvt, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &endTime, 0);
+    if (cont->gpuProfiling)
+    {
+      status_p1 = clGetEventProfilingInfo(ndrEvt, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &startTime, 0);
+      status_p2 = clGetEventProfilingInfo(ndrEvt, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &endTime, 0);
+    }
+    else
+    {
+      status_p2 = OCLGetHostProfilingInfo(CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &endTime, 0);
+    }
 
     // event must be released in any case
     status = clReleaseEvent(ndrEvt);

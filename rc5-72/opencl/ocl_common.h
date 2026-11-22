@@ -47,6 +47,7 @@ bool GetAppleComputeCapability(cl_device_id device, int &m_version);
 bool GetAMDRegisterHint(int gfx_hex, int &regs_2pipe, int &regs_4pipe);
 bool GetNVRegisterHint(int sm_version, int &regs_2pipe, int &regs_4pipe);
 cl_int OCLWaitForKernel(ocl_context_t *cont, cl_event evt, u32 workItems);
+cl_int OCLGetHostProfilingInfo(cl_profiling_info param_name, size_t param_value_size, void *param_value, size_t *param_value_size_ret);
 
 
 #endif //OCL_COMMON_H
