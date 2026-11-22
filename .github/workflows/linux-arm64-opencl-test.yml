@@ -34,12 +34,12 @@ jobs:
         ./dnetc -version
     - name: gpuinfo (branch as committed; CPU device is not listed)
       run: ./dnetc -gpuinfo
-    # Test only: the client's own debug switch, so it accepts PoCL's CPU device
-    - name: rebuild with the CPU debug switch
+    # Test only: the runner has no GPU, so the client is rebuilt with
+    # OCL_ALLOW_CPU_DEVICES to accept PoCL's CPU device
+    - name: rebuild with OCL_ALLOW_CPU_DEVICES
       run: |
-        sed -i 's|^// #undef  CL_DEVICE_TYPE_GPU|#undef  CL_DEVICE_TYPE_GPU|; s|^// #define CL_DEVICE_TYPE_GPU CL_DEVICE_TYPE_ALL|#define CL_DEVICE_TYPE_GPU CL_DEVICE_TYPE_ALL|' plat/opencl/ocl_setup.cpp
-        grep -n "CL_DEVICE_TYPE_GPU CL_DEVICE_TYPE_ALL" plat/opencl/ocl_setup.cpp
-        make
+        touch plat/opencl/ocl_setup.cpp
+        make CC="$(sed -n 's/^CC = //p' Makefile) -DOCL_ALLOW_CPU_DEVICES"
     - name: gpuinfo
       run: |
         ./dnetc -gpuinfo 2>&1 | tee gpuinfo.log
