@@ -11,6 +11,7 @@
 #include <time.h>
 #endif
 #include "ocl_common.h"
+#include "clitime.h"  // CliGetMonotonicClock()
 #include "base64.h"
 #include <stdlib.h>
 #include <string.h>
@@ -121,6 +122,29 @@ cl_int ocl_diagnose(cl_int result, const char *where, ocl_context_t *cont)
   }
 
   return result;
+}
+
+/* Host clock counterpart of clGetEventProfilingInfo(), for a command queue
+   created without CL_QUEUE_PROFILING_ENABLE. Returns the current host time in
+   nanoseconds: ask for CL_PROFILING_COMMAND_START before the command is
+   enqueued and for CL_PROFILING_COMMAND_END after it has completed. */
+cl_int OCLGetHostProfilingInfo(cl_profiling_info param_name, size_t param_value_size, void *param_value, size_t *param_value_size_ret)
+{
+  struct timeval tv;
+
+  if (param_name != CL_PROFILING_COMMAND_START && param_name != CL_PROFILING_COMMAND_END)
+    return CL_INVALID_VALUE;
+  if (param_value != NULL && param_value_size < sizeof(cl_ulong))
+    return CL_INVALID_VALUE;
+  if (CliGetMonotonicClock(&tv) != 0)
+    return CL_PROFILING_INFO_NOT_AVAILABLE;
+
+  if (param_value != NULL)
+    *(cl_ulong *)param_value = (cl_ulong)tv.tv_sec * 1000000000 + (cl_ulong)tv.tv_usec * 1000;
+  if (param_value_size_ret != NULL)
+    *param_value_size_ret = sizeof(cl_ulong);
+
+  return CL_SUCCESS;
 }
 
 static void OCLPreciseSleep(unsigned int usecs)

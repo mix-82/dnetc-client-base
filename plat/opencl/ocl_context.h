@@ -34,6 +34,7 @@ typedef struct {
   u32               runSizeMultiplier;
   u32               maxWorkSize;
   double            fullKernelTime;  // GPU time (ms) of the most recent full-size kernel, 0 = unknown
+  bool              gpuProfiling;    // queue has profiling: kernel times come from the GPU, else from the host clock
 } ocl_context_t;
 
 ocl_context_t *ocl_get_context(int device);
