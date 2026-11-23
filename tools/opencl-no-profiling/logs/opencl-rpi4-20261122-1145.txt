@@ -1,0 +1,157 @@
+# dnetc OpenCL rusticl/v3d results
+date: Sun 22 Nov 11:45:58 PST 2026
+host: rpi4
+model: Raspberry Pi 4 Model B Rev 1.1
+kernel: Linux rpi4 6.18.50+rpt-rpi-v8 #1 SMP PREEMPT Debian 1:6.18.50-1+rpt1 (2026-09-11) aarch64 GNU/Linux
+os: Debian GNU/Linux 13 (trixie)
+packages: mesa-opencl-icd 26.2.7-1~bpo13+0~rpt1  clinfo 3.0.25.02.14-1
+groups: uid=1000(skralg) gid=992(render) groups=992(render),4(adm),20(dialout),27(sudo),44(video),46(plugdev),100(users),102(netdev),986(gpio),988(i2c),989(spi),996(input),1000(skralg),1001(docs)
+RUSTICL_ENABLE=v3d
+
+==== before ====
+temp=76.4'C
+throttled=throttled=0x80000
+
+============================================================
+## dnetc -gpuinfo
+## command: ./dnetc -gpuinfo
+## start: Sun 22 Nov 11:45:58 PST 2026
+============================================================
+
+distributed.net client for OpenCL on Linux Copyright 1997-2026, distributed.net
+Please visit https://www.distributed.net/ for up-to-date contest information.
+Start the client with '-help' for a list of valid command line options.
+
+
+dnetc v2.9116-525-CTR for OpenCL on Linux (Linux 6.18.50+rpt-rpi-v8).
+Please provide the *entire* version descriptor when submitting bug reports.
+The distributed.net bug report pages are at https://bugs.distributed.net/
+
+=== Rusticl warning: Patched Mesa libclc not detected. Upstream libclc may contain known bugs or breaking changes and isn't guaranteed to work reliably. Please visit https://gitlab.freedesktop.org/karolherbst/mesa-libclc for more information. ===
+[Nov 22 19:45:59 UTC] size_t on device 0: 32 bits, host: 64
+Automatic processor identification tag: 0
+	name: V3D 4.2.14.0 
+Estimated processor clock speed (0 if unknown): 0 MHz
+Number of processors detected by this client: 1
+Number of processors supported by this client: 512
+
+Platform info:
+--------------
+                 Platform Name: rusticl
+               Platform Vendor: Mesa/X.org
+              Platform Version: OpenCL 3.1 
+           Platform Extensions: cl_khr_icd cl_khr_byte_addressable_store cl ...
+
+Device Info:
+--------------
+                          Type: GPU
+                          Name: V3D 4.2.14.0
+                 Max clockrate: 0
+             Max compute units: 1
+      Global memory cache size: 0
+      Global memory cache type: NONE
+      Unified memory subsystem: Yes
+                 Image support: No
+             Local memory size: 32768
+            Max workgroup size: 256
+     native vector width (int): 1
+   native vector width (float): 1
+              OpenCL C version: OpenCL C 1.2 
+  Device timer resolution (ns): 0
+                 Device vendor: Broadcom
+              Device vendor id: 0x14e4
+                Driver version: 26.2.7-1~bpo13+0~rpt1
+           Device address bits: 32 - NOT MATCHED -
+             Device extensions: cl_khr_byte_addressable_store cl_khr_create ...
+
+Compiler Info:
+--------------
+              Built-in defined: __clang__
+             Parameter defined: 
+
+## end: Sun 22 Nov 11:45:59 PST 2026
+## exit=0 elapsed=1s
+
+============================================================
+## dnetc -test
+## command: ./dnetc -test
+## start: Sun 22 Nov 11:45:59 PST 2026
+============================================================
+
+distributed.net client for OpenCL on Linux Copyright 1997-2026, distributed.net
+Please visit https://www.distributed.net/ for up-to-date contest information.
+Start the client with '-help' for a list of valid command line options.
+
+
+dnetc v2.9116-525-CTR for OpenCL on Linux (Linux 6.18.50+rpt-rpi-v8).
+Please provide the *entire* version descriptor when submitting bug reports.
+The distributed.net bug report pages are at https://bugs.distributed.net/
+
+=== Rusticl warning: Patched Mesa libclc not detected. Upstream libclc may contain known bugs or breaking changes and isn't guaranteed to work reliably. Please visit https://gitlab.freedesktop.org/karolherbst/mesa-libclc for more information. ===
+[Nov 22 19:45:59 UTC] size_t on device 0: 32 bits, host: 64
+[Nov 22 19:45:59 UTC] RC5-72: using core #0 (CL ANSI 1-pipe).
+[Nov 22 19:45:59 UTC] Error creating command queue on device 0
+[Nov 22 19:45:59 UTC] Error code -35, message: Invalid queue properties
+[Nov 22 19:45:59 UTC] RC5-72: Test 01 FAILED2: 00:00000000:00000000-C9:0C03 ...
+
+## end: Sun 22 Nov 11:45:59 PST 2026
+## exit=0 elapsed=0s
+
+============================================================
+## dnetc -stress (capped at 600s)
+## command: timeout --signal=INT --kill-after=15 600 ./dnetc -stress
+## start: Sun 22 Nov 11:45:59 PST 2026
+============================================================
+
+distributed.net client for OpenCL on Linux Copyright 1997-2026, distributed.net
+Please visit https://www.distributed.net/ for up-to-date contest information.
+Start the client with '-help' for a list of valid command line options.
+
+
+dnetc v2.9116-525-CTR for OpenCL on Linux (Linux 6.18.50+rpt-rpi-v8).
+Please provide the *entire* version descriptor when submitting bug reports.
+The distributed.net bug report pages are at https://bugs.distributed.net/
+
+=== Rusticl warning: Patched Mesa libclc not detected. Upstream libclc may contain known bugs or breaking changes and isn't guaranteed to work reliably. Please visit https://gitlab.freedesktop.org/karolherbst/mesa-libclc for more information. ===
+[Nov 22 19:45:59 UTC] size_t on device 0: 32 bits, host: 64
+[Nov 22 19:45:59 UTC] RC5-72: using core #0 (CL ANSI 1-pipe).
+[Nov 22 19:45:59 UTC] Error creating command queue on device 0
+[Nov 22 19:45:59 UTC] Error code -35, message: Invalid queue properties
+[Nov 22 19:45:59 UTC] RC5-72: *** break ***
+
+## end: Sun 22 Nov 11:45:59 PST 2026
+## exit=0 elapsed=0s
+
+============================================================
+## dnetc -bench (capped at 600s)
+## command: timeout --signal=INT --kill-after=15 600 ./dnetc -bench
+## start: Sun 22 Nov 11:45:59 PST 2026
+============================================================
+
+distributed.net client for OpenCL on Linux Copyright 1997-2026, distributed.net
+Please visit https://www.distributed.net/ for up-to-date contest information.
+Start the client with '-help' for a list of valid command line options.
+
+
+dnetc v2.9116-525-CTR for OpenCL on Linux (Linux 6.18.50+rpt-rpi-v8).
+Please provide the *entire* version descriptor when submitting bug reports.
+The distributed.net bug report pages are at https://bugs.distributed.net/
+
+=== Rusticl warning: Patched Mesa libclc not detected. Upstream libclc may contain known bugs or breaking changes and isn't guaranteed to work reliably. Please visit https://gitlab.freedesktop.org/karolherbst/mesa-libclc for more information. ===
+[Nov 22 19:45:59 UTC] size_t on device 0: 32 bits, host: 64
+[Nov 22 19:45:59 UTC] RC5-72: using core #0 (CL ANSI 1-pipe).
+[Nov 22 19:45:59 UTC] Error creating command queue on device 0
+[Nov 22 19:45:59 UTC] Error code -35, message: Invalid queue properties
+[Nov 22 19:45:59 UTC] Calibration failed!
+[Nov 22 19:45:59 UTC] Compare and share your rates in the speeds database at
+                      https://cgi.distributed.net/speed/
+                      (benchmark rates are for a single processor core)
+
+## end: Sun 22 Nov 11:45:59 PST 2026
+## exit=0 elapsed=0s
+
+==== after ====
+temp=76.9'C
+throttled=throttled=0x80000
+
+LOGFILE=/tmp/opencl-rpi4-20261122-1145.txt
