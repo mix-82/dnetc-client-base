@@ -371,8 +371,8 @@ static s32 rc5_72_unit_func_ocl_npipe(RC5_72UnitWork *rc5_72unitwork, u32 *itera
     size_t globalWorkSize[1];
     globalWorkSize[0] = rest0;
 
-    cl_ulong startTime;
-    cl_ulong endTime;
+    cl_ulong startTime = 0;
+    cl_ulong endTime = 0;
     cl_int   status_p1 = CL_PROFILING_INFO_NOT_AVAILABLE;
     cl_int   status_p2 = CL_PROFILING_INFO_NOT_AVAILABLE;
     if (!cont->gpuProfiling) // no profiling on the queue: time the kernel with the host clock
