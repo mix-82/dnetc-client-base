@@ -130,7 +130,7 @@ jobs:
             mkdir -p /tmp/icd-$v
             echo /kit/v3d-ror-kit/mesa-$v/libRusticlOpenCL.so.1 > /tmp/icd-$v/rusticl.icd
             LD_PRELOAD=$SHIM V3D_GPU_ID=$g OCL_ICD_VENDORS=/tmp/icd-$v RUSTICL_ENABLE=v3d V3D_DEBUG=cs \
-              MESA_SHADER_CACHE_DISABLE=true ROTCHECK_ONLY=var timeout 30 /kit/v3d-ror-kit/rotcheck > /tmp/shim-$g-$v.txt 2>&1 || true
+              MESA_SHADER_CACHE_DISABLE=true ROTCHECK_ONLY=var ROTCHECK_COMPILE_ONLY=1 timeout 60 /kit/v3d-ror-kit/rotcheck > /tmp/shim-$g-$v.txt 2>&1 || true
             n=$(grep -c ' ror ' /tmp/shim-$g-$v.txt || true)
             d=$(grep '^device:' /tmp/shim-$g-$v.txt | head -1)
             q=$(grep -c 'MESA: info: 0x' /tmp/shim-$g-$v.txt || true)
@@ -143,7 +143,7 @@ jobs:
         grep ' ror ' /tmp/shim-42-ror.txt | head -3 || true
         for v in stock ror; do
           f=/tmp/shim-42-$v.txt
-          echo "::notice title=diag NIR 42 $v::NIR dumps: $(grep -c 'NIR:' $f || true); urol: $(grep -c ' urol ' $f || true); uror: $(grep -c ' uror ' $f || true); ishl: $(grep -c ' ishl ' $f || true); ushr: $(grep -c ' ushr ' $f || true); first lines: $(head -3 $f | tr '\n' '|' | cut -c1-300)"
+          echo "::notice title=diag NIR 42 $v::NIR dumps: $(grep -c 'NIR:' $f || true); urol: $(grep -c ' urol ' $f || true); uror: $(grep -c ' uror ' $f || true); ishl: $(grep -c ' ishl ' $f || true); ushr: $(grep -c ' ushr ' $f || true); program output: $(grep -v -E '^MESA|^===|^ *[0-9]+:|^$|^thread|^note|^stack|^ +at ' $f | head -12 | tr '\n' '|' | cut -c1-500); errors: $(grep -E 'MESA: error|panicked' $f | head -3 | tr '\n' '|' | cut -c1-300)"
         done
         echo "::notice title=diag source::$(grep -n 'has_rotate32' $MESA_SRC/src/gallium/drivers/v3d/v3d_screen.c $MESA_SRC/src/broadcom/vulkan/v3dv_pipeline.c | tr '\n' ' '); urol cases in nir_to_vir.c: $(grep -c 'nir_op_urol' $MESA_SRC/src/broadcom/compiler/nir_to_vir.c); nir_options users: $(grep -n 'nir_options\|get_compiler_options' $MESA_SRC/src/gallium/drivers/v3d/*.c | cut -c1-160 | tr '\n' ' ' | cut -c1-700)"
         echo "::notice title=diag patches::$(ls $MESA_SRC/debian/patches | tr '\n' ' ' | cut -c1-800)"

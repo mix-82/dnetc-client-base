@@ -16,6 +16,9 @@
  *   ROTCHECK_ONLY=var        run only the three variable-amount kernels
  *   ROTCHECK_CONTROL=1       compare against a deliberately wrong reference
  *                            (the check must then report mismatches)
+ *   ROTCHECK_COMPILE_ONLY=1  only make the driver compile the variable-amount
+ *                            kernels (for drivers that cannot execute, such
+ *                            as Mesa's drm-shim); no results are checked
  * Exit: 0 all match, 1 mismatches, 2 OpenCL error, 3 wrong device.
  */
 #define CL_TARGET_OPENCL_VERSION 120
@@ -24,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <unistd.h>
 
 #define NX 256
 #define NS 256
@@ -70,6 +74,7 @@ int main(void)
   cl_platform_id plat; cl_device_id dev; cl_int err;
 
   control = getenv("ROTCHECK_CONTROL") != NULL;
+  setvbuf(stdout, NULL, _IOLBF, 0);
 
   /* inputs */
   n = 0;
@@ -93,7 +98,7 @@ int main(void)
   ADD("__kernel void var_l(__global const uint *in, __global uint *out) { HEAD out[i] = rotate(x, s); }\n");
   ADD("__kernel void var_r(__global const uint *in, __global uint *out) { HEAD out[i] = (x >> s) | (x << (32u - s)); }\n");
   ADD("__kernel void var_c(__global const uint *in, __global uint *out) { HEAD out[i] = (x << s) | (x >> (32u - s)); }\n");
-  for (i = 1; i < 32; i++) {
+  for (i = 1; i < 32 && !(only && !strcmp(only, "var")); i++) {
     ADD("__kernel void cl_%d(__global const uint *in, __global uint *out) { HEAD out[i] = rotate(x, %du) + (s & 0u); }\n", i, i);
     ADD("__kernel void cr_%d(__global const uint *in, __global uint *out) { HEAD out[i] = ((x >> %du) | (x << %du)) + (s & 0u); }\n", i, i, 32 - i);
   }
@@ -123,6 +128,21 @@ int main(void)
     printf("OPENCL ERROR %d building the kernels:\n%s\n", (int)err, log);
     return 2;
   }
+  if (getenv("ROTCHECK_COMPILE_ONLY")) {
+    const char *names[3] = { "var_l", "var_r", "var_c" };
+    cl_mem sb = clCreateBuffer(ctx, CL_MEM_READ_WRITE, 256, NULL, &err); CHK(err);
+    size_t g = 16;
+    for (i = 0; i < 3; i++) {
+      cl_kernel kern = clCreateKernel(prog, names[i], &err); CHK(err);
+      CHK(clSetKernelArg(kern, 0, sizeof(sb), &sb));
+      CHK(clSetKernelArg(kern, 1, sizeof(sb), &sb));
+      CHK(clEnqueueNDRangeKernel(q, kern, 1, NULL, &g, NULL, 0, NULL, NULL));
+    }
+    clFlush(q);
+    sleep(5);
+    printf("compile-only: kernels were handed to the driver\n");
+    _exit(0);
+  }
   cl_mem ib = clCreateBuffer(ctx, CL_MEM_READ_ONLY, sizeof(in), NULL, &err); CHK(err);
   cl_mem ob = clCreateBuffer(ctx, CL_MEM_READ_WRITE, sizeof(out), NULL, &err); CHK(err);
   CHK(clEnqueueWriteBuffer(q, ib, CL_TRUE, 0, sizeof(in), in, 0, NULL, NULL));
@@ -139,6 +159,7 @@ int main(void)
       snprintf(kn, sizeof(kn), kind ? "cr_%d" : "cl_%d", c);
     }
     cl_kernel kern = clCreateKernel(prog, kn, &err); CHK(err);
+    if (getenv("ROTCHECK_VERBOSE")) printf("running %s\n", kn);
     CHK(clSetKernelArg(kern, 0, sizeof(ib), &ib));
     CHK(clSetKernelArg(kern, 1, sizeof(ob), &ob));
     memset(out, 0x5A, sizeof(out));
