@@ -71,7 +71,7 @@ jobs:
         fi
         meson setup /build -Dbuildtype=release -Db_ndebug=true \
           -Dgallium-drivers=v3d,llvmpipe -Dvulkan-drivers= -Dgallium-rusticl=true -Dllvm=enabled \
-          -Dplatforms= -Dglx=disabled -Degl=disabled -Dgbm=disabled -Dvideo-codecs= -Dtools= \
+          -Dplatforms= -Dglx=disabled -Degl=disabled -Dgbm=disabled -Dvideo-codecs= -Dtools=drm-shim \
           > /tmp/setup.log 2>&1 || { tail -40 /tmp/setup.log; echo "::error title=meson setup::$(grep -i 'error' /tmp/setup.log | tail -3 | tr '\n' ' ')"; exit 1; }
         tail -30 /tmp/setup.log
         ninja -C /build > /tmp/build-stock.log 2>&1 || { tail -60 /tmp/build-stock.log; echo "::error title=build stock::$(grep -i -m3 'error' /tmp/build-stock.log | tr '\n' ' ' | cut -c1-800)"; exit 1; }
@@ -120,6 +120,28 @@ jobs:
         sha256sum v3d-ror-kit.tar.xz | tee v3d-ror-kit.tar.xz.sha256
         echo "::notice title=kit::v3d-ror-kit.tar.xz $(stat -c %s v3d-ror-kit.tar.xz) bytes sha256=$(cut -d' ' -f1 v3d-ror-kit.tar.xz.sha256)"
         echo "::notice title=libraries::stock $(stat -c %s $K/mesa-stock/libRusticlOpenCL.so.1) bytes, ror $(stat -c %s $K/mesa-ror/libRusticlOpenCL.so.1) bytes; needs: $(ldd $K/mesa-ror/libRusticlOpenCL.so.1 | awk '{print $1}' | grep -v -E 'linux-vdso|ld-linux' | tr '\n' ' ')"
+    - name: Faked Pi 4 and Pi 5 GPUs - only the patched library may emit ror
+      run: |
+        SHIM=/build/src/broadcom/drm-shim/libv3d_noop_drm_shim.so
+        ls -la $SHIM
+        ok=1
+        for g in 42 71; do
+          for v in stock ror; do
+            mkdir -p /tmp/icd-$v
+            echo /kit/v3d-ror-kit/mesa-$v/libRusticlOpenCL.so.1 > /tmp/icd-$v/rusticl.icd
+            LD_PRELOAD=$SHIM V3D_GPU_ID=$g OCL_ICD_VENDORS=/tmp/icd-$v RUSTICL_ENABLE=v3d V3D_DEBUG=cs \
+              MESA_SHADER_CACHE_DISABLE=true ROTCHECK_ONLY=var timeout 30 /kit/v3d-ror-kit/rotcheck > /tmp/shim-$g-$v.txt 2>&1 || true
+            n=$(grep -c ' ror ' /tmp/shim-$g-$v.txt || true)
+            d=$(grep '^device:' /tmp/shim-$g-$v.txt | head -1)
+            q=$(grep -c 'MESA: info: 0x' /tmp/shim-$g-$v.txt || true)
+            echo "::notice title=faked V3D $g, mesa-$v::$d; QPU lines dumped: $q; lines with ror: $n"
+            if [ $v = stock ] && [ "$n" != 0 ]; then ok=0; fi
+            if [ $v = ror ] && [ "$n" = 0 ]; then ok=0; fi
+            if [ "$q" = 0 ]; then ok=0; fi
+          done
+        done
+        grep ' ror ' /tmp/shim-42-ror.txt | head -3
+        [ $ok = 1 ] || { echo "::error title=faked V3D::unexpected ror counts"; exit 1; }
     - uses: actions/upload-artifact@v4
       with:
         name: v3d-ror-kit
