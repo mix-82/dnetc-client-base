@@ -23,7 +23,16 @@ jobs:
     - name: Raspberry Pi OS package source
       run: |
         set -e
-        curl -fsSL https://archive.raspberrypi.com/debian/raspberrypi.gpg.key | gpg --dearmor -o /usr/share/keyrings/raspberrypi.gpg
+        # The key at raspberrypi.gpg.key is rejected by trixie's apt (SHA1 binding), so take
+        # the keyring package Raspberry Pi OS itself installs, over HTTPS from the same archive.
+        B=https://archive.raspberrypi.com/debian
+        (curl -fsSL $B/dists/trixie/main/binary-arm64/Packages.gz | gunzip > /tmp/Packages) || (curl -fsSL $B/dists/trixie/main/binary-arm64/Packages.xz | xz -d > /tmp/Packages)
+        F=$(awk '/^Package: raspberrypi-archive-keyring$/{p=1} p&&/^Filename:/{print $2; exit}' /tmp/Packages)
+        curl -fsSL -o /tmp/keyring.deb "$B/$F"
+        dpkg -i /tmp/keyring.deb
+        KR=$(dpkg -L raspberrypi-archive-keyring | grep -E '/usr/share/keyrings/.*\.(pgp|gpg)$' | head -1)
+        echo "::notice title=keyring::$F -> $(dpkg -L raspberrypi-archive-keyring | grep -v -E '/doc/|^/\.$|^/usr$|^/usr/share$|^/etc$' | tr '\n' ' ' | cut -c1-600)"
+        ln -sf "$KR" /usr/share/keyrings/raspberrypi.gpg
         echo "deb [signed-by=/usr/share/keyrings/raspberrypi.gpg] http://archive.raspberrypi.com/debian/ trixie main" > /etc/apt/sources.list.d/raspi.list
         ls -la /usr/share/keyrings/raspberrypi.gpg /etc/apt/sources.list.d/
         apt-get update -q > /tmp/upd1.log 2>&1 || { cat /tmp/upd1.log; echo "::error title=apt update (deb)::$(grep -E '^(E|W|Err)' /tmp/upd1.log | head -6 | tr '\n' ' ' | cut -c1-900)"; exit 1; }
@@ -130,7 +139,16 @@ jobs:
         set -e
         apt-get update -q
         apt-get install -y -q ca-certificates curl gnupg xz-utils
-        curl -fsSL https://archive.raspberrypi.com/debian/raspberrypi.gpg.key | gpg --dearmor -o /usr/share/keyrings/raspberrypi.gpg
+        # The key at raspberrypi.gpg.key is rejected by trixie's apt (SHA1 binding), so take
+        # the keyring package Raspberry Pi OS itself installs, over HTTPS from the same archive.
+        B=https://archive.raspberrypi.com/debian
+        (curl -fsSL $B/dists/trixie/main/binary-arm64/Packages.gz | gunzip > /tmp/Packages) || (curl -fsSL $B/dists/trixie/main/binary-arm64/Packages.xz | xz -d > /tmp/Packages)
+        F=$(awk '/^Package: raspberrypi-archive-keyring$/{p=1} p&&/^Filename:/{print $2; exit}' /tmp/Packages)
+        curl -fsSL -o /tmp/keyring.deb "$B/$F"
+        dpkg -i /tmp/keyring.deb
+        KR=$(dpkg -L raspberrypi-archive-keyring | grep -E '/usr/share/keyrings/.*\.(pgp|gpg)$' | head -1)
+        echo "::notice title=keyring::$F -> $(dpkg -L raspberrypi-archive-keyring | grep -v -E '/doc/|^/\.$|^/usr$|^/usr/share$|^/etc$' | tr '\n' ' ' | cut -c1-600)"
+        ln -sf "$KR" /usr/share/keyrings/raspberrypi.gpg
         echo "deb [signed-by=/usr/share/keyrings/raspberrypi.gpg] http://archive.raspberrypi.com/debian/ trixie main" > /etc/apt/sources.list.d/raspi.list
         apt-get update -q
         apt-get install -y -q mesa-opencl-icd clinfo
