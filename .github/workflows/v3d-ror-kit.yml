@@ -25,9 +25,11 @@ jobs:
         set -e
         curl -fsSL https://archive.raspberrypi.com/debian/raspberrypi.gpg.key | gpg --dearmor -o /usr/share/keyrings/raspberrypi.gpg
         echo "deb [signed-by=/usr/share/keyrings/raspberrypi.gpg] http://archive.raspberrypi.com/debian/ trixie main" > /etc/apt/sources.list.d/raspi.list
+        ls -la /usr/share/keyrings/raspberrypi.gpg /etc/apt/sources.list.d/
+        apt-get update -q > /tmp/upd1.log 2>&1 || { cat /tmp/upd1.log; echo "::error title=apt update (deb)::$(grep -E '^(E|W|Err)' /tmp/upd1.log | head -6 | tr '\n' ' ' | cut -c1-900)"; exit 1; }
         echo "deb-src [signed-by=/usr/share/keyrings/raspberrypi.gpg] http://archive.raspberrypi.com/debian/ trixie main" >> /etc/apt/sources.list.d/raspi.list
         sed -i 's/^Types: deb$/Types: deb deb-src/' /etc/apt/sources.list.d/debian.sources
-        apt-get update -q
+        apt-get update -q > /tmp/upd2.log 2>&1 || { cat /tmp/upd2.log; echo "::error title=apt update (deb-src)::$(grep -E '^(E|W|Err)' /tmp/upd2.log | head -6 | tr '\n' ' ' | cut -c1-900)"; exit 1; }
         echo "::notice title=binary package::$(apt-cache policy mesa-opencl-icd | sed -n '1,3p' | tr '\n' ' ')"
         echo "::notice title=source versions::$(apt-cache showsrc mesa 2>/dev/null | grep '^Version' | sort -u | tr '\n' ' ')"
     - name: Get the Mesa source
