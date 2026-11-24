@@ -1,0 +1,157 @@
+name: V3D ror test kit (test only, not for a PR)
+
+on:
+  push:
+    branches: [ "ci-v3d-ror-kit" ]
+  workflow_dispatch:
+
+env:
+  DEBIAN_FRONTEND: noninteractive
+  MESA_PKG_VERSION: "26.2.7-1~bpo13+0~rpt1"
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    container: debian:trixie
+    timeout-minutes: 120
+    steps:
+    - name: Base tools
+      run: |
+        apt-get update -q
+        apt-get install -y -q ca-certificates curl gnupg git xz-utils python3 dpkg-dev file
+    - uses: actions/checkout@v4
+    - name: Raspberry Pi OS package source
+      run: |
+        set -e
+        curl -fsSL https://archive.raspberrypi.com/debian/raspberrypi.gpg.key | gpg --dearmor -o /usr/share/keyrings/raspberrypi.gpg
+        echo "deb [signed-by=/usr/share/keyrings/raspberrypi.gpg] http://archive.raspberrypi.com/debian/ trixie main" > /etc/apt/sources.list.d/raspi.list
+        echo "deb-src [signed-by=/usr/share/keyrings/raspberrypi.gpg] http://archive.raspberrypi.com/debian/ trixie main" >> /etc/apt/sources.list.d/raspi.list
+        sed -i 's/^Types: deb$/Types: deb deb-src/' /etc/apt/sources.list.d/debian.sources
+        apt-get update -q
+        echo "::notice title=binary package::$(apt-cache policy mesa-opencl-icd | sed -n '1,3p' | tr '\n' ' ')"
+        echo "::notice title=source versions::$(apt-cache showsrc mesa 2>/dev/null | grep '^Version' | sort -u | tr '\n' ' ')"
+    - name: Get the Mesa source
+      run: |
+        set -e
+        mkdir /src && cd /src
+        if apt-get source -q "mesa=$MESA_PKG_VERSION"; then
+          echo "::notice title=mesa source::$MESA_PKG_VERSION (Raspberry Pi OS source package, patches applied)"
+        else
+          echo "::error title=mesa source::could not get mesa=$MESA_PKG_VERSION"
+          exit 1
+        fi
+        ls -d /src/mesa-*/
+        echo "MESA_SRC=$(ls -d /src/mesa-*/ | head -1)" >> $GITHUB_ENV
+        ls /src/mesa-*/debian/patches 2>/dev/null | head -40
+    - name: Build dependencies
+      run: |
+        set -e
+        cd "$MESA_SRC"
+        apt-get build-dep -y -q . > /tmp/builddep.log 2>&1 || { tail -30 /tmp/builddep.log; echo "::error title=build-dep::$(tail -3 /tmp/builddep.log | tr '\n' ' ')"; exit 1; }
+        apt-get install -y -q ocl-icd-opencl-dev opencl-c-headers clinfo
+        echo "::notice title=toolchain::$(gcc --version | head -1); $(rustc --version); meson $(meson --version); $(llvm-config --version 2>/dev/null || ls /usr/bin/llvm-config-* | tr '\n' ' ')"
+    - name: Build stock Mesa (OpenCL library only)
+      run: |
+        cd "$MESA_SRC"
+        grep -n -i "rusticl\|cargo\|MESON_PACKAGE_CACHE_DIR\|wrap" debian/rules | head -20 || true
+        if [ -f debian/get-wraps-from-cargo-registry.py ]; then
+          python3 debian/get-wraps-from-cargo-registry.py --cargo-registry /usr/share/cargo/registry || true
+          export MESON_PACKAGE_CACHE_DIR=/usr/share/cargo/registry/
+        fi
+        meson setup /build -Dbuildtype=release -Db_ndebug=true \
+          -Dgallium-drivers=v3d,llvmpipe -Dvulkan-drivers= -Dgallium-rusticl=true -Dllvm=enabled \
+          -Dplatforms= -Dglx=disabled -Degl=disabled -Dgbm=disabled -Dvideo-codecs= -Dtools= \
+          > /tmp/setup.log 2>&1 || { tail -40 /tmp/setup.log; echo "::error title=meson setup::$(grep -i 'error' /tmp/setup.log | tail -3 | tr '\n' ' ')"; exit 1; }
+        tail -30 /tmp/setup.log
+        ninja -C /build > /tmp/build-stock.log 2>&1 || { tail -60 /tmp/build-stock.log; echo "::error title=build stock::$(grep -i -m3 'error' /tmp/build-stock.log | tr '\n' ' ' | cut -c1-800)"; exit 1; }
+        tail -3 /tmp/build-stock.log
+        mkdir -p /kit/v3d-ror-kit/mesa-stock
+        cp /build/src/gallium/targets/rusticl/libRusticlOpenCL.so.1.0.0 /kit/v3d-ror-kit/mesa-stock/libRusticlOpenCL.so.1
+    - name: Apply the ror change and rebuild
+      run: |
+        cd "$MESA_SRC"
+        python3 "$GITHUB_WORKSPACE/tools/v3d-ror-kit/apply-ror.py" . > /tmp/apply.log 2>&1 || { cat /tmp/apply.log; echo "::error title=apply-ror::$(tail -2 /tmp/apply.log | tr '\n' ' ')"; exit 1; }
+        cat /tmp/apply.log
+        for f in src/broadcom/compiler/nir_to_vir.c src/gallium/drivers/v3d/v3d_screen.c src/broadcom/vulkan/v3dv_pipeline.c; do
+          diff -u --label "a/$f" --label "b/$f" "$f.orig" "$f" || true
+        done > /kit/v3d-ror-kit/v3d-ror.diff
+        rm -f src/broadcom/compiler/nir_to_vir.c.orig src/gallium/drivers/v3d/v3d_screen.c.orig src/broadcom/vulkan/v3dv_pipeline.c.orig
+        cat /kit/v3d-ror-kit/v3d-ror.diff
+        ninja -C /build > /tmp/build-ror.log 2>&1 || { tail -60 /tmp/build-ror.log; echo "::error title=build ror::$(grep -i -m3 'error' /tmp/build-ror.log | tr '\n' ' ' | cut -c1-800)"; exit 1; }
+        tail -3 /tmp/build-ror.log
+        mkdir -p /kit/v3d-ror-kit/mesa-ror
+        cp /build/src/gallium/targets/rusticl/libRusticlOpenCL.so.1.0.0 /kit/v3d-ror-kit/mesa-ror/libRusticlOpenCL.so.1
+        if cmp -s /kit/v3d-ror-kit/mesa-stock/libRusticlOpenCL.so.1 /kit/v3d-ror-kit/mesa-ror/libRusticlOpenCL.so.1; then
+          echo "::error title=libraries::stock and patched libraries are identical"; exit 1
+        fi
+        strip --strip-unneeded /kit/v3d-ror-kit/mesa-stock/libRusticlOpenCL.so.1 /kit/v3d-ror-kit/mesa-ror/libRusticlOpenCL.so.1
+        echo "::notice title=patch::applied to $(basename "$MESA_SRC"): $(grep -c '^+[^+]' /kit/v3d-ror-kit/v3d-ror.diff) lines added; warnings in the rebuild: $(grep -c 'warning:' /tmp/build-ror.log)"
+    - name: Assemble the kit
+      run: |
+        set -e
+        K=/kit/v3d-ror-kit
+        T="$GITHUB_WORKSPACE/tools/v3d-ror-kit"
+        gcc -O2 -Wall -o $K/rotcheck $T/rotcheck.c -lOpenCL
+        cp $T/rotcheck.c $T/run.sh $T/README.txt $K/
+        chmod +x $K/run.sh $K/rotcheck
+        {
+          echo "v3d-ror-kit, built $(date -u +%Y-%m-%dT%H:%MZ) from mix-82/dnetc-client-base $GITHUB_SHA (branch ci-v3d-ror-kit)"
+          echo "Mesa source: Raspberry Pi OS source package mesa $MESA_PKG_VERSION"
+          echo "Build: meson release, gallium drivers v3d+llvmpipe, rusticl; container debian:trixie arm64 on $(uname -m)"
+          echo "Toolchain: $(gcc --version | head -1); $(rustc --version)"
+          echo "mesa-stock: unchanged source. mesa-ror: the same source plus v3d-ror.diff."
+        } > $K/BUILD-INFO.txt
+        cd $K
+        find . -type f ! -name SHA256SUMS | sort | xargs sha256sum > SHA256SUMS
+        cat SHA256SUMS
+        cd /kit
+        tar -cJf v3d-ror-kit.tar.xz v3d-ror-kit
+        sha256sum v3d-ror-kit.tar.xz | tee v3d-ror-kit.tar.xz.sha256
+        echo "::notice title=kit::v3d-ror-kit.tar.xz $(stat -c %s v3d-ror-kit.tar.xz) bytes sha256=$(cut -d' ' -f1 v3d-ror-kit.tar.xz.sha256)"
+        echo "::notice title=libraries::stock $(stat -c %s $K/mesa-stock/libRusticlOpenCL.so.1) bytes, ror $(stat -c %s $K/mesa-ror/libRusticlOpenCL.so.1) bytes; needs: $(ldd $K/mesa-ror/libRusticlOpenCL.so.1 | awk '{print $1}' | grep -v -E 'linux-vdso|ld-linux' | tr '\n' ' ')"
+    - uses: actions/upload-artifact@v4
+      with:
+        name: v3d-ror-kit
+        path: |
+          /kit/v3d-ror-kit.tar.xz
+          /kit/v3d-ror-kit.tar.xz.sha256
+        if-no-files-found: error
+
+  dry-run:
+    needs: build
+    runs-on: ubuntu-24.04-arm
+    container: debian:trixie
+    timeout-minutes: 30
+    steps:
+    - name: A plain Raspberry Pi OS userland with only the OpenCL packages
+      run: |
+        set -e
+        apt-get update -q
+        apt-get install -y -q ca-certificates curl gnupg xz-utils
+        curl -fsSL https://archive.raspberrypi.com/debian/raspberrypi.gpg.key | gpg --dearmor -o /usr/share/keyrings/raspberrypi.gpg
+        echo "deb [signed-by=/usr/share/keyrings/raspberrypi.gpg] http://archive.raspberrypi.com/debian/ trixie main" > /etc/apt/sources.list.d/raspi.list
+        apt-get update -q
+        apt-get install -y -q mesa-opencl-icd clinfo
+        echo "::notice title=dry-run system::mesa-opencl-icd $(dpkg-query -W -f='${Version}' mesa-opencl-icd)"
+    - uses: actions/checkout@v4
+    - uses: actions/download-artifact@v4
+      with:
+        name: v3d-ror-kit
+        path: /dl
+    - name: Dry run of the exact kit archive on Mesa's CPU driver
+      run: |
+        cd /dl
+        sha256sum -c v3d-ror-kit.tar.xz.sha256
+        mkdir /t && cd /t && tar -xJf /dl/v3d-ror-kit.tar.xz
+        cd v3d-ror-kit
+        rc=0
+        ./run.sh "$GITHUB_WORKSPACE/tools/v3d-ror-kit/stub-dnetc.sh" --dry-run || rc=$?
+        S=$(ls -d results-*/ | head -1)summary.txt
+        for k in "kit libraries" "missing" "^system:" "^stock:" "^ror:" "library selection" "control" "STOP" "RESULT"; do
+          grep -E "$k" "$S" | head -3 | cut -c1-300 | while read -r l; do echo "::notice title=dry-run::$l"; done
+        done
+        cat results-*/rotcheck-ror.txt | head -20
+        grep -q "library selection: OK" "$S" || { echo "::error title=dry-run::kit libraries were not loaded"; exit 1; }
+        grep -q "^ror: exit 0; ROTCHECK PASSED" "$S" || { echo "::error title=dry-run::rotate check did not pass on the patched library"; exit 1; }
+        grep -q "^stock: exit 0; ROTCHECK PASSED" "$S" || { echo "::error title=dry-run::rotate check did not pass on the stock library"; exit 1; }
+        exit $rc
