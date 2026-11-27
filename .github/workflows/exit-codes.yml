@@ -119,46 +119,48 @@ jobs:
       matrix:
         include:
           - label: linux-ppc
-            packages: g++-powerpc-linux-gnu
-            cc: powerpc-linux-gnu-g++
-            as: powerpc-linux-gnu-gcc -c
+            triplet: powerpc-linux-gnu
             ldflags: -static
           - label: linux-ppc64
-            packages: g++-powerpc64-linux-gnu
-            cc: powerpc64-linux-gnu-g++
-            as: powerpc64-linux-gnu-gcc -c
+            triplet: powerpc64-linux-gnu
             ldflags: -static
           - label: linux-arm-eabi
-            packages: g++-arm-linux-gnueabihf
-            cc: arm-linux-gnueabihf-gcc
-            as: arm-linux-gnueabihf-gcc -c
+            triplet: arm-linux-gnueabi
             ldflags: -static
           - label: linux-s390x
-            packages: g++-s390x-linux-gnu
-            cc: s390x-linux-gnu-gcc
-            as: s390x-linux-gnu-gcc -c
+            triplet: s390x-linux-gnu
             ldflags: -static
           - label: linux-mips64
-            packages: g++-mips64-linux-gnuabi64
-            cc: mips64-linux-gnuabi64-gcc
-            as: mips64-linux-gnuabi64-gcc -c
+            triplet: mips64el-linux-gnuabi64
             ldflags: -mabi=64 -static
     steps:
     - uses: actions/checkout@v4
     - name: Install the cross compiler and QEMU
       run: |
         sudo apt-get update
-        sudo apt-get install -y ${{ matrix.packages }} file
+        sudo apt-get install -y g++-${{ matrix.triplet }} file
         # the package was renamed in newer Ubuntu releases
         sudo apt-get install -y qemu-user-static || sudo apt-get install -y qemu-user qemu-user-binfmt
         sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+    - name: Offer the cross tools under the names configure and the Makefile use
+      run: |
+        mkdir -p "$HOME/crossbin"
+        for t in gcc g++ strip ar as ld
+        do
+          ln -s /usr/bin/${{ matrix.triplet }}-$t "$HOME/crossbin/$t"
+        done
+        echo "$HOME/crossbin" >> "$GITHUB_PATH"
+        # lets QEMU run a dynamically linked test program if configure builds one
+        echo "QEMU_LD_PREFIX=/usr/${{ matrix.triplet }}" >> "$GITHUB_ENV"
     - name: configure
       env:
         SHELL: /bin/sh
-      run: ./configure ${{ matrix.label }}
+      run: |
+        gcc -v 2>&1 | tail -1
+        ./configure ${{ matrix.label }}
     - name: make
       run: |
-        make -j4 CC="${{ matrix.cc }}" AS="${{ matrix.as }}" LDFLAGS="${{ matrix.ldflags }}"
+        make -j4 LDFLAGS="${{ matrix.ldflags }}"
         file dnetc
     - name: Exit code tests
       run: |
