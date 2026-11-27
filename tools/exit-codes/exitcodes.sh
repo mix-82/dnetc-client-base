@@ -31,6 +31,12 @@
 #                 its first 200 lines (keeps CI artifacts small)
 #   KILLALL="..." extra command run after a hung case has been stopped, e.g.
 #                 "taskkill //F //IM dnetc.exe" on Windows
+#   COMPANION=f   a second file copied beside the client in every case, under
+#                 its own name (Windows: dnetc.exe when the client under test
+#                 is the console wrapper dnetc.com)
+#   CMDCODE=1     Windows: start the client through cmd.exe (cmdcode.cmd) and
+#                 record the exit code cmd.exe sees. The code this shell sees
+#                 goes into a fifth column.
 #   CAP=300       seconds after which a case that has not finished is stopped
 #                 and recorded as "hung"
 #
@@ -61,11 +67,22 @@ NAME=dnetc$EXE
 mkdir -p "$OUT" || exit 2
 OUT=$(cd "$OUT" && pwd)
 BIN=$(cd "$(dirname "$BIN")" && pwd)/$(basename "$BIN")
+TOOLS=$(cd "$(dirname "$0")" && pwd)
+if [ -n "$COMPANION" ]
+then
+  [ -f "$COMPANION" ] || { echo "no such file: $COMPANION"; exit 2; }
+  COMPANION=$(cd "$(dirname "$COMPANION")" && pwd)/$(basename "$COMPANION")
+fi
 WORK=$OUT/work-$LABEL
 RES=$OUT/$LABEL.tsv
 rm -rf "$WORK"
 mkdir -p "$WORK" || exit 2
-printf 'case\texpected\texit\tlast line of output\n' > "$RES"
+if [ "$CMDCODE" = 1 ]
+then
+  printf 'case\texpected\texit\tlast line of output\texit seen by sh\n' > "$RES"
+else
+  printf 'case\texpected\texit\tlast line of output\n' > "$RES"
+fi
 
 n=0
 
@@ -76,6 +93,14 @@ newdir()
   D=$WORK/$(printf '%02d' $n)
   mkdir -p "$D"
   cp "$BIN" "$D/$NAME"
+  if [ -n "$COMPANION" ]
+  then
+    cp "$COMPANION" "$D/"
+  fi
+  if [ "$CMDCODE" = 1 ]
+  then
+    cp "$TOOLS/cmdcode.cmd" "$D/"
+  fi
   cd "$D" || exit 2
   printf '[parameters]\nid=exitcode-test@example.invalid\n' > dnetc.ini
 }
@@ -90,15 +115,33 @@ record()
     rm -f out.txt
     : > out.txt
   fi
-  printf '%s\t%s\t%s\t%s\n' "$1" "$2" "$3" "$last" >> "$RES"
-  printf '%-44s expected %-9s got %-4s %s\n' "$1" "$2" "$3" "$last"
+  if [ "$CMDCODE" = 1 ]
+  then
+    # the code cmd.exe saw, if the case got that far
+    shown=$3
+    if [ "$3" != hung ] && [ -s code.txt ]
+    then
+      shown=$(tr -d '\r\n ' < code.txt)
+    fi
+    printf '%s\t%s\t%s\t%s\t%s\n' "$1" "$2" "$shown" "$last" "$3" >> "$RES"
+    printf '%-44s expected %-9s got %-4s (sh: %s) %s\n' "$1" "$2" "$shown" "$3" "$last"
+  else
+    printf '%s\t%s\t%s\t%s\n' "$1" "$2" "$3" "$last" >> "$RES"
+    printf '%-44s expected %-9s got %-4s %s\n' "$1" "$2" "$3" "$last"
+  fi
 }
 
 # start <client options...>: start the client in the background, output to out.txt.
 # Sets pid. Input comes from the file named by STDIN (default: none).
 start()
 {
-  ( ulimit -f 40000 2>/dev/null; exec $WRAP ./$NAME "$@" > out.txt 2>&1 < "${STDIN:-/dev/null}" ) &
+  if [ "$CMDCODE" = 1 ]
+  then
+    rm -f code.txt
+    ( exec cmd //c cmdcode.cmd $NAME "$@" > out.txt 2>&1 < "${STDIN:-/dev/null}" ) &
+  else
+    ( ulimit -f 40000 2>/dev/null; exec $WRAP ./$NAME "$@" > out.txt 2>&1 < "${STDIN:-/dev/null}" ) &
+  fi
   pid=$!
 }
 

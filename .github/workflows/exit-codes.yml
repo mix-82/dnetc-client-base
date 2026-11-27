@@ -232,7 +232,7 @@ jobs:
   windows:
     name: ${{ matrix.label }}
     runs-on: windows-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -277,9 +277,13 @@ jobs:
     - name: Exit code tests
       shell: bash
       run: |
-        EXE=.exe STOP=shutdown SKIPCONFIG=1 SLOW=1 PACKET=1 OTHERS=1 TRIM=1 CAP=120 \
-          KILLALL="taskkill //F //IM dnetc.exe" \
-          sh tools/exit-codes/exitcodes.sh ./dnetc.exe ${{ matrix.label }} ci-out
+        # the client is started the way a user at the command prompt starts it:
+        # through the console wrapper dnetc.com, from cmd.exe, whose view of
+        # the exit code is the one recorded
+        EXE=.com COMPANION=./dnetc.exe CMDCODE=1 \
+          STOP=shutdown SKIPCONFIG=1 SLOW=1 PACKET=1 OTHERS=1 TRIM=1 CAP=120 \
+          KILLALL="taskkill //F //IM dnetc.exe //IM dnetc.com" \
+          sh tools/exit-codes/exitcodes.sh ./dnetc.com ${{ matrix.label }}-com ci-out
     - name: Results
       if: always()
       shell: bash
