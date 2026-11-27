@@ -112,7 +112,7 @@ jobs:
   # ------------------------------------------- Linux targets under QEMU user mode
   cross:
     name: ${{ matrix.label }} (QEMU)
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 40
     strategy:
       fail-fast: false
@@ -120,18 +120,24 @@ jobs:
         include:
           - label: linux-ppc
             triplet: powerpc-linux-gnu
+            runner: ubuntu-latest
             ldflags: -static
           - label: linux-ppc64
             triplet: powerpc64-linux-gnu
+            runner: ubuntu-latest
             ldflags: -static
           - label: linux-arm-eabi
             triplet: arm-linux-gnueabi
+            runner: ubuntu-latest
             ldflags: -static
           - label: linux-s390x
             triplet: s390x-linux-gnu
+            runner: ubuntu-latest
             ldflags: -static
           - label: linux-mips64
             triplet: mips64el-linux-gnuabi64
+            # apt on ubuntu-latest (26.04) cannot find this cross compiler
+            runner: ubuntu-24.04
             ldflags: -mabi=64 -static
     steps:
     - uses: actions/checkout@v4
@@ -152,6 +158,14 @@ jobs:
         echo "$HOME/crossbin" >> "$GITHUB_PATH"
         # lets QEMU run a dynamically linked test program if configure builds one
         echo "QEMU_LD_PREFIX=/usr/${{ matrix.triplet }}" >> "$GITHUB_ENV"
+    - name: Work around a compile error in the PowerPC-only battery check
+      if: matrix.label == 'linux-ppc'
+      run: |
+        # common/triggers.cpp:556 compares a FILE pointer with "> 0", which
+        # current g++ rejects. Changed in this checkout only, to get a client
+        # to test.
+        sed -i '556s/fd > 0/fd != 0/' common/triggers.cpp
+        sed -n '556p' common/triggers.cpp
     - name: configure
       env:
         SHELL: /bin/sh
