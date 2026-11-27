@@ -1,0 +1,327 @@
+name: Exit code tests (EXPERIMENT, not for merge)
+
+# Builds the client for several targets and runs tools/exit-codes/exitcodes.sh
+# on each one. The script records the exit code of a fixed list of cases.
+# Only -cpuinfo/-gpuinfo, -test, -benchmark2 and offline runs are used;
+# nothing is fetched from or sent to distributed.net.
+
+on:
+  push:
+    branches: [ "ci-exit-codes" ]
+
+env:
+  ISPC_VERSION: "1.32.0"
+
+jobs:
+  # ------------------------------------------------------------------ Linux
+  linux:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: linux-amd64
+            runner: ubuntu-latest
+            packages: yasm
+            ispc: yes
+            configure: ./configure linux-amd64
+            make: make -j4
+            info: -cpuinfo
+            packet: 1
+            broken: yes
+          - label: linux-x86
+            runner: ubuntu-latest
+            packages: yasm nasm gcc-multilib g++-multilib
+            configure: setarch i686 ./configure linux-x86
+            make: make -j4 LDFLAGS=-m32
+            info: -cpuinfo
+            packet: 1
+          - label: linux-arm64
+            runner: ubuntu-24.04-arm
+            packages: file
+            configure: ./configure linux-arm64
+            make: make -j4
+            info: -cpuinfo
+            packet: 1
+          - label: linux-amd64-opencl-no-device
+            runner: ubuntu-latest
+            packages: ocl-icd-opencl-dev pocl-opencl-icd
+            configure: ./configure linux-amd64-opencl
+            make: make -j4
+            info: -gpuinfo
+          - label: linux-amd64-opencl-pocl
+            runner: ubuntu-latest
+            packages: ocl-icd-opencl-dev pocl-opencl-icd
+            configure: ./configure linux-amd64-opencl
+            make: make -j4
+            info: -gpuinfo
+            shim: yes
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ${{ matrix.packages }}
+        # let the script put each client start in an empty network namespace
+        sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+        unshare -rn true && echo "network namespaces available"
+    - name: Install ispc
+      if: matrix.ispc == 'yes'
+      working-directory: /tmp
+      run: |
+        wget -q https://github.com/ispc/ispc/releases/download/v${ISPC_VERSION}/ispc-v${ISPC_VERSION}-linux.tar.gz
+        tar xzf ispc-v${ISPC_VERSION}-linux.tar.gz
+        sudo install ispc-v${ISPC_VERSION}-linux/bin/ispc /usr/bin/
+    - name: configure
+      env:
+        SHELL: /bin/sh
+      run: ${{ matrix.configure }}
+    - name: make
+      run: |
+        ${{ matrix.make }}
+        file dnetc
+    - name: Build the OpenCL shim (offers PoCL's CPU device to the unmodified client)
+      if: matrix.shim == 'yes'
+      run: gcc -shared -fPIC -O1 -o tools/exit-codes/oclshim.so tools/exit-codes/oclshim.c -ldl
+    - name: Exit code tests
+      run: |
+        if [ "${{ matrix.shim }}" = yes ]
+        then
+          export WRAP="unshare -rn env LD_PRELOAD=$PWD/tools/exit-codes/oclshim.so OCLSHIM_ALLTYPES=1"
+        fi
+        SLOW=1 PACKET=${{ matrix.packet }} OTHERS=1 TRIM=1 INFO=${{ matrix.info }} \
+          sh tools/exit-codes/exitcodes.sh ./dnetc ${{ matrix.label }} ci-out
+    - name: Same tests with one test vector changed
+      if: matrix.broken == 'yes'
+      run: |
+        sed -i '28s/0x562D285A/0x562D285B/' common/selftest.cpp
+        git diff --stat
+        ${{ matrix.make }}
+        TRIM=1 INFO=${{ matrix.info }} sh tools/exit-codes/exitcodes.sh ./dnetc ${{ matrix.label }}-broken-vector ci-out
+    - name: Results
+      if: always()
+      run: cat ci-out/*.tsv
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: exit-codes-${{ matrix.label }}
+        path: ci-out
+
+  # ------------------------------------------- Linux targets under QEMU user mode
+  cross:
+    name: ${{ matrix.label }} (QEMU)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: linux-ppc
+            packages: g++-powerpc-linux-gnu
+            cc: powerpc-linux-gnu-g++
+            as: powerpc-linux-gnu-gcc -c
+            ldflags: -static
+          - label: linux-ppc64
+            packages: g++-powerpc64-linux-gnu
+            cc: powerpc64-linux-gnu-g++
+            as: powerpc64-linux-gnu-gcc -c
+            ldflags: -static
+          - label: linux-arm-eabi
+            packages: g++-arm-linux-gnueabihf
+            cc: arm-linux-gnueabihf-gcc
+            as: arm-linux-gnueabihf-gcc -c
+            ldflags: -static
+          - label: linux-s390x
+            packages: g++-s390x-linux-gnu
+            cc: s390x-linux-gnu-gcc
+            as: s390x-linux-gnu-gcc -c
+            ldflags: -static
+          - label: linux-mips64
+            packages: g++-mips64-linux-gnuabi64
+            cc: mips64-linux-gnuabi64-gcc
+            as: mips64-linux-gnuabi64-gcc -c
+            ldflags: -mabi=64 -static
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install the cross compiler and QEMU
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ${{ matrix.packages }} qemu-user-static file
+        sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+    - name: configure
+      env:
+        SHELL: /bin/sh
+      run: ./configure ${{ matrix.label }}
+    - name: make
+      run: |
+        make -j4 CC="${{ matrix.cc }}" AS="${{ matrix.as }}" LDFLAGS="${{ matrix.ldflags }}"
+        file dnetc
+    - name: Exit code tests
+      run: |
+        ./dnetc -cpuinfo | head -20
+        SLOW=1 OTHERS=1 TRIM=1 sh tools/exit-codes/exitcodes.sh ./dnetc ${{ matrix.label }}-qemu ci-out
+    - name: Results
+      if: always()
+      run: cat ci-out/*.tsv
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: exit-codes-${{ matrix.label }}-qemu
+        path: ci-out
+
+  # ------------------------------------------------------------------ macOS
+  macos:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: macosx-amd64
+            runner: macos-15-intel
+            packages: yasm
+          - label: macosx-arm64
+            runner: macos-15
+            packages: ""
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies
+      if: matrix.packages != ''
+      run: brew install ${{ matrix.packages }}
+    - name: configure
+      env:
+        SHELL: /bin/sh
+      run: ./configure ${{ matrix.label }}
+    - name: make
+      run: |
+        make -j4
+        file dnetc
+    - name: Exit code tests
+      run: SLOW=1 PACKET=1 OTHERS=1 TRIM=1 sh tools/exit-codes/exitcodes.sh ./dnetc ${{ matrix.label }} ci-out
+    - name: Results
+      if: always()
+      run: cat ci-out/*.tsv
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: exit-codes-${{ matrix.label }}
+        path: ci-out
+
+  # ---------------------------------------------------------------- Windows
+  windows:
+    name: ${{ matrix.label }}
+    runs-on: windows-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: win64-amd64
+            arch: AMD64
+            vcvars: x64
+          - label: win32-x86
+            arch: x86
+            vcvars: x86
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install YASM and NASM
+      shell: pwsh
+      run: |
+        choco install yasm nasm -y --no-progress
+        # makefile.vc on master calls nasmw for one AMD64 file
+        Copy-Item "C:\Program Files\NASM\nasm.exe" "C:\Program Files\NASM\nasmw.exe"
+        "C:\Program Files\NASM" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+    - name: Install ISPC
+      shell: pwsh
+      run: |
+        $zip = "$env:RUNNER_TEMP\ispc.zip"
+        Invoke-WebRequest -Uri "https://github.com/ispc/ispc/releases/download/v$env:ISPC_VERSION/ispc-v$env:ISPC_VERSION-windows.zip" -OutFile $zip
+        $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+        if ($hash -ne "148d5cd96abe7501c730d5fbd00f1f0c893b96bfeada38d1811c9b6251e86a5c") { throw "ispc.zip sha256 mismatch: $hash" }
+        Expand-Archive $zip -DestinationPath $env:RUNNER_TEMP
+        "$env:RUNNER_TEMP\ispc-v$env:ISPC_VERSION-windows\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+    - name: Build
+      shell: cmd
+      run: |
+        for /f "usebackq delims=" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath`) do set "VSDIR=%%i"
+        call "%VSDIR%\VC\Auxiliary\Build\vcvarsall.bat" ${{ matrix.vcvars }} || exit /b 1
+        set "PATH=C:\ProgramData\chocolatey\bin;%PATH%"
+        if not exist output mkdir output
+        nmake -nologo -f makefile.vc PROCESSOR_ARCHITECTURE=${{ matrix.arch }} > build.log 2>&1
+        set RC=%ERRORLEVEL%
+        type build.log
+        echo nmake exit code %RC%
+        if not exist dnetc.exe exit /b 1
+        dir dnetc.exe dnetc.com
+    - name: Exit code tests
+      shell: bash
+      run: |
+        EXE=.exe STOP=shutdown SKIPCONFIG=1 SLOW=1 PACKET=1 OTHERS=1 TRIM=1 \
+          sh tools/exit-codes/exitcodes.sh ./dnetc.exe ${{ matrix.label }} ci-out
+    - name: Results
+      if: always()
+      shell: bash
+      run: cat ci-out/*.tsv
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: exit-codes-${{ matrix.label }}
+        path: ci-out
+
+  # ------------------------------------------------------- BSDs in a QEMU VM
+  bsd:
+    name: ${{ matrix.label }} (VM)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: freebsd-amd64
+            os: freebsd
+            version: '14.3'
+            setup: sudo pkg install -y gmake yasm
+            make: gmake -j4 CC=c++ AS="cc -c"
+          - label: netbsd-amd64
+            os: netbsd
+            version: '10.1'
+            setup: sudo pkgin -y install gmake yasm
+            make: gmake -j4
+          - label: openbsd-amd64
+            os: openbsd
+            version: '7.7'
+            setup: sudo pkg_add -I gmake yasm
+            make: gmake -j4 CC=c++
+    steps:
+    - uses: actions/checkout@v4
+    - name: Start VM
+      # cross-platform-actions/action v1.8.0
+      uses: cross-platform-actions/action@30cde56b87a128507bebea9531205087890ee360
+      with:
+        operating_system: ${{ matrix.os }}
+        architecture: x86-64
+        version: ${{ matrix.version }}
+        memory: 4G
+        cpu_count: 4
+    - name: Build
+      shell: cpa.sh {0}
+      run: |
+        uname -a
+        ${{ matrix.setup }}
+        SHELL=/bin/sh ./configure ${{ matrix.label }}
+        ${{ matrix.make }}
+        ls -l dnetc
+    - name: Exit code tests
+      shell: cpa.sh {0}
+      run: |
+        SLOW=1 OTHERS=1 TRIM=1 sh tools/exit-codes/exitcodes.sh ./dnetc ${{ matrix.label }} ci-out
+        cat ci-out/*.tsv
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: exit-codes-${{ matrix.label }}
+        path: ci-out
