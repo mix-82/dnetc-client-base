@@ -102,7 +102,7 @@ jobs:
         TRIM=1 INFO=${{ matrix.info }} sh tools/exit-codes/exitcodes.sh ./dnetc ${{ matrix.label }}-broken-vector ci-out
     - name: Results
       if: always()
-      run: cat ci-out/*.tsv
+      run: cat ci-out/*.tsv || true
     - uses: actions/upload-artifact@v4
       if: always()
       with:
@@ -148,7 +148,9 @@ jobs:
     - name: Install the cross compiler and QEMU
       run: |
         sudo apt-get update
-        sudo apt-get install -y ${{ matrix.packages }} qemu-user-static file
+        sudo apt-get install -y ${{ matrix.packages }} file
+        # the package was renamed in newer Ubuntu releases
+        sudo apt-get install -y qemu-user-static || sudo apt-get install -y qemu-user qemu-user-binfmt
         sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
     - name: configure
       env:
@@ -164,7 +166,7 @@ jobs:
         SLOW=1 OTHERS=1 TRIM=1 sh tools/exit-codes/exitcodes.sh ./dnetc ${{ matrix.label }}-qemu ci-out
     - name: Results
       if: always()
-      run: cat ci-out/*.tsv
+      run: cat ci-out/*.tsv || true
     - uses: actions/upload-artifact@v4
       if: always()
       with:
@@ -182,7 +184,7 @@ jobs:
         include:
           - label: macosx-amd64
             runner: macos-15-intel
-            packages: yasm
+            packages: yasm ispc
           - label: macosx-arm64
             runner: macos-15
             packages: ""
@@ -203,7 +205,7 @@ jobs:
       run: SLOW=1 PACKET=1 OTHERS=1 TRIM=1 sh tools/exit-codes/exitcodes.sh ./dnetc ${{ matrix.label }} ci-out
     - name: Results
       if: always()
-      run: cat ci-out/*.tsv
+      run: cat ci-out/*.tsv || true
     - uses: actions/upload-artifact@v4
       if: always()
       with:
@@ -259,12 +261,13 @@ jobs:
     - name: Exit code tests
       shell: bash
       run: |
-        EXE=.exe STOP=shutdown SKIPCONFIG=1 SLOW=1 PACKET=1 OTHERS=1 TRIM=1 \
+        EXE=.exe STOP=shutdown SKIPCONFIG=1 SLOW=1 PACKET=1 OTHERS=1 TRIM=1 CAP=120 \
+          KILLALL="taskkill //F //IM dnetc.exe" \
           sh tools/exit-codes/exitcodes.sh ./dnetc.exe ${{ matrix.label }} ci-out
     - name: Results
       if: always()
       shell: bash
-      run: cat ci-out/*.tsv
+      run: cat ci-out/*.tsv || true
     - uses: actions/upload-artifact@v4
       if: always()
       with:
@@ -284,20 +287,28 @@ jobs:
           - label: freebsd-amd64
             os: freebsd
             version: '14.3'
-            setup: sudo pkg install -y gmake yasm
-            make: gmake -j4 CC=c++ AS="cc -c"
+            setup: sudo pkg install -y gmake yasm gcc
           - label: netbsd-amd64
             os: netbsd
             version: '10.1'
             setup: sudo pkgin -y install gmake yasm
-            make: gmake -j4
           - label: openbsd-amd64
             os: openbsd
             version: '7.7'
-            setup: sudo pkg_add -I gmake yasm
-            make: gmake -j4 CC=c++
+            # configure asks "gcc" for its version and builds with eg++
+            setup: sudo pkg_add -I gmake yasm gcc%11 g++%11 && sudo ln -sf /usr/local/bin/egcc /usr/local/bin/gcc
     steps:
     - uses: actions/checkout@v4
+    - name: Build the ISPC object on the host (there is no ispc for these systems)
+      run: |
+        cd /tmp
+        wget -q https://github.com/ispc/ispc/releases/download/v${ISPC_VERSION}/ispc-v${ISPC_VERSION}-linux.tar.gz
+        tar xzf ispc-v${ISPC_VERSION}-linux.tar.gz
+        cd "$GITHUB_WORKSPACE"
+        /tmp/ispc-v${ISPC_VERSION}-linux/bin/ispc --pic --wno-perf --target=avx512skx-x16 --target-os=freebsd \
+          rc5-72/ispc/r72-ks-spmd-ispc.ispc -o ci-ispc-prebuilt.o
+        printf '#!/bin/sh\n# stands in for ispc inside the VM: copy the object built on the host\nwhile [ $# -gt 0 ]; do [ "$1" = "-o" ] && out=$2; shift; done\ncp ci-ispc-prebuilt.o "$out"\n' > ci-ispc.sh
+        cat ci-ispc.sh
     - name: Start VM
       # cross-platform-actions/action v1.8.0
       uses: cross-platform-actions/action@30cde56b87a128507bebea9531205087890ee360
@@ -313,7 +324,7 @@ jobs:
         uname -a
         ${{ matrix.setup }}
         SHELL=/bin/sh ./configure ${{ matrix.label }}
-        ${{ matrix.make }}
+        gmake -j4 ISPC="sh ./ci-ispc.sh"
         ls -l dnetc
     - name: Exit code tests
       shell: cpa.sh {0}

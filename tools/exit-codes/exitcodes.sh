@@ -29,6 +29,8 @@
 #                 "ulimit -f" cannot cap its endless output, e.g. Windows)
 #   TRIM=1        after each case, cut an output file larger than 1 MB down to
 #                 its first 200 lines (keeps CI artifacts small)
+#   KILLALL="..." extra command run after a hung case has been stopped, e.g.
+#                 "taskkill //F //IM dnetc.exe" on Windows
 #   CAP=300       seconds after which a case that has not finished is stopped
 #                 and recorded as "hung"
 #
@@ -110,6 +112,10 @@ finish()
     if [ $t -ge $1 ]
     then
       kill $pid 2>/dev/null
+      if [ -n "$KILLALL" ]
+      then
+        $KILLALL > /dev/null 2>&1
+      fi
       wait $pid 2>/dev/null
       rc=hung
       return
@@ -138,7 +144,16 @@ stop_client()
 {
   if [ "$STOP" = shutdown ]
   then
-    $WRAP ./$NAME -shutdown > stop.txt 2>&1 < /dev/null
+    # the request itself gets 30 seconds
+    ( exec $WRAP ./$NAME -shutdown > stop.txt 2>&1 < /dev/null ) &
+    sp=$!
+    w=0
+    while kill -0 $sp 2>/dev/null && [ $w -lt 30 ]
+    do
+      sleep 1
+      w=$((w + 1))
+    done
+    kill $sp 2>/dev/null
   else
     kill -$2 $1
   fi
