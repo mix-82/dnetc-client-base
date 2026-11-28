@@ -83,6 +83,10 @@
   #define SERVICEFOR  "OpenCL-client"
   const char *NTSERVICEIDS[]={"dnetc-OpenCL"/*Aug12*/};
   const char *W9xSERVICEKEY = "";
+  #elif (CLIENT_CPU == CPU_VULKAN)
+  #define SERVICEFOR  "Vulkan-client"
+  const char *NTSERVICEIDS[]={"dnetc-Vulkan"};
+  const char *W9xSERVICEKEY = "";
   #else
   #define SERVICEFOR  "client"
   const char *NTSERVICEIDS[]={"dnetc"/*oct99*/,"rc5desnt"/*Oct98*/,"bovrc5nt"/*ancient*/};

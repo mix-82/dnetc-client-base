@@ -109,6 +109,8 @@
   #define CLIENT_OS_NAME   "Win64"
   #if defined(OPENCL)
     #define CLIENT_CPU     CPU_OPENCL
+  #elif defined(VULKAN)
+    #define CLIENT_CPU     CPU_VULKAN
   #elif defined(_M_AMD64)
     #define CLIENT_CPU     CPU_AMD64
   #elif defined(_M_IA64)

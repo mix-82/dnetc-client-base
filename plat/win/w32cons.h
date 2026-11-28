@@ -22,6 +22,9 @@
 #elif (CLIENT_CPU == CPU_OPENCL)
 #define W32CLI_MUTEX_NAME       "Bovine RC5/DES Win32-OpenCL Client"
 #define W32CLI_CONSOLE_NAME     "distributed.net OpenCL client"
+#elif (CLIENT_CPU == CPU_VULKAN)
+#define W32CLI_MUTEX_NAME       "Bovine RC5/DES Win32-Vulkan Client"
+#define W32CLI_CONSOLE_NAME     "distributed.net Vulkan client"
 #else
 #define W32CLI_MUTEX_NAME       "Bovine RC5/DES Win32 Client"
 #define W32CLI_CONSOLE_NAME     "distributed.net client"

@@ -7,6 +7,7 @@
 #PROCESSOR_ARCHITECTURE = ATI_STREAM
 #PROCESSOR_ARCHITECTURE = OPENCL32
 #PROCESSOR_ARCHITECTURE = OPENCL64
+#PROCESSOR_ARCHITECTURE = VULKAN64
 #PROCESSOR_ARCHITECTURE = arm
 
 BASENAME = dnetc
@@ -74,6 +75,12 @@ OPTS_CC_CPU =
 OPTS_M_PLAT = AMD64
 CHIPSRCPATH = plat
 ZIPSUFFIX = win64-amd64-opencl
+!elseif "$(PROCESSOR_ARCHITECTURE)" == "VULKAN64"
+HAVE_OGR_CORES = 0
+OPTS_CC_CPU =
+OPTS_M_PLAT = AMD64
+CHIPSRCPATH = plat
+ZIPSUFFIX = win64-amd64-vulkan
 !elseif "$(PROCESSOR_ARCHITECTURE)" == "arm"
 HAVE_OGR_CORES = 0
 OPTS_CC_CPU = /D_ARM_WINAPI_PARTITION_DESKTOP_SDK_AVAILABLE=1
@@ -236,6 +243,16 @@ ZIPEXTRAS = $(ZIPEXTRAS) docs\readme.opencl
 OPTS_MSVC = $(OPTS_MSVC) -I"$(OPENCLDIR)include" -Iplat\opencl -Iplat\amd64
 OPTS_LIBS = $(OPTS_LIBS) "$(OPENCLDIR)lib\x86_64\opencl.lib"
 ZIPEXTRAS = $(ZIPEXTRAS) docs\readme.opencl
+!endif
+
+# --------------------------------------------
+
+# Vulkan support (VULKANDIR = Vulkan SDK directory, with trailing backslash)
+
+!if "$(PROCESSOR_ARCHITECTURE)" == "VULKAN64"
+OPTS_MSVC = $(OPTS_MSVC) -I"$(VULKANDIR)Include" -Iplat\vulkan
+OPTS_LIBS = $(OPTS_LIBS) "$(VULKANDIR)Lib\vulkan-1.lib"
+ZIPEXTRAS = $(ZIPEXTRAS) docs\readme.vulkan
 !endif
 
 # --------------------------------------------
@@ -446,6 +463,15 @@ RC5_72_OBJS =                      \
         $(OUTPUTPATH)/ocl_1pipe.obj
 
 OPTS_MSVC = $(OPTS_MSVC) -DHAVE_RC5_72_CORES -DOPENCL -DDYN_TIMESLICE
+!elseif "$(PROCESSOR_ARCHITECTURE)" == "VULKAN64"
+RC5_72_OBJS =                      \
+        $(OUTPUTPATH)/vk_info.obj \
+        $(OUTPUTPATH)/vk_setup.obj \
+        $(OUTPUTPATH)/vk_compute.obj \
+        $(OUTPUTPATH)/vk_common.obj \
+        $(OUTPUTPATH)/vk_rc572.obj
+
+OPTS_MSVC = $(OPTS_MSVC) -DHAVE_RC5_72_CORES -DVULKAN -DDYN_TIMESLICE
 !elseif "$(PROCESSOR_ARCHITECTURE)" == "arm"
 RC5_72_OBJS =                        \
         $(OUTPUTPATH)/r72arm1-winrt.obj \
@@ -664,6 +690,14 @@ $(VC_CHECK):
         cl -c $(OPTS_MSVC) -Ox -Fo$(OUTPUTPATH)\ $<
 
 {$(RC572SRCPATH)/opencl}.cpp{$(OUTPUTPATH)}.obj::
+        cl -c -O2 $(OPTS_MSVC) -Fo$(OUTPUTPATH)\ $<
+
+!elseif "$(PROCESSOR_ARCHITECTURE)" == "VULKAN64"
+
+{$(CHIPSRCPATH)/vulkan}.cpp{$(OUTPUTPATH)}.obj::
+        cl -c $(OPTS_MSVC) -Ox -Fo$(OUTPUTPATH)\ $<
+
+{$(RC572SRCPATH)/vulkan}.cpp{$(OUTPUTPATH)}.obj::
         cl -c -O2 $(OPTS_MSVC) -Fo$(OUTPUTPATH)\ $<
 
 !elseif "$(PROCESSOR_ARCHITECTURE)" == "arm"
