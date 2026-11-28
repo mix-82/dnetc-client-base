@@ -1,0 +1,30 @@
+name: Linux amd64 Vulkan CI
+
+on:
+  push:
+    branches: [ "ci-vulkan-client" ]
+
+jobs:
+  build:
+    timeout-minutes: 20
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install libvulkan-dev mesa-vulkan-drivers
+    - name: configure
+      env:
+        SHELL: /bin/sh
+      run: ./configure linux-amd64-vulkan
+    # The runner has no GPU, so the client is built to also accept CPU
+    # devices (test builds only) and run on Mesa's llvmpipe.
+    - name: make
+      run: make CC="gcc -DVK_ALLOW_CPU_DEVICES"
+    - name: gpuinfo
+      run: ./dnetc -gpuinfo
+    - name: test
+      run: ./dnetc -test
