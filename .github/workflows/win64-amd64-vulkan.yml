@@ -44,23 +44,12 @@ jobs:
         install: mingw-w64-x86_64-mesa
     - name: Register llvmpipe
       shell: cmd
-      run: |
-        reg add "HKLM\SOFTWARE\Khronos\Vulkan\Drivers" /v "${{ steps.msys2.outputs.msys2-location }}\mingw64\share\vulkan\icd.d\lvp_icd.x86_64.json" /t REG_DWORD /d 0 /f
-        echo ${{ steps.msys2.outputs.msys2-location }}\mingw64\bin>> %GITHUB_PATH%
+      run: reg add "HKLM\SOFTWARE\Khronos\Vulkan\Drivers" /v "${{ steps.msys2.outputs.msys2-location }}\mingw64\share\vulkan\icd.d\lvp_icd.x86_64.json" /t REG_DWORD /d 0 /f
+    # Run from the MSYS2 shell, so that Mesa finds the DLLs it was built with.
+    # Git's bash has other versions of them first in its search path.
     - name: gpuinfo
-      shell: bash
+      shell: msys2 {0}
       run: ./dnetc.exe -gpuinfo
     - name: test
-      shell: bash
+      shell: msys2 {0}
       run: ./dnetc.exe -test
-    # Diagnostics for the exit code 127 after -test (test branch only).
-    - name: bash DLL search order
-      if: always()
-      shell: bash
-      run: |
-        echo "$PATH" | tr ':' '\n' | head -14
-        for d in libstdc++-6.dll libgcc_s_seh-1.dll libwinpthread-1.dll zlib1.dll libzstd.dll vulkan-1.dll; do echo "== $d"; which -a $d 2>&1 || true; done
-        set +e
-        ./dnetc.exe -test > /dev/null; echo "PATH as is: exit code $?"
-        PATH="$(cygpath -u '${{ steps.msys2.outputs.msys2-location }}')/mingw64/bin:$PATH" ./dnetc.exe -test > /dev/null; echo "MSYS2 mingw64 first: exit code $?"
-        exit 0
