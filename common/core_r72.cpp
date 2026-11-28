@@ -115,6 +115,8 @@ extern "C" s32 rc5_72_unit_func_ocl_ref (RC5_72UnitWork *rc5_72unitwork, u32 *it
 extern "C" s32 rc5_72_unit_func_ocl_1pipe (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
 extern "C" s32 rc5_72_unit_func_ocl_2pipe (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
 extern "C" s32 rc5_72_unit_func_ocl_4pipe (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
+#elif (CLIENT_CPU == CPU_VULKAN)
+extern "C" s32 rc5_72_unit_func_vk_ref (RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
 #elif (CLIENT_CPU == CPU_ARM64)
 extern "C" s32 rc5_72_unit_func_monika_4pipe(RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
 extern "C" s32 rc5_72_unit_func_monika_2pipe(RC5_72UnitWork *rc5_72unitwork, u32 *iterations, void *);
@@ -252,6 +254,8 @@ const char **corenames_for_contest_rc572()
       "CL 1-pipe",
       "CL 2-pipe",
       "CL 4-pipe",
+  #elif (CLIENT_CPU == CPU_VULKAN)
+      "VK ANSI 1-pipe",
   #else
       "ANSI 4-pipe",
       "ANSI 2-pipe",
@@ -710,6 +714,8 @@ int selcoreGetPreselectedCoreForProject_rc572(int device)
     cindex = 1; // now we use ansi-2pipe
   #elif (CLIENT_CPU == CPU_CUDA)
     cindex = 0; // 1-pipe 64-threads
+  #elif (CLIENT_CPU == CPU_VULKAN)
+    cindex = 0; // the only core
   #elif (CLIENT_CPU == CPU_OPENCL)
     switch (detected_type)
     {
@@ -1053,6 +1059,15 @@ int selcoreSelectCore_rc572(Client *client, unsigned int threadindex,
       case 3:
         unit_func.gen_72 = rc5_72_unit_func_ocl_4pipe;
         pipeline_count = 4;
+        break;
+
+    // -----------
+     #elif (CLIENT_CPU == CPU_VULKAN)
+      case 0:
+      default:
+        unit_func.gen_72 = rc5_72_unit_func_vk_ref;
+        pipeline_count = 1;
+        coresel = 0; // yes, we explicitly set coresel in the default case !
         break;
 
     // -----------

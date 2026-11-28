@@ -1,0 +1,107 @@
+/*
+* Copyright distributed.net 2012-2026 - All Rights Reserved
+* For use in distributed.net projects only.
+* Any other distribution or use of this source violates copyright.
+*
+* Vulkan port of rc5-72/opencl/rc5-ref.cl. One key per work item.
+* Compile with "sh tools/build_shader.sh rc5-ref", which also writes rc5-ref.cpp.
+*/
+#version 450
+
+// Work-group size. The host sets constant_id 0 when it builds the pipeline;
+// 64 is only the default.
+layout(local_size_x = 64) in;
+layout(local_size_x_id = 0) in;
+
+// Number of words in the output buffer: a counter and 63 results.
+#define OUT_WORDS 64
+
+// Written by the host before every run (FillConstantBuffer in vk_rc572.cpp).
+layout(std140, set = 0, binding = 0) uniform UnitWork
+{
+  uint L0hi;
+  uint L0mid;
+  uint L0lo;
+  uint keys;       // number of keys in this run
+  uint plain_lo;
+  uint plain_hi;
+  uint cypher_lo;
+  uint cypher_hi;
+  uint row_keys;   // keys in one row of the dispatch
+} rc5_72unitwork;
+
+layout(std430, set = 0, binding = 1) buffer OutBuf
+{
+  uint outbuf[OUT_WORDS];
+};
+
+#define ROTL(x, s) (((x) << ((s) & 31u)) | ((x) >> ((32u - (s)) & 31u)))
+#define ROTL3(x) (((x) << 3u) | ((x) >> 29u))
+#define SWAP(x) (((x) >> 24u) | ((x) << 24u) | (((x) & 0x00ff0000u) >> 8u) | (((x) & 0x0000ff00u) << 8u))
+
+#define P 0xB7E15163u
+#define Q 0x9E3779B9u
+
+void main()
+{
+  uint L[3];
+  uint S[26];
+  uint A, B;
+  uint i, j, k;
+
+  // Number of this key within the run. The last group and the last row of a
+  // dispatch are usually not full.
+  uint id = gl_GlobalInvocationID.y * rc5_72unitwork.row_keys + gl_GlobalInvocationID.x;
+  if (id >= rc5_72unitwork.keys)
+    return;
+
+  L[2] = rc5_72unitwork.L0hi;
+  L[1] = rc5_72unitwork.L0mid;
+  L[0] = rc5_72unitwork.L0lo;
+
+  L[2] += id;
+  uint l1_t1 = SWAP(L[1]);
+  uint l1_t2 = l1_t1 + (L[2] >> 8u);
+  L[2] &= 0x000000ffu;
+  if (l1_t2 < l1_t1)
+  {
+    uint l0_t = SWAP(L[0]);
+    l0_t += 1u;
+    L[0] = SWAP(l0_t);
+  }
+  L[1] = SWAP(l1_t2);
+
+  S[0] = P;
+  for (i = 1u; i < 26u; i++)
+    S[i] = S[i - 1u] + Q;
+
+  A = 0u;
+  B = 0u;
+  i = 0u;
+  j = 0u;
+  for (k = 0u; k < 3u * 26u; k++)
+  {
+    A = S[i] = ROTL3(S[i] + (A + B));
+    B = L[j] = ROTL(L[j] + (A + B), (A + B));
+    i = (i + 1u) % 26u;
+    j = (j + 1u) % 3u;
+  }
+  A = rc5_72unitwork.plain_lo + S[0];
+  B = rc5_72unitwork.plain_hi + S[1];
+  for (i = 1u; i <= 12u; i++)
+  {
+    A = ROTL(A ^ B, B) + S[2u * i];
+    B = ROTL(B ^ A, A) + S[2u * i + 1u];
+  }
+
+  if (A == rc5_72unitwork.cypher_lo)
+  {
+    uint idx = atomicAdd(outbuf[0], 1u) + 1u;
+    uint val = id;
+    if (B == rc5_72unitwork.cypher_hi)
+      val |= 0x80000000u; // Full match
+    // The host sees the count in outbuf[0] and reports an overflow.
+    if (idx < uint(OUT_WORDS))
+      outbuf[idx] = val;
+  }
+}

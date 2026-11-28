@@ -42,6 +42,10 @@
 #include "ocl_setup.h"		// InitializeOpenCL()
 #endif
 
+#if (CLIENT_CPU == CPU_VULKAN)
+#include "vk_setup.h"           // InitializeVulkan()
+#endif
+
 /* ------------------------------------------------------------------------ */
 
 void ResetClientData(Client *client)
@@ -354,6 +358,11 @@ static void InitializeCoProcessorsOnce(Client *client)
       #define GPU_INIT InitializeOpenCL()
     #endif
 
+    #if (CLIENT_CPU == CPU_VULKAN)
+      #define GPU_NAME "Vulkan"
+      #define GPU_INIT InitializeVulkan()
+    #endif
+
     #ifdef GPU_NAME
     if (GPU_INIT < 0)
       Log("Unable to initialize " GPU_NAME "\n");
@@ -569,6 +578,10 @@ static int ClientMain( int argc, char *argv[] )
 
   #if (CLIENT_CPU == CPU_ATI_STREAM)
   ADLdeinit();
+  #endif
+
+  #if (CLIENT_CPU == CPU_VULKAN)
+  ShutdownVulkan();
   #endif
 
   TRACE_OUT((-1,"Client.Main()\n"));

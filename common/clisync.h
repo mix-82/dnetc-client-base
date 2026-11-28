@@ -183,6 +183,7 @@
   }
 
 #elif (CLIENT_CPU == CPU_X86) || (CLIENT_CPU == CPU_AMD64) || (CLIENT_CPU == CPU_CUDA) || (CLIENT_CPU == CPU_ATI_STREAM) || ((CLIENT_CPU == CPU_OPENCL) && !defined(__arm64__)) || \
+  ((CLIENT_CPU == CPU_VULKAN) && !defined(__arm64__) && !defined(__aarch64__)) || \
   ((CLIENT_CPU == CPU_ARM) && !defined(__GNUC__)) || ((CLIENT_CPU == CPU_ARM64) && !defined(__GNUC__))
 
   typedef volatile long fastlock_t;

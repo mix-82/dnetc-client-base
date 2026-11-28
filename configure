@@ -824,6 +824,26 @@ add_sources() # $1=os, $2=arch, $3=custom
     fi # HAVE_RC5_72
 
   #-----------------------------------------------------------------
+  elif [ "$2" = "vulkan" ]; then
+
+    HAVE_OGR="0"
+    HAVE_OGR_P2="0"
+    TARGET_HDIRS="$TARGET_HDIRS ./plat/vulkan"
+
+    TARGET_ADDSRCS="$TARGET_ADDSRCS \
+                          plat/vulkan/vk_info.cpp \
+                          plat/vulkan/vk_setup.cpp \
+                          plat/vulkan/vk_compute.cpp"
+
+    # -------------- rc5-72 --------------
+    if [ "$HAVE_RC5_72" = "1" ]; then
+      DEFAULT_RC5_72="0"     # don't add the ansi cores
+      TARGET_ADDSRCS="$TARGET_ADDSRCS \
+                          rc5-72/vulkan/vk_common.cpp \
+                          rc5-72/vulkan/vk_rc572.cpp"
+    fi # HAVE_RC5_72
+
+  #-----------------------------------------------------------------
   else
     echo "Warning. Unknown arch '$2' to add_sources. Using all-ANSI cores."
   fi
@@ -3511,6 +3531,21 @@ case "$1" in
         TARGET_DOCFILES="docs/readme._ix docs/readme.opencl"   #platform specific docfile
         TARGET_TARBALL="freebsd-amd64-opencl"
         add_sources "freebsd" "opencl"
+        ;;
+
+# Vulkan ***************************************************************
+
+    *linux-amd64-vulkan)        # needs the Vulkan headers (libvulkan-dev)
+        infer_arch_and_version "Linux"
+        TARGET_AS="gcc -c"
+        TARGET_CC="gcc"
+        generate_gcc_opts "${inferred_arch}" "linux"
+        TARGET_CCFLAGS="$OPTS_GCC -DVULKAN -DDYN_TIMESLICE"
+        TARGET_LIBS="-lrt -lvulkan -lpthread"
+        TARGET_USES_GNUMAKE="yes"
+        TARGET_DOCFILES="docs/readme.linux docs/readme.vulkan"   #platform specific docfile
+        TARGET_TARBALL="linux-amd64-vulkan"
+        add_sources "linux" "vulkan"
         ;;
 
 # Wildcards ************************************************************
