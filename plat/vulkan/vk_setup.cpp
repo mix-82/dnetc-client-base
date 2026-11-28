@@ -20,6 +20,15 @@
 
 #define VK_NOT_INITIALIZED (-12345)
 
+// MoltenVK (Vulkan on Apple's Metal) is a "portability" driver: it has all
+// this client uses, but is not a complete Vulkan. The Vulkan loader hides
+// such drivers unless the instance asks for them, and their devices must be
+// created with the VK_KHR_portability_subset extension. These are the only
+// extensions the client ever enables.
+#if (CLIENT_OS == OS_MACOSX) && !defined(VK_USE_PORTABILITY_DRIVERS)
+#define VK_USE_PORTABILITY_DRIVERS
+#endif
+
 static int numDevices = VK_NOT_INITIALIZED;
 static vk_context_t *vk_context = NULL;
 static VkInstance vk_instance = VK_NULL_HANDLE;
@@ -64,6 +73,44 @@ VkResult vk_diagnose(VkResult status, const char *where, const vk_context_t *con
   }
   return status;
 }
+
+// -----------------------------------------------------------------------
+
+#ifdef VK_USE_PORTABILITY_DRIVERS
+// Is the extension offered by the instance (phys == VK_NULL_HANDLE) or by
+// the device?
+static bool ExtensionListed(VkPhysicalDevice phys, const char *name)
+{
+  u32 count = 0;
+  VkResult status;
+  bool listed = false;
+
+  if (phys == VK_NULL_HANDLE)
+    status = vkEnumerateInstanceExtensionProperties(NULL, &count, NULL);
+  else
+    status = vkEnumerateDeviceExtensionProperties(phys, NULL, &count, NULL);
+  if (status != VK_SUCCESS || count == 0)
+    return false;
+
+  VkExtensionProperties *exts = (VkExtensionProperties *) malloc(count * sizeof(VkExtensionProperties));
+  if (exts == NULL)
+    return false;
+  if (phys == VK_NULL_HANDLE)
+    status = vkEnumerateInstanceExtensionProperties(NULL, &count, exts);
+  else
+    status = vkEnumerateDeviceExtensionProperties(phys, NULL, &count, exts);
+  if (status == VK_SUCCESS || status == VK_INCOMPLETE)
+  {
+    for (u32 i = 0; i < count && !listed; i++)
+    {
+      if (strcmp(exts[i].extensionName, name) == 0)
+        listed = true;
+    }
+  }
+  free(exts);
+  return listed;
+}
+#endif
 
 // -----------------------------------------------------------------------
 
@@ -198,6 +245,16 @@ int InitializeVulkan(void)
   instInfo.sType            = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
   instInfo.pApplicationInfo = &appInfo;
 
+#ifdef VK_USE_PORTABILITY_DRIVERS
+  const char *instanceExtension = VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME;
+  if (ExtensionListed(VK_NULL_HANDLE, instanceExtension))
+  {
+    instInfo.flags                  |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+    instInfo.enabledExtensionCount   = 1;
+    instInfo.ppEnabledExtensionNames = &instanceExtension;
+  }
+#endif
+
   status = vkCreateInstance(&instInfo, NULL, &vk_instance);
   if (vk_diagnose(status, "creating the Vulkan instance (vkCreateInstance)", NULL) != VK_SUCCESS)
   {
@@ -299,6 +356,16 @@ bool VKCreateDevice(vk_context_t *cont)
   deviceInfo.sType                = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
   deviceInfo.queueCreateInfoCount = 1;
   deviceInfo.pQueueCreateInfos    = &queueInfo;
+
+#ifdef VK_USE_PORTABILITY_DRIVERS
+  // the name is spelled out: its macro is only in the "beta" Vulkan header
+  const char *deviceExtension = "VK_KHR_portability_subset";
+  if (ExtensionListed(cont->physDevice, deviceExtension))
+  {
+    deviceInfo.enabledExtensionCount   = 1;
+    deviceInfo.ppEnabledExtensionNames = &deviceExtension;
+  }
+#endif
 
   VkResult status = vkCreateDevice(cont->physDevice, &deviceInfo, NULL, &cont->device);
   if (vk_diagnose(status, "creating Vulkan device", cont) != VK_SUCCESS)
