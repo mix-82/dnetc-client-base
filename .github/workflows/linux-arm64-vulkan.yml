@@ -26,5 +26,8 @@ jobs:
       run: make CC="g++ -DVK_ALLOW_CPU_DEVICES"
     - name: gpuinfo
       run: ./dnetc -gpuinfo
+    # -test exits 0 even when it tested nothing, so look for the pass line.
     - name: test
-      run: ./dnetc -test
+      run: |
+        ./dnetc -test | tee test.log
+        grep -q "32/32 Tests Passed" test.log

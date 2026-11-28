@@ -50,6 +50,9 @@ jobs:
     - name: gpuinfo
       shell: msys2 {0}
       run: ./dnetc.exe -gpuinfo
+    # -test exits 0 even when it tested nothing, so look for the pass line.
     - name: test
       shell: msys2 {0}
-      run: ./dnetc.exe -test
+      run: |
+        ./dnetc.exe -test | tee test.log
+        grep -q "32/32 Tests Passed" test.log
