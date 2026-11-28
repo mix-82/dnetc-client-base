@@ -3564,6 +3564,8 @@ case "$1" in
         TARGET_CC="aarch64-linux-android30-clang++"
         TARGET_AS="aarch64-linux-android30-clang -c"
         TARGET_CCFLAGS="$OPTS_CLANGCC -std=gnu++14 -DANDROID -DVULKAN -DDYN_TIMESLICE"
+        # libc++_shared.so is not a system library on a device
+        TARGET_LDFLAGS="$TARGET_LDFLAGS -static-libstdc++"
         TARGET_LIBS="-lvulkan"
         TARGET_USES_GNUMAKE="yes"
         TARGET_DOCFILES="docs/readme._ix docs/readme.vulkan"   #platform specific docfile
