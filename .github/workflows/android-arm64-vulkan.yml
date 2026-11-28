@@ -1,0 +1,34 @@
+name: Android arm64 Vulkan CI
+
+on:
+  push:
+    branches: [ "ci-vulkan-client" ]
+
+jobs:
+  build:
+    timeout-minutes: 20
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Add the NDK compilers to the PATH
+      run: |
+        grep Pkg.Revision "$ANDROID_NDK_LATEST_HOME/source.properties"
+        echo "$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
+    - name: configure
+      env:
+        SHELL: /bin/sh
+      run: ./configure android-arm64-vulkan
+    - name: make
+      run: make
+    # An Android binary cannot run on the runner, so this only checks the build.
+    - name: file
+      run: |
+        file dnetc
+        llvm-readelf -d dnetc | grep NEEDED
+    # Test branch only: the binary for a run on a phone.
+    - uses: actions/upload-artifact@v4
+      with:
+        name: dnetc-android-arm64-vulkan
+        path: dnetc
