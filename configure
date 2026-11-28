@@ -3575,6 +3575,16 @@ case "$1" in
         add_sources "android" "vulkan"
         ;;
 
+    *macosx-arm64-vulkan)       # macOS 11 64-bit, Darwin; needs the Vulkan SDK (set VULKAN_SDK)
+        TARGET_plat="-mmacosx-version-min=11.0 -DMACOSX_DEPLOYMENT_TARGET=11.0 -arch arm64"
+        TARGET_CCFLAGS="$OPTS_CLANGCC -std=gnu++14 -DVULKAN -DDYN_TIMESLICE $TARGET_plat ${VULKAN_SDK:+-I$VULKAN_SDK/include}"
+        TARGET_LIBS="-framework IOKit -framework CoreFoundation -lvulkan"
+        TARGET_LDFLAGS="$TARGET_plat ${VULKAN_SDK:+-L$VULKAN_SDK/lib -Wl,-rpath,$VULKAN_SDK/lib}"
+        TARGET_DOCFILES="docs/readme.osx.html docs/readme.vulkan"   #platform specific docfile
+        TARGET_TARBALL="macosx-arm64-vulkan"
+        add_sources "macosx" "vulkan"
+        ;;
+
 # Wildcards ************************************************************
 
     *freebsd*)                  # FreeBSD (autoselect version and arch)

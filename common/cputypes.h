@@ -482,6 +482,8 @@
     #define CLIENT_CPU    CPU_CUDA
   #elif defined(OPENCL) && (defined(__i386__) || defined(__x86_64__) || defined(__arm64__))
     #define CLIENT_CPU    CPU_OPENCL
+  #elif defined(VULKAN)
+    #define CLIENT_CPU    CPU_VULKAN
   #elif defined(__ppc__) || defined(__ppc64__)
     #define CLIENT_CPU    CPU_POWERPC
   #elif defined(__i386__) || defined(ASM_X86)
