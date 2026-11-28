@@ -4,9 +4,10 @@ on:
   push:
     branches: [ "ci-vulkan-client" ]
 
+# Experiments on the test branch: which drivers and which settings work.
 jobs:
   build:
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     strategy:
       fail-fast: false
@@ -17,28 +18,83 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Install the Vulkan loader, headers and MoltenVK
-      run: brew install vulkan-loader vulkan-headers molten-vk vulkan-tools
+    - name: Install the Vulkan loader, headers, MoltenVK, validation layers and Mesa
+      run: brew install vulkan-loader vulkan-headers molten-vk vulkan-tools vulkan-validationlayers mesa
     - name: What Vulkan sees
       run: |
         sysctl -n machdep.cpu.brand_string
         sw_vers
-        find "$(brew --prefix)/etc/vulkan" "$(brew --prefix)/share/vulkan" "$(brew --prefix molten-vk)/etc/vulkan" -name '*.json' 2>/dev/null || true
+        find "$(brew --prefix)/etc/vulkan" "$(brew --prefix)/share/vulkan" -name '*.json' 2>/dev/null || true
         vulkaninfo --summary || true
     - name: configure
       env:
         SHELL: /bin/sh
       run: VULKAN_SDK="$(brew --prefix)" ./configure macosx-arm64-vulkan
-    # Built to also accept CPU-type devices, so that whatever the virtual
-    # machine offers can be tried (test builds only).
-    - name: make
-      run: make CC="$(sed -n 's/^CC = //p' Makefile) -DVK_ALLOW_CPU_DEVICES"
-    - name: gpuinfo
-      run: ./dnetc -gpuinfo
-    # -test exits 0 even when it tested nothing, so look for the pass line.
-    - name: test
+
+    # A: the client as it would be released.
+    - name: A make (plain build)
       run: |
-        ./dnetc -test | tee test.log
+        make
+        cp dnetc dnetc-plain
+        otool -L dnetc-plain
+    - name: A gpuinfo
+      run: ./dnetc-plain -gpuinfo
+    - name: A test
+      run: |
+        ./dnetc-plain -test | tee test.log
         grep -q "32/32 Tests Passed" test.log
-    - name: bench
-      run: ./dnetc -bench
+    - name: A bench
+      run: ./dnetc-plain -bench
+    - name: A test under the validation layer
+      continue-on-error: true
+      run: |
+        VK_INSTANCE_LAYERS=VK_LAYER_KHRONOS_validation ./dnetc-plain -test > validation.log 2>&1 || true
+        grep -E "Tests Passed|Internal error|No Vulkan|Unable" validation.log || true
+        echo "validation messages: $(grep -c -E 'VUID|Validation (Error|Warning)' validation.log)"
+        grep -E 'VUID|Validation (Error|Warning)' validation.log | cut -c1-400 | sort | uniq -c | head -20 || true
+
+    # B: one driver at a time, with a build that also accepts CPU devices.
+    - name: B make (also accepts CPU devices)
+      run: |
+        touch plat/vulkan/vk_setup.cpp
+        make CC="$(sed -n 's/^CC = //p' Makefile) -DVK_ALLOW_CPU_DEVICES"
+        cp dnetc dnetc-cpu
+    - name: B each driver alone
+      continue-on-error: true
+      run: |
+        for json in $(find "$(brew --prefix)/etc/vulkan" "$(brew --prefix)/share/vulkan" -path '*icd.d*' -name '*.json' 2>/dev/null); do
+          echo "=================== driver: $json"
+          VK_DRIVER_FILES="$json" ./dnetc-cpu -gpuinfo 2>&1 | grep -E "Device [0-9]|Type:|Driver:|Vulkan version|No Vulkan|Unable|not supported" || true
+          VK_DRIVER_FILES="$json" ./dnetc-cpu -test 2>&1 | grep -E "Tests Passed|Internal error|No Vulkan|Unable|Sanity|Error|not supported" || true
+          VK_DRIVER_FILES="$json" ./dnetc-cpu -bench 2>&1 | grep -E "keys/sec|Internal error|No Vulkan|Unable|Sanity|Error" || true
+        done
+
+    # C: without the portability extensions, to see which drivers still appear.
+    - name: C make (no portability extensions)
+      continue-on-error: true
+      run: |
+        cp plat/vulkan/vk_setup.cpp vk_setup.cpp.orig
+        sed -i '' -e '/^#define VK_USE_PORTABILITY_DRIVERS$/d' plat/vulkan/vk_setup.cpp
+        ! cmp -s plat/vulkan/vk_setup.cpp vk_setup.cpp.orig
+        make CC="$(sed -n 's/^CC = //p' Makefile) -DVK_ALLOW_CPU_DEVICES"
+        cp dnetc dnetc-noext
+        cp vk_setup.cpp.orig plat/vulkan/vk_setup.cpp
+        for json in $(find "$(brew --prefix)/etc/vulkan" "$(brew --prefix)/share/vulkan" -path '*icd.d*' -name '*.json' 2>/dev/null); do
+          echo "=================== driver: $json"
+          VK_DRIVER_FILES="$json" ./dnetc-noext -gpuinfo 2>&1 | grep -E "Device [0-9]|Driver:|No Vulkan|Unable|not supported" || true
+          VK_DRIVER_FILES="$json" ./dnetc-noext -test 2>&1 | grep -E "Tests Passed|Internal error|No Vulkan|Unable|Sanity|Error" || true
+        done
+
+    # D: listing portability drivers, but not enabling VK_KHR_portability_subset.
+    - name: D make (enumeration only, no portability_subset)
+      continue-on-error: true
+      run: |
+        sed -i '' -e 's/"VK_KHR_portability_subset"/"VK_KHR_not_an_extension"/' plat/vulkan/vk_setup.cpp
+        ! cmp -s plat/vulkan/vk_setup.cpp vk_setup.cpp.orig
+        make CC="$(sed -n 's/^CC = //p' Makefile) -DVK_ALLOW_CPU_DEVICES"
+        cp dnetc dnetc-nosubset
+        cp vk_setup.cpp.orig plat/vulkan/vk_setup.cpp
+        ./dnetc-nosubset -test 2>&1 | grep -E "Tests Passed|Internal error|No Vulkan|Unable|Sanity|Error" || true
+        VK_INSTANCE_LAYERS=VK_LAYER_KHRONOS_validation ./dnetc-nosubset -test > validation-d.log 2>&1 || true
+        echo "validation messages: $(grep -c -E 'VUID|Validation (Error|Warning)' validation-d.log)"
+        grep -E 'VUID|Validation (Error|Warning)' validation-d.log | cut -c1-400 | sort | uniq -c | head -10 || true
