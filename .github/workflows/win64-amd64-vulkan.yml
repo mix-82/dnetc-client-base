@@ -53,3 +53,16 @@ jobs:
     - name: test
       shell: bash
       run: ./dnetc.exe -test
+    # Diagnostics for the exit code 127 after -test (test branch only).
+    - name: exit codes and crash records
+      if: always()
+      shell: pwsh
+      run: |
+        foreach ($a in '-gpuinfo', '-test', '-bench') {
+          $p = Start-Process -FilePath .\dnetc.exe -ArgumentList $a -Wait -PassThru -NoNewWindow
+          '{0}: exit code 0x{1:X8}' -f $a, $p.ExitCode
+        }
+        $env:VK_LOADER_DEBUG = 'error,warn'
+        $p = Start-Process -FilePath .\dnetc.exe -ArgumentList '-test' -Wait -PassThru -NoNewWindow
+        'with VK_LOADER_DEBUG: exit code 0x{0:X8}' -f $p.ExitCode
+        Get-WinEvent -FilterHashtable @{LogName='Application'; Id=1000,1001} -MaxEvents 8 -ErrorAction SilentlyContinue | Format-List TimeCreated, Id, Message
