@@ -168,7 +168,9 @@
 #elif defined(__ANDROID__) || defined(_ANDROID_)
   /* must precede the linux test: Android compilers also define linux */
   #define CLIENT_OS_NAME  "Android"
-  #if defined(__arm64__) || defined(__aarch64__)
+  #if defined(VULKAN)
+    #define CLIENT_CPU     CPU_VULKAN
+  #elif defined(__arm64__) || defined(__aarch64__)
     #define CLIENT_CPU     CPU_ARM64
   #elif defined(__x86_64__) || defined(__amd64__)
     #define CLIENT_CPU     CPU_AMD64

@@ -3560,6 +3560,19 @@ case "$1" in
         add_sources "linux" "vulkan"
         ;;
 
+    *android-arm64-vulkan)      # Android NDK clang, 64-bit, API 30
+        TARGET_CC="aarch64-linux-android30-clang++"
+        TARGET_AS="aarch64-linux-android30-clang -c"
+        TARGET_CCFLAGS="$OPTS_CLANGCC -std=gnu++14 -DANDROID -DVULKAN -DDYN_TIMESLICE"
+        TARGET_LIBS="-lvulkan"
+        TARGET_USES_GNUMAKE="yes"
+        TARGET_DOCFILES="docs/readme._ix docs/readme.vulkan"   #platform specific docfile
+        TARGET_TARBALL="android-arm64-vulkan"
+        TARGET_STRIP="llvm-strip"
+        TARGET_IS_CROSSCOMPILE="1"
+        add_sources "android" "vulkan"
+        ;;
+
 # Wildcards ************************************************************
 
     *freebsd*)                  # FreeBSD (autoselect version and arch)
