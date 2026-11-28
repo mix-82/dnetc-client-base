@@ -24,8 +24,16 @@ jobs:
       run: |
         sysctl -n machdep.cpu.brand_string
         sw_vers
-        find "$(brew --prefix)/etc/vulkan" "$(brew --prefix)/share/vulkan" -name '*.json' 2>/dev/null || true
+        find -L "$(brew --prefix)/etc/vulkan" "$(brew --prefix)/share/vulkan" -path '*icd.d*' -name '*.json' 2>/dev/null || true
+        ls -la "$(brew --prefix mesa)/share/vulkan/icd.d" "$(brew --prefix mesa)/lib" 2>/dev/null | grep -iE 'icd|vulkan|kosmic|lvp' || true
         vulkaninfo --summary || true
+        echo "--- is the validation layer loaded when asked for?"
+        VK_LOADER_DEBUG=layer VK_INSTANCE_LAYERS=VK_LAYER_KHRONOS_validation vulkaninfo --summary 2>&1 | grep -iE 'khronos_validation|Insert instance layer' | head -4 || true
+        echo "--- KosmicKrisp alone, with loader messages"
+        for json in $(find -L "$(brew --prefix)/share/vulkan" -path '*icd.d*' -iname '*kosmic*' 2>/dev/null); do
+          cat "$json"
+          VK_LOADER_DEBUG=error,warn,driver VK_DRIVER_FILES="$json" vulkaninfo --summary 2>&1 | grep -vE 'extension revision|^VK_|^=+$|^-+$' | tail -25 || true
+        done
     - name: configure
       env:
         SHELL: /bin/sh
@@ -62,7 +70,7 @@ jobs:
     - name: B each driver alone
       continue-on-error: true
       run: |
-        for json in $(find "$(brew --prefix)/etc/vulkan" "$(brew --prefix)/share/vulkan" -path '*icd.d*' -name '*.json' 2>/dev/null); do
+        for json in $(find -L "$(brew --prefix)/etc/vulkan" "$(brew --prefix)/share/vulkan" -path '*icd.d*' -name '*.json' 2>/dev/null); do
           echo "=================== driver: $json"
           VK_DRIVER_FILES="$json" ./dnetc-cpu -gpuinfo 2>&1 | grep -E "Device [0-9]|Type:|Driver:|Vulkan version|No Vulkan|Unable|not supported" || true
           VK_DRIVER_FILES="$json" ./dnetc-cpu -test 2>&1 | grep -E "Tests Passed|Internal error|No Vulkan|Unable|Sanity|Error|not supported" || true
@@ -79,7 +87,7 @@ jobs:
         make CC="$(sed -n 's/^CC = //p' Makefile) -DVK_ALLOW_CPU_DEVICES"
         cp dnetc dnetc-noext
         cp vk_setup.cpp.orig plat/vulkan/vk_setup.cpp
-        for json in $(find "$(brew --prefix)/etc/vulkan" "$(brew --prefix)/share/vulkan" -path '*icd.d*' -name '*.json' 2>/dev/null); do
+        for json in $(find -L "$(brew --prefix)/etc/vulkan" "$(brew --prefix)/share/vulkan" -path '*icd.d*' -name '*.json' 2>/dev/null); do
           echo "=================== driver: $json"
           VK_DRIVER_FILES="$json" ./dnetc-noext -gpuinfo 2>&1 | grep -E "Device [0-9]|Driver:|No Vulkan|Unable|not supported" || true
           VK_DRIVER_FILES="$json" ./dnetc-noext -test 2>&1 | grep -E "Tests Passed|Internal error|No Vulkan|Unable|Sanity|Error" || true
