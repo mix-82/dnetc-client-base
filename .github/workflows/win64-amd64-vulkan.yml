@@ -54,15 +54,13 @@ jobs:
       shell: bash
       run: ./dnetc.exe -test
     # Diagnostics for the exit code 127 after -test (test branch only).
-    - name: exit codes and crash records
+    - name: bash DLL search order
       if: always()
-      shell: pwsh
+      shell: bash
       run: |
-        foreach ($a in '-gpuinfo', '-test', '-bench') {
-          $p = Start-Process -FilePath .\dnetc.exe -ArgumentList $a -Wait -PassThru -NoNewWindow
-          '{0}: exit code 0x{1:X8}' -f $a, $p.ExitCode
-        }
-        $env:VK_LOADER_DEBUG = 'error,warn'
-        $p = Start-Process -FilePath .\dnetc.exe -ArgumentList '-test' -Wait -PassThru -NoNewWindow
-        'with VK_LOADER_DEBUG: exit code 0x{0:X8}' -f $p.ExitCode
-        Get-WinEvent -FilterHashtable @{LogName='Application'; Id=1000,1001} -MaxEvents 8 -ErrorAction SilentlyContinue | Format-List TimeCreated, Id, Message
+        echo "$PATH" | tr ':' '\n' | head -14
+        for d in libstdc++-6.dll libgcc_s_seh-1.dll libwinpthread-1.dll zlib1.dll libzstd.dll vulkan-1.dll; do echo "== $d"; which -a $d 2>&1 || true; done
+        set +e
+        ./dnetc.exe -test > /dev/null; echo "PATH as is: exit code $?"
+        PATH="$(cygpath -u '${{ steps.msys2.outputs.msys2-location }}')/mingw64/bin:$PATH" ./dnetc.exe -test > /dev/null; echo "MSYS2 mingw64 first: exit code $?"
+        exit 0
