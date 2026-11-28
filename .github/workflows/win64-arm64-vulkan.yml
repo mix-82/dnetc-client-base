@@ -1,0 +1,55 @@
+name: Windows ARM64 Vulkan CI
+
+on:
+  push:
+    branches: [ "ci-vulkan-client" ]
+
+jobs:
+  build:
+    timeout-minutes: 30
+
+    runs-on: windows-11-arm
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build Vulkan headers and loader
+      shell: bash
+      working-directory: ${{ runner.temp }}
+      run: |
+        git clone --depth 1 --branch vulkan-sdk-1.4.363.0 https://github.com/KhronosGroup/Vulkan-Headers
+        git clone --depth 1 --branch vulkan-sdk-1.4.363.0 https://github.com/KhronosGroup/Vulkan-Loader
+        cmake -S Vulkan-Headers -B headers -DCMAKE_INSTALL_PREFIX="$(cygpath -m "$PWD")/headers-install"
+        cmake --install headers
+        cmake -S Vulkan-Loader -B loader -A ARM64 -DVULKAN_HEADERS_INSTALL_DIR="$(cygpath -m "$PWD")/headers-install"
+        cmake --build loader --config Release
+        mkdir -p vk/Include vk/Lib
+        cp -r headers-install/include/vulkan headers-install/include/vk_video vk/Include/
+        cp loader/loader/Release/vulkan-1.lib vk/Lib/
+        cp loader/loader/Release/vulkan-1.dll "$GITHUB_WORKSPACE"
+    # The runner has no GPU or Vulkan driver, so the client is built to also
+    # accept CPU devices (test builds only) and run on Mesa's llvmpipe.
+    - name: nmake
+      shell: cmd
+      run: |
+        for /f "usebackq delims=" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath`) do set "VSDIR=%%i"
+        call "%VSDIR%\VC\Auxiliary\Build\vcvarsall.bat" arm64
+        set CL=-DVK_ALLOW_CPU_DEVICES
+        nmake -nologo -f makefile.vc PROCESSOR_ARCHITECTURE=VULKAN_ARM64 VULKANDIR=%RUNNER_TEMP%\vk\
+    - name: Install Mesa
+      id: msys2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: CLANGARM64
+        update: true
+        install: mingw-w64-clang-aarch64-mesa
+    - name: Register llvmpipe
+      shell: cmd
+      run: reg add "HKLM\SOFTWARE\Khronos\Vulkan\Drivers" /v "${{ steps.msys2.outputs.msys2-location }}\clangarm64\share\vulkan\icd.d\lvp_icd.aarch64.json" /t REG_DWORD /d 0 /f
+    # Run from the MSYS2 shell, so that Mesa finds the DLLs it was built with.
+    # Git's bash has other versions of them first in its search path.
+    - name: gpuinfo
+      shell: msys2 {0}
+      run: ./dnetc.exe -gpuinfo
+    - name: test
+      shell: msys2 {0}
+      run: ./dnetc.exe -test
