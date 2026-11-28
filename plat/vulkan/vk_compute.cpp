@@ -335,9 +335,15 @@ bool VKBuildProgram(vk_context_t *cont, const u32 *spirv, size_t spirvBytes,
 
 u32 VKMaxDispatchItems(const vk_context_t *cont)
 {
-  // 64-bit arithmetic: the device limits can be as large as 2^32 - 1 each.
-  unsigned long long limit =
-      (unsigned long long) cont->maxGroupCount[0] * cont->maxGroupCount[1] * cont->localSize;
+  // The device limits can be as large as 2^32 - 1 each, so the product of
+  // all three does not always fit in 64 bits (MoltenVK reports 2^30 groups
+  // per dimension). Multiply one factor at a time and stop at the cap.
+  unsigned long long limit = cont->localSize;
+
+  limit *= cont->maxGroupCount[0];
+  if (limit > VK_MAX_ITEMS)
+    limit = VK_MAX_ITEMS;
+  limit *= cont->maxGroupCount[1];
   if (limit > VK_MAX_ITEMS)
     limit = VK_MAX_ITEMS;
   return (u32) limit;
