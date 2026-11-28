@@ -1,0 +1,41 @@
+name: macOS arm64 Vulkan test
+
+on:
+  push:
+    branches: [ "ci-vulkan-client" ]
+
+jobs:
+  build:
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ macos-15, macos-26 ]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install the Vulkan loader, headers and MoltenVK
+      run: brew install vulkan-loader vulkan-headers molten-vk vulkan-tools
+    - name: What Vulkan sees
+      run: |
+        sysctl -n machdep.cpu.brand_string
+        sw_vers
+        find "$(brew --prefix)/etc/vulkan" "$(brew --prefix)/share/vulkan" "$(brew --prefix molten-vk)/etc/vulkan" -name '*.json' 2>/dev/null || true
+        vulkaninfo --summary || true
+    - name: configure
+      env:
+        SHELL: /bin/sh
+      run: VULKAN_SDK="$(brew --prefix)" ./configure macosx-arm64-vulkan
+    # Built to also accept CPU-type devices, so that whatever the virtual
+    # machine offers can be tried (test builds only).
+    - name: make
+      run: make CC="$(sed -n 's/^CC = //p' Makefile) -DVK_ALLOW_CPU_DEVICES"
+    - name: gpuinfo
+      run: ./dnetc -gpuinfo
+    - name: test
+      run: ./dnetc -test
+    - name: bench
+      run: ./dnetc -bench
